@@ -4,6 +4,13 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
 <meta name="theme-color" content="#ECEEE9">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="ฝึกพูดจีน">
 <title>ฝึกพูดจีน — พูดได้จริง</title>
 <style>
 :root{
@@ -31,6 +38,10 @@ body{
   font-family:"Noto Sans Thai","Sarabun","Segoe UI",system-ui,sans-serif;
   font-size:1.0625rem;line-height:1.6;
   overscroll-behavior-y:none;
+}
+/* เปิดแบบแอปบนมือถือที่มีติ่ง/แถบล่าง ต้องเว้นขอบเอง ไม่งั้นตัวหนังสือมุดใต้แถบ */
+@media (display-mode: standalone){
+  body{padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)}
 }
 .zh{font-family:"Noto Serif SC","Songti SC","PingFang SC","Microsoft YaHei",serif}
 .py{font-family:"Noto Sans",Roboto,"Segoe UI",system-ui,"Noto Serif",sans-serif;font-style:italic;letter-spacing:.005em}
@@ -259,6 +270,13 @@ td.r,th.r{text-align:right}
       <button class="btn ghost" id="btnLevels">📚 เลือกด่าน</button>
       <button class="btn ghost" id="btnStats">📊 สถิติ</button>
       <button class="btn ghost" id="btnSettings">⚙️</button>
+    </div>
+
+    <div class="card" id="pwaCard" hidden>
+      <div class="row"><b class="grow">📲 ติดตั้งลงหน้าจอโฮม</b></div>
+      <p class="small muted" style="margin:.4rem 0 .6rem">เปิดเหมือนแอปจริง เต็มจอ ไม่มีแถบที่อยู่เว็บ กดจากหน้าจอโฮมเข้าฝึกได้เลย</p>
+      <button class="btn" id="btnInstall">ติดตั้ง</button>
+      <p class="small muted" id="pwaIos" hidden style="margin:.6rem 0 0">บน iPhone/iPad: กดปุ่ม <b>แชร์</b> (สี่เหลี่ยมมีลูกศรชี้ขึ้น) ที่แถบล่างของ Safari แล้วเลื่อนหาเมนู <b>Add to Home Screen</b></p>
     </div>
 
     <div class="card">
@@ -2765,7 +2783,7 @@ const MILESTONES = [
 /* ============================================================
    2.5 บันทึกปัญหา (diagnostics) — ไว้ส่งให้ผู้พัฒนาดูเวลาไมค์มีปัญหา
    ============================================================ */
-const BUILD='2026-09-15a';                     // เปลี่ยนทุกครั้งที่แก้ไฟล์ จะได้รู้ว่า log มาจากรุ่นไหน
+const BUILD='2026-09-15b';                     // เปลี่ยนทุกครั้งที่แก้ไฟล์ จะได้รู้ว่า log มาจากรุ่นไหน
 const DIAG=[], STUCK={}, T0=Date.now();
 function dlog(tag, msg, extra){
   const line={t:Date.now()-T0, tag:tag, msg:msg===undefined?'':String(msg), extra:extra};
@@ -5052,6 +5070,46 @@ document.addEventListener('keyup',e=>{
   dlog('เริ่ม','protocol='+location.protocol+' secure='+window.isSecureContext+' จำสิทธิ์ได้='+PERSIST_OK);
   dlog('เริ่ม','SpeechRecognition='+(HAS_SR?'มี':'ไม่มี')+' online='+navigator.onLine);
   dlog('เริ่ม',navigator.userAgent);
+
+  /* ---------- ติดตั้งเป็นแอป ---------- */
+  const STANDALONE = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone===true;
+  dlog('pwa','โหมดแอป='+(STANDALONE?'ใช่':'ไม่ใช่'));
+  if('serviceWorker' in navigator){
+    const isLocal = /^(localhost|127\.)/.test(location.hostname||'');
+    if(!isLocal || /[?&]sw=1/.test(location.search)){   // ที่ localhost ไม่ลงให้ จะได้ไม่แคชทับตอนแก้ไฟล์
+      navigator.serviceWorker.register('sw.js').then(reg=>{
+        dlog('pwa','ลงทะเบียน service worker แล้ว');
+        reg.addEventListener('updatefound',()=>{
+          const w=reg.installing; if(!w) return;
+          w.addEventListener('statechange',()=>{
+            if(w.state==='installed' && navigator.serviceWorker.controller)
+              toast('มีรุ่นใหม่แล้ว','ปิดแล้วเปิดใหม่อีกครั้งเพื่ออัปเดต',3500);
+          });
+        });
+      }).catch(e=>dlog('pwa','ลงทะเบียนไม่สำเร็จ: '+e.message));
+    }
+  }
+  let installEvt=null;
+  const pwaCard=$('#pwaCard');
+  window.addEventListener('beforeinstallprompt', e=>{      // Chrome/Edge: ติดตั้งได้ด้วยปุ่มเดียว
+    e.preventDefault(); installEvt=e;
+    $('#pwaIos').hidden=true; $('#btnInstall').hidden=false; pwaCard.hidden=false;
+    dlog('pwa','ติดตั้งได้ — ขึ้นปุ่มให้แล้ว');
+  });
+  $('#btnInstall').onclick=async ()=>{
+    if(!installEvt) return;
+    installEvt.prompt();
+    const r=await installEvt.userChoice;
+    dlog('pwa','ผู้ใช้เลือก: '+r.outcome);
+    installEvt=null; pwaCard.hidden=true;
+  };
+  window.addEventListener('appinstalled',()=>{
+    pwaCard.hidden=true;
+    toast('ติดตั้งแล้ว','เปิดจากไอคอนบนหน้าจอโฮมได้เลย',3000);
+  });
+  if(IS_IOS && !STANDALONE && location.protocol==='https:'){  // Safari ไม่มีปุ่มติดตั้ง ต้องบอกวิธี
+    $('#btnInstall').hidden=true; $('#pwaIos').hidden=false; pwaCard.hidden=false;
+  }
 
   document.body.classList.toggle('hidethai', !S.settings.showThai);
   renderHome();

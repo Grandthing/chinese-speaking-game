@@ -1,0 +1,36 @@
+{
+  "name": "ฝึกพูดจีน — พูดได้จริง",
+  "short_name": "ฝึกพูดจีน",
+  "description": "เกมฝึกเปล่งเสียงภาษาจีนสำหรับคนไทย บทเรียน 1–52 + ชุดทริป",
+  "lang": "th",
+  "start_url": "./",
+  "scope": "./",
+  "id": "/chinese-speaking-game/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#ECEEE9",
+  "theme_color": "#ECEEE9",
+  "categories": [
+    "education"
+  ],
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
