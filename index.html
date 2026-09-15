@@ -4984,9 +4984,7 @@ $('#fileRestore').onchange=e=>{
     const d=(o&&o._app==='zhgame')?o.data:o;
     if(!d || typeof d!=='object' || !('words' in d) && !('core' in d)){ alert('ไฟล์นี้ไม่ใช่ไฟล์สำรองของเกมนี้'); return; }
     const n=Object.keys(d.words||{}).length, c=Object.keys(d.core||{}).length;
-    if(!confirm('กู้คืน '+n+' คำ และคำในโหมดนึกเอง '+c+' คำ
-
-ความคืบหน้าที่มีอยู่ในเครื่องนี้จะถูกทับทั้งหมด ยืนยันไหม?')) return;
+    if(!confirm('กู้คืน '+n+' คำ และคำในโหมดนึกเอง '+c+' คำ\n\nความคืบหน้าที่มีอยู่ในเครื่องนี้จะถูกทับทั้งหมด ยืนยันไหม?')) return;
     try{ localStorage.setItem(SKEY, JSON.stringify(d)); }catch(err){ alert('เซฟไม่ได้ — พื้นที่เต็มหรือเบราว์เซอร์ปิดการเซฟ'); return; }
     alert('กู้คืนแล้ว กำลังเปิดเกมใหม่');
     location.reload();
