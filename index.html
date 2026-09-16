@@ -276,7 +276,7 @@ td.r,th.r{text-align:right}
       <div class="row"><b class="grow">📲 ติดตั้งลงหน้าจอโฮม</b></div>
       <p class="small muted" style="margin:.4rem 0 .6rem">เปิดเหมือนแอปจริง เต็มจอ ไม่มีแถบที่อยู่เว็บ กดจากหน้าจอโฮมเข้าฝึกได้เลย</p>
       <button class="btn" id="btnInstall">ติดตั้ง</button>
-      <p class="small muted" id="pwaIos" hidden style="margin:.6rem 0 0">บน iPhone/iPad: กดปุ่ม <b>แชร์</b> (สี่เหลี่ยมมีลูกศรชี้ขึ้น) ที่แถบล่างของ Safari แล้วเลื่อนหาเมนู <b>Add to Home Screen</b></p>
+      <p class="small muted" id="pwaIos" hidden style="margin:.6rem 0 0"></p>
     </div>
 
     <div class="card">
@@ -466,6 +466,7 @@ td.r,th.r{text-align:right}
     <div class="card">
       <div class="row"><b class="grow">โหมดแฮนด์ฟรี (ไม่ต้องกดปุ่ม)</b><button class="chip" id="swAuto">ปิด</button></div>
       <p class="small muted" style="margin:.4rem 0 0"><b>ปิด</b> = กดปุ่มค้างไว้แล้วพูด ปล่อยเมื่อจบ (แนะนำ ควบคุมจังหวะได้เอง)<br><b>เปิด</b> = ระบบเปิดไมค์ให้เองทุกข้อ ไม่ต้องแตะจอเลย แต่ต้องพูดตามจังหวะของระบบ</p>
+      <p class="small muted" id="iosAuto" hidden style="margin:.4rem 0 0;color:var(--warn)">บน iPhone/iPad ใช้โหมดนี้ไม่ได้ — ระบบของ Apple บังคับว่าต้องแตะจอก่อนเปิดไมค์ทุกครั้ง ให้ใช้แบบกดปุ่มค้างแทน</p>
     </div>
     <div class="card">
       <div class="row"><b class="grow">สั่นตอบรับ</b><button class="chip" id="swVib">เปิด</button></div>
@@ -2783,7 +2784,7 @@ const MILESTONES = [
 /* ============================================================
    2.5 บันทึกปัญหา (diagnostics) — ไว้ส่งให้ผู้พัฒนาดูเวลาไมค์มีปัญหา
    ============================================================ */
-const BUILD='2026-09-15b';                     // เปลี่ยนทุกครั้งที่แก้ไฟล์ จะได้รู้ว่า log มาจากรุ่นไหน
+const BUILD='2026-09-16a';                     // เปลี่ยนทุกครั้งที่แก้ไฟล์ จะได้รู้ว่า log มาจากรุ่นไหน
 const DIAG=[], STUCK={}, T0=Date.now();
 function dlog(tag, msg, extra){
   const line={t:Date.now()-T0, tag:tag, msg:msg===undefined?'':String(msg), extra:extra};
@@ -3614,7 +3615,7 @@ function speak(text, done){
    ปัญหาเดิม: ปล่อยให้ SpeechRecognition เป็นคนขอสิทธิ์เอง Chrome จึงถามใหม่ทุกครั้งที่เริ่มฟัง
    และระหว่างที่ป๊อปอัปค้างอยู่ ไมค์ยังไม่เริ่มอัด เสียงที่พูดไปจึงหายทั้งประโยค
    แก้: ขอสิทธิ์ครั้งเดียวตอนกดเริ่มด่าน ด้วย getUserMedia แล้วปล่อยไมค์คืนทันที */
-let micPerm='unknown', manualMode=false, fallbackInstalled=false, heldStream=null, micRetried=false;
+let micPerm='unknown', manualMode=false, fallbackInstalled=false, heldStream=null, micRetried=false, engineLogged=false;
 /* origin ที่ Chrome ยอมจำสิทธิ์ไมค์ให้: https หรือ localhost เท่านั้น — file:// จะถามใหม่ทุกครั้ง */
 const PERSIST_OK = (location.protocol==='https:' || /^(localhost|127\.)/.test(location.hostname||''));
 async function queryMicPerm(){
@@ -3717,6 +3718,10 @@ function startRec(keepHeard){
   rec.lang='zh-CN'; rec.maxAlternatives=5;
   rec.interimResults=true;   // ขอผลระหว่างพูด จะได้ตรวจทันทีที่ได้ยินครบ ไม่ต้องรอปิดไมค์
   rec.continuous=true;    // ไม่ให้ Chrome ตัดจบเองตอนเว้นจังหวะกลางประโยคยาว
+  if(!engineLogged){      // iOS ใช้เอนจิ้นของ WebKit ค่าที่ตั้งไปอาจไม่ถูกรับ ต้องรู้ว่ามันรับอะไรจริง
+    engineLogged=true;
+    dlog('mic','เอนจิ้นรับค่า: continuous='+rec.continuous+' interim='+rec.interimResults+' maxAlt='+rec.maxAlternatives);
+  }
 
   recStarting=true; micState('wait');
   dlog('mic','start() — ขอเริ่มฟัง');
@@ -5074,6 +5079,7 @@ document.addEventListener('keyup',e=>{
   /* ---------- ติดตั้งเป็นแอป ---------- */
   const STANDALONE = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone===true;
   dlog('pwa','โหมดแอป='+(STANDALONE?'ใช่':'ไม่ใช่'));
+  if(IS_IOS) $('#iosAuto').hidden=false;
   if('serviceWorker' in navigator){
     const isLocal = /^(localhost|127\.)/.test(location.hostname||'');
     if(!isLocal || /[?&]sw=1/.test(location.search)){   // ที่ localhost ไม่ลงให้ จะได้ไม่แคชทับตอนแก้ไฟล์
@@ -5107,8 +5113,13 @@ document.addEventListener('keyup',e=>{
     pwaCard.hidden=true;
     toast('ติดตั้งแล้ว','เปิดจากไอคอนบนหน้าจอโฮมได้เลย',3000);
   });
-  if(IS_IOS && !STANDALONE && location.protocol==='https:'){  // Safari ไม่มีปุ่มติดตั้ง ต้องบอกวิธี
+  if(IS_IOS && !STANDALONE && location.protocol==='https:'){  // iOS ไม่มีปุ่มติดตั้ง ต้องบอกวิธีตามเบราว์เซอร์ที่ใช้อยู่
+    const IOS_OTHER = /CriOS|FxiOS|EdgiOS|OPiOS/.test(UA);   // Chrome/Firefox/Edge บน iPhone ก็คือ WebKit ทั้งหมด
+    $('#pwaIos').innerHTML = IOS_OTHER
+      ? 'ตอนนี้คุณเปิดด้วย Chrome อยู่ <b>ให้ก็อปลิงก์นี้ไปเปิดใน Safari</b> แล้วกดปุ่ม <b>แชร์</b> (สี่เหลี่ยมมีลูกศรชี้ขึ้น) ที่แถบล่าง เลื่อนหาเมนู <b>Add to Home Screen</b><br>เพราะบน iPhone มีแต่ Safari ที่ติดตั้งเป็นแอปได้จริง'
+      : 'กดปุ่ม <b>แชร์</b> (สี่เหลี่ยมมีลูกศรชี้ขึ้น) ที่แถบล่างของจอ แล้วเลื่อนลงหาเมนู <b>Add to Home Screen</b>';
     $('#btnInstall').hidden=true; $('#pwaIos').hidden=false; pwaCard.hidden=false;
+    dlog('pwa','iOS — แสดงวิธีติดตั้งแบบ'+(IOS_OTHER?' (ไม่ใช่ Safari)':' Safari'));
   }
 
   document.body.classList.toggle('hidethai', !S.settings.showThai);
