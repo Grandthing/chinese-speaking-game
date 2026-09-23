@@ -472,6 +472,12 @@ td.r,th.r{text-align:right}
       <div class="row"><b class="grow">สั่นตอบรับ</b><button class="chip" id="swVib">เปิด</button></div>
     </div>
 
+    <div class="card">
+      <div class="row"><b class="grow">รุ่นของไฟล์</b><span class="small muted" id="setBuild"></span></div>
+      <p class="small muted" id="setVerNote" style="margin:.4rem 0 .6rem">กำลังตรวจว่ามีรุ่นใหม่กว่านี้ไหม…</p>
+      <button class="btn ghost" id="btnForceUpdate">♻️ บังคับโหลดรุ่นล่าสุด</button>
+    </div>
+
     <button class="btn ghost" id="btnDiag">🐞 บันทึกปัญหา (log) — ส่งให้ผู้พัฒนาดู</button>
     <button class="btn ghost" id="btnExport" style="margin-top:.5rem">⬇ ดาวน์โหลด log การฝึก (JSON)</button>
     <div class="card" style="margin-top:.75rem">
@@ -2784,7 +2790,7 @@ const MILESTONES = [
 /* ============================================================
    2.5 บันทึกปัญหา (diagnostics) — ไว้ส่งให้ผู้พัฒนาดูเวลาไมค์มีปัญหา
    ============================================================ */
-const BUILD='2026-09-23a';                     // เปลี่ยนทุกครั้งที่แก้ไฟล์ จะได้รู้ว่า log มาจากรุ่นไหน
+const BUILD='2026-09-23b';                     // เปลี่ยนทุกครั้งที่แก้ไฟล์ จะได้รู้ว่า log มาจากรุ่นไหน
 const DIAG=[], STUCK={}, T0=Date.now();
 function dlog(tag, msg, extra){
   const line={t:Date.now()-T0, tag:tag, msg:msg===undefined?'':String(msg), extra:extra};
@@ -3083,6 +3089,9 @@ const ALIAS={
   '技':'几',                                /* jì/jǐ */
   '砍':'看',                                /* kǎn/kàn */
   '是':'十',                                /* shì/shí ต่างแค่วรรณยุกต์ (กันชนกับ 是 ที่เป็นโจทย์เอง ด้วยกฎความปลอดภัย) */
+  /* ---- จาก log 09-23 ---- */
+  '呵':'喝',                                /* hē เสียงเดียวกันเป๊ะ */
+  '可':'客',                                /* kě/kè ต่างแค่วรรณยุกต์ */
   '歌':'个','哥':'个','戈':'个',
   '恶':'二','饿':'二',
 
@@ -3186,7 +3195,10 @@ const NEAR={
   '卖':[['美','美 คือ měi เสียง 3 ลงแล้วขึ้น ไม่ใช่ mài'],
         ['买','买 คือ mǎi เสียง 3 ลากต่ำลงแล้วดันขึ้น — ถ้าเสียงตกอย่างเดียวจะกลายเป็น 卖 (ขาย)']],
   '买':['卖','卖 คือ mài เสียง 4 ตกลงห้วนๆ — ถ้าลงแล้วขึ้นจะกลายเป็น 买 (ซื้อ)'],
-  '妈':['买','买 คือ mǎi เสียง 3 และลงท้ายด้วยเสียง ไอ ไม่ใช่ mā'],
+  '妈':[['买','买 คือ mǎi เสียง 3 และลงท้ายด้วยเสียง ไอ ไม่ใช่ mā'],
+        ['吗','吗 ออกเสียงเบาสั้นว่า "มะ" ไม่ใช่ mā ที่ลากยาว']],
+  '叫':[['找','找 คือ zhǎo ม้วนลิ้นแตะเพดาน ไม่ใช่ jiào'],
+        ['久','久 คือ jiǔ ลงท้ายด้วยเสียง อิ่ว ไม่ใช่ jiào']],
   '妹':['美','美 คือ měi เสียง 3 ลงแล้วขึ้น ไม่ใช่ mèi'],
   '右':['日','日 คือ rì ม้วนลิ้นค้างแล้วออกเสียง ไม่ใช่ yòu'],
   /* ---- อื่นๆ จาก log เดียวกัน ---- */
@@ -3213,6 +3225,14 @@ const NEAR={
   '代':['在','在 คือ zài ปลายลิ้นแตะฟันหน้า ไม่ใช่ dài'],
   '火':['五','五 คือ wǔ ห่อปากออกเสียง "อู่" ไม่ใช่ huǒ'],
   '虎':['五','五 คือ wǔ ห่อปากออกเสียง "อู่" ไม่ใช่ hǔ'],
+  /* ---- จาก log 09-23 ---- */
+  '低':['几','几 คือ jǐ ลิ้นแตะปุ่มเหงือกแล้วปล่อย ไม่ใช่ dī'],
+  '惜':['气','气 คือ qì ดันลมออกแรง ไม่ใช่ xī'],
+  '拜':['百','百 คือ bǎi เสียง 3 ลงแล้วขึ้น ไม่ใช่ bài ที่เสียงตก'],
+  '切':['谢','谢 คือ xiè ลิ้นแบนราบดันลมออก ไม่ใช่ qiè'],
+  '蛇':['十','十 คือ shí สระเป็น อือ ไม่ใช่ shé ที่เป็นสระ เออ'],
+  '就':['走','走 คือ zǒu ปลายลิ้นแตะฟันหน้า ไม่ใช่ jiù'],
+  '着':['走','走 คือ zǒu ลงท้ายด้วยสระ โอว ไม่ใช่ zhe'],
   '完':['湾','湾 คือ wān เสียง 1 ราบยาว ไม่ใช่ wán'],
   '江':['千','千 คือ qiān ไม่ใช่ jiāng — ปากยิ้มกว้างแล้วดันลม'],
   '将':['千','千 คือ qiān ไม่ใช่ jiāng'],
@@ -3236,7 +3256,7 @@ function phraseFix(h, t){
 /* ตัวถอดเสียงบน iPhone คืนคำอังกฤษมาเลยในบางเสียง (是是是 -> "Siri Siri Siri")
    norm() ตัดอักษรอังกฤษทิ้งหมด คะแนนเลยเป็น 0 ทั้งที่พูดถูก
    กฎความปลอดภัยเดียวกับ ALIAS: แทนได้เฉพาะตัวที่โจทย์มีจริง */
-const LATIN_FIX=[[/siri/gi,'是'],[/\bshe\b/gi,'是'],[/\bher\b/gi,'喝']];
+const LATIN_FIX=[[/siri/gi,'是'],[/siri/gi,'十'],[/\bshe\b/gi,'是'],[/\bher\b/gi,'喝']];
 function latinFix(a, t){
   if(!a || !/[A-Za-z]/.test(a)) return a;
   let out=String(a);
@@ -5128,6 +5148,17 @@ $('#diagSave').onclick=()=>{
   document.body.appendChild(a); a.click(); a.remove();
   setTimeout(()=>URL.revokeObjectURL(a.href),3000);
 };
+async function forceUpdate(){                   // ล้างทุกอย่างที่อาจค้างรุ่นเก่าไว้ แล้วโหลดใหม่
+  try{
+    if('serviceWorker' in navigator){
+      const regs=await navigator.serviceWorker.getRegistrations();
+      await Promise.all(regs.map(r=>r.unregister()));
+    }
+    if(window.caches){ const ks=await caches.keys(); await Promise.all(ks.map(k=>caches.delete(k))); }
+  }catch(e){}
+  location.replace(location.pathname+'?u='+Date.now());
+}
+$('#btnForceUpdate').onclick=forceUpdate;
 $('#btnBackup').onclick=()=>{
   const blob=new Blob([JSON.stringify({_app:'zhgame', _v:1, savedAt:new Date().toISOString(), data:S},null,1)],{type:'application/json'});
   const a=document.createElement('a');
@@ -5218,6 +5249,17 @@ document.addEventListener('keyup',e=>{
   /* ---------- ติดตั้งเป็นแอป ---------- */
   const STANDALONE = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone===true;
   dlog('pwa','โหมดแอป='+(STANDALONE?'ใช่':'ไม่ใช่'));
+  $('#setBuild').textContent=BUILD;
+  // เทียบรุ่นกับบนเว็บทุกครั้งที่เปิด — ไฟล์นี้เล็กและห้ามแคช จะได้รู้ทันทีว่ากำลังรันของเก่าอยู่ไหม
+  fetch('version.json?t='+Date.now(), {cache:'no-store'})
+    .then(r=>r.ok?r.json():null)
+    .then(v=>{
+      if(!v||!v.build) return;
+      if(v.build===BUILD){ $('#setVerNote').textContent='รุ่นนี้เป็นรุ่นล่าสุดแล้ว'; return; }
+      dlog('เวอร์ชัน','เครื่องนี้รัน '+BUILD+' แต่บนเว็บเป็น '+v.build);
+      $('#setVerNote').innerHTML='<b style="color:var(--warn)">บนเว็บมีรุ่น '+esc(v.build)+' แล้ว</b> — กดปุ่มข้างล่างเพื่อโหลดของใหม่';
+      banner('warn','มีรุ่นใหม่กว่านี้บนเว็บแล้ว ('+v.build+')','เครื่องนี้ยังใช้รุ่น '+BUILD+' อยู่ ปัญหาที่แก้ไปแล้วจะยังเจออยู่','อัปเดตเดี๋ยวนี้',forceUpdate);
+    }).catch(()=>{ $('#setVerNote').textContent='ตรวจรุ่นไม่ได้ (ออฟไลน์อยู่)'; });
   if(IS_IOS) $('#iosAuto').hidden=false;
   if('serviceWorker' in navigator){
     const isLocal = /^(localhost|127\.)/.test(location.hostname||'');

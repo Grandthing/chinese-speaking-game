@@ -2,7 +2,7 @@
    หลักการ: ตัวหน้าเว็บเอา "ของใหม่ก่อนเสมอ" (ไม่งั้นแก้ไฟล์แล้วผู้ใช้ไม่ได้ของใหม่)
             ถ้าเน็ตช้า/ไม่มีเน็ต ค่อยตกมาใช้ของที่แคชไว้
    หมายเหตุ: ระบบตรวจเสียงของ Chrome ต้องต่อเน็ต ออฟไลน์จะเปิดดูได้แต่ตรวจเสียงไม่ได้ */
-const V = '2026-09-23a';
+const V = '2026-09-23b';
 const CACHE = 'zhgame-' + V;
 const ASSETS = ['./', './index.html', './manifest.webmanifest',
                 './icon-192.png', './icon-512.png', './apple-touch-icon.png'];
@@ -38,6 +38,7 @@ self.addEventListener('fetch', e => {
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
   if (url.origin !== self.location.origin) return;
+  if (url.pathname.endsWith('/version.json')) return;   // ไฟล์เช็กรุ่น ห้ามแคชเด็ดขาด
 
   const isDoc = req.mode === 'navigate' || url.pathname.endsWith('/') || url.pathname.endsWith('.html');
 
