@@ -2196,7 +2196,7 @@ const TALK = [
         hint:"ตกลงรับ หรือปฏิเสธก็ได้", accept:["可以","好","我要","不要","谢谢"],
         model:"好，我要这个。", modelPy:"hǎo, wǒ yào zhè ge", modelTh:"ห่าว, หว่อ เย่า เจ้อ เกอะ" },
       { ask:"你要几个？", askPy:"nǐ yào jǐ ge", askMean:"เอากี่ชิ้น",
-        hint:"บอกจำนวน เช่น 两个", accept:["个","一","两","三","四","五"],
+        hint:"บอกจำนวน เช่น 两个", accept:["个","一","两","二","三","四","五"],
         model:"两个，谢谢。", modelPy:"liǎng ge, xiè xie", modelTh:"เหลี่ยง เกอะ, เซี่ย เสียะ" },
       { ask:"刷卡还是微信？", askPy:"shuā kǎ hái shi wēi xìn", askMean:"จ่ายบัตรหรือวีแชท",
         hint:"เลือกวิธีจ่ายเงิน", accept:["微信","刷卡","现金"],
@@ -2784,7 +2784,7 @@ const MILESTONES = [
 /* ============================================================
    2.5 บันทึกปัญหา (diagnostics) — ไว้ส่งให้ผู้พัฒนาดูเวลาไมค์มีปัญหา
    ============================================================ */
-const BUILD='2026-09-22a';                     // เปลี่ยนทุกครั้งที่แก้ไฟล์ จะได้รู้ว่า log มาจากรุ่นไหน
+const BUILD='2026-09-23a';                     // เปลี่ยนทุกครั้งที่แก้ไฟล์ จะได้รู้ว่า log มาจากรุ่นไหน
 const DIAG=[], STUCK={}, T0=Date.now();
 function dlog(tag, msg, extra){
   const line={t:Date.now()-T0, tag:tag, msg:msg===undefined?'':String(msg), extra:extra};
@@ -3008,9 +3008,18 @@ function numScore(t, tNum, h){
   return sim(t,d);            // ไม่ใช้หน้าต่างเลื่อน กันเลข 59 ไปแมตช์กับ 九
 }
 
+/* iPhone ถอด "หกโมง" ออกมาเป็น 6:00 — ถ้าปล่อยไว้ 点 กับ 分 จะหายไปทั้งที่ผู้ใช้พูดครบ */
+function timeFix(str){
+  return String(str).replace(/(\d{1,2})\s*[:\uff1a]\s*(\d{2})/g, function(m, h, mm){
+    const H = numToHan(String(+h)) + '点';
+    const M = +mm;
+    return M===0 ? H : H + numToHan(String(M)) + '分';
+  });
+}
 function norm(str, dropDigits){
   if(!str) return '';
   let s = String(str);
+  if(!dropDigits) s = timeFix(s);        // โหมดตัดเลขทิ้งไม่ต้องแปลง จะได้ตัดได้จริง
   // เลขอารบิก -> เลขจีน (ตัวถอดเสียงมักคืน "20" แทน 二十) หรือทิ้งไปเลยถ้า dropDigits
   s = s.replace(/\d+/g, m => dropDigits ? '' : numToHan(m));
   // เหลือเฉพาะอักษรจีน แล้วแปลงตัวเต็ม -> ตัวย่อ
@@ -3073,6 +3082,7 @@ const ALIAS={
   '咦':'一',                                /* yí/yī */
   '技':'几',                                /* jì/jǐ */
   '砍':'看',                                /* kǎn/kàn */
+  '是':'十',                                /* shì/shí ต่างแค่วรรณยุกต์ (กันชนกับ 是 ที่เป็นโจทย์เอง ด้วยกฎความปลอดภัย) */
   '歌':'个','哥':'个','戈':'个',
   '恶':'二','饿':'二',
 
@@ -3196,6 +3206,13 @@ const NEAR={
   '凉':['人','人 คือ rén ม้วนลิ้นค้าง ไม่ใช่ liáng'],
   '链':['人','人 คือ rén ม้วนลิ้นค้าง ไม่ใช่ liàn'],
   '碳':['看','看 คือ kàn ขึ้นต้นด้วยเสียง k พ่นลม ไม่ใช่ tàn'],
+  /* ---- จาก log 09-22: บอกเวลา ---- */
+  '变':['点','点 คือ diǎn ปลายลิ้นแตะปุ่มเหงือก ไม่ใช่ biàn'],
+  '电':['点','点 คือ diǎn ขึ้นต้นด้วย d ไม่ใช่ diàn เสียงตก'],
+  '店':['点','点 คือ diǎn เสียง 3 ลงแล้วขึ้น ไม่ใช่ diàn เสียงตก'],
+  '代':['在','在 คือ zài ปลายลิ้นแตะฟันหน้า ไม่ใช่ dài'],
+  '火':['五','五 คือ wǔ ห่อปากออกเสียง "อู่" ไม่ใช่ huǒ'],
+  '虎':['五','五 คือ wǔ ห่อปากออกเสียง "อู่" ไม่ใช่ hǔ'],
   '完':['湾','湾 คือ wān เสียง 1 ราบยาว ไม่ใช่ wán'],
   '江':['千','千 คือ qiān ไม่ใช่ jiāng — ปากยิ้มกว้างแล้วดันลม'],
   '将':['千','千 คือ qiān ไม่ใช่ jiāng'],
@@ -4351,12 +4368,22 @@ function showModel(){
 function judgeTalk(alts){
   const t=talkTurn(); if(!t) return;
   const best=(alts&&alts[0])||'';
-  let hit=null, score=0;
+  let hit=null, score=0, nearHit=false, tips=[];
   (alts||[]).forEach(a=>{
-    const h=norm(a,false);
     t.accept.forEach(acc=>{
       const na=norm(acc,false);
-      if(na && (h.indexOf(na)>=0 || applyAlias(h,na).indexOf(na)>=0)){ hit=acc; score=Math.max(score,95); }
+      if(!na) return;
+      // ใช้สายประมวลผลชุดเดียวกับเครื่องให้คะแนน ไม่งั้นตอบถูกเรื่องแต่จับไม่ได้
+      const h1=applyAlias(phraseFix(norm(latinFix(a,na),false),na),na);
+      if(h1.indexOf(na)>=0){
+        if(score<95){ hit=acc; nearHit=false; tips=[]; }
+        score=Math.max(score,95); return;
+      }
+      const nf=nearFix(h1,na);                    // ตอบถูกเรื่องแต่ออกเสียงเพี้ยน -> ผ่านแบบ 2 ดาว + บอกวิธีแก้
+      if(nf.hints.length && nf.text.indexOf(na)>=0){
+        if(score<75){ hit=acc; nearHit=true; tips=nf.hints; }
+        score=Math.max(score,75);
+      }
     });
     score=Math.max(score, scoreAll(t.model,[a]).score);   // พูดตามตัวอย่างเป๊ะก็ผ่าน
   });
@@ -4365,7 +4392,7 @@ function judgeTalk(alts){
   S.stats.utter++; S.stats.stars+=st;
   bestPer[ti]=Math.max(bestPer[ti]||0, score);
   S.log.push({levelId, hanzi:t.ask, heard:best, score, stars:st, ts:Date.now()});
-  dlog('ตอบโต้', t.ask+' -> '+score+'% '+(hit?('เจอคำตอบ '+hit):'ไม่ตรงคำตอบที่รับได้')+' (ได้ยิน: '+(best||'—')+')');
+  dlog('ตอบโต้', t.ask+' -> '+score+'% '+(hit?('เจอคำตอบ '+hit+(nearHit?' (เสียงเพี้ยน)':'')):'ไม่ตรงคำตอบที่รับได้')+' (ได้ยิน: '+(best||'—')+')');
   save();
 
   const heardPy=best?toPinyin(best):'';
@@ -4374,7 +4401,9 @@ function judgeTalk(alts){
     '<div class="txt py">'+(heardPy?pyHTML(heardPy):'—')+'</div>'+
     '<div class="small muted zh">'+(best?esc(best):'')+'</div>'+
     '<div class="stars" style="color:var(--'+(st>=3?'ok':st>=2?'warn':'bad')+')">'+
-      (st>=2?'✓ ตอบเป็นเรื่องแล้ว ':'✗ ยังไม่ตรงคำถาม ')+starStr(st)+'</div>';
+      (st>=2?'✓ ตอบเป็นเรื่องแล้ว ':'✗ ยังไม่ตรงคำถาม ')+starStr(st)+'</div>'+
+    (nearHit&&tips.length ? '<div class="nearTip">ตอบถูกเรื่องแล้ว แต่เสียงยังเพี้ยน — '+esc(tips[0])+'</div>' : '')+
+    (!hit&&t.hint ? '<div class="nearTip">คำตอบนี้ต้องมีคำว่า <b class="zh">'+esc(t.accept.slice(0,3).join(' / '))+'</b></div>' : '');
 
   if(st>=2){
     vib([30,40,30]); micState('ok');
