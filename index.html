@@ -3236,7 +3236,7 @@ const MILESTONES = [
 /* ============================================================
    2.5 บันทึกปัญหา (diagnostics) — ไว้ส่งให้ผู้พัฒนาดูเวลาไมค์มีปัญหา
    ============================================================ */
-const BUILD='2026-09-27d';                     // เปลี่ยนทุกครั้งที่แก้ไฟล์ จะได้รู้ว่า log มาจากรุ่นไหน
+const BUILD='2026-09-28a';                     // เปลี่ยนทุกครั้งที่แก้ไฟล์ จะได้รู้ว่า log มาจากรุ่นไหน
 const DIAG=[], STUCK={}, T0=Date.now();
 function dlog(tag, msg, extra){
   const line={t:Date.now()-T0, tag:tag, msg:msg===undefined?'':String(msg), extra:extra};
@@ -4382,7 +4382,7 @@ function startRec(keepHeard){
     gotAlts=combineAlts(segAlts);
     if(latT0 && !latT1){                            // โค้ช: เวลาตอบ = ตั้งแต่โจทย์ขึ้นจอ ถึงตอนได้ยินตัวจีนตัวแรก
       const any=(segAlts.length? segAlts[segAlts.length-1][0] : '')+interimText;
-      if(/[\u4e00-\u9fff]/.test(any)){ latT1=Date.now(); coachRingStop(latT1-latT0); }
+      if(/[\u4e00-\u9fff]/.test(any)){ latT1=Date.now(); coachRingStop(coachLatency()); }
     }
     if(sawFinal && gotAlts) dlog('mic','ได้ผลถอดเสียง', gotAlts);
     // ได้ยินครบแล้วก็ตัดสินเลย ไม่ต้องรอปล่อยนิ้ว/รอปิดไมค์
@@ -5987,11 +5987,18 @@ $('#btnCoach10').onclick=()=>coachStart(10);
 /* ---------- จับเวลาตอบ (กฎ 3 วินาที) ---------- */
 let latT0=0, latT1=0, latPress=0, latFirst=false, ringT=null;
 function coachBlockIs(b){ const k=coachBlock(); return !!k && k.b===b; }
+/* เวลานึก = ตั้งแต่โจทย์ขึ้นจอ ถึงตอนเริ่มตอบ — ไม่นับเวลาที่ระบบถอดเสียงใช้เอง
+   log 09-25 (iPhone): ตอบเร็วสุดยังวัดได้ 2.1 วิ เพราะตัวถอดเสียงส่งตัวจีนตัวแรกมาช้า ~1 วิหลังเริ่มพูด
+   ผลคือด่านทดสอบเลเวล 1 ตก 2 รอบทั้งที่ตอบถูกครบ — วัดเครื่อง ไม่ได้วัดคน
+   -> ใช้ค่าที่มากกว่าระหว่าง (ก) เวลาที่กดไมค์ (ข) ตัวจีนตัวแรกลบเวลาถอดเสียงของเครื่อง
+      กดไมค์เร็วแต่มานึกตอนกดค้างอยู่ ก็ยังจับได้จาก (ข) */
+const ASR_LAG=1200;
 function coachLatency(){
   if(!latT0) return null;
-  if(latT1) return Math.max(0, latT1-latT0);                 // ได้ยินตัวจีนตัวแรก
-  if(latPress) return Math.max(0, latPress+400-latT0);       // ไม่มีผลระหว่างพูด ใช้เวลากดไมค์ + 400ms
-  return null;
+  const a = latPress ? latPress-latT0 : null;
+  const b = latT1 ? latT1-latT0-ASR_LAG : null;
+  if(a===null && b===null) return null;
+  return Math.max(0, Math.round(Math.max(a===null?0:a, b===null?0:b)));
 }
 function coachRingStart(){
   const el=$('#latRing'); el.hidden=false; el.className='latring';
