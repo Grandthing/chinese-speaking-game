@@ -217,6 +217,61 @@ td,th{padding:.45rem 0;border-bottom:1px solid var(--rule);text-align:left}
 th{font-size:.78rem;color:var(--muted);font-weight:600}
 td.r,th.r{text-align:right}
 
+/* ---------- โหมดโค้ช ---------- */
+.coachcard{border:2px solid var(--t1)}
+.coachcard .ccline{font-size:.9rem;color:var(--muted);margin-top:.2rem}
+.coachbar{display:flex;align-items:center;gap:.5rem;background:var(--t1);color:#fff;font-size:.85rem;font-weight:700;
+  padding:.4rem .9rem;border-radius:0 0 .6rem .6rem;margin:0 1rem}
+.coachbar #cbTime{font-variant-numeric:tabular-nums;font-size:.95rem}
+.cdrow{display:flex;justify-content:space-between;gap:.5rem;padding:.45rem 0;border-bottom:1px solid var(--rule);font-size:.95rem}
+.cdrow:last-child{border-bottom:0}
+.cdrow b{white-space:nowrap}
+
+.miclane{position:relative}
+.latring{position:absolute;top:.85rem;right:.7rem;width:2.6rem;height:2.6rem;pointer-events:none}
+.latring svg{width:100%;height:100%;transform:rotate(-90deg)}
+.latring circle{fill:none;stroke-width:3.2}
+.latring .bg{stroke:rgba(255,255,255,.35)}
+.latring .fg{stroke:#fff;stroke-dasharray:100;stroke-dashoffset:0;stroke-linecap:round}
+.latring span{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:.85rem}
+.latring.late .fg{stroke:#FFD37A}
+.latring.done .fg{stroke:#9FE08A}
+.latring.done.late .fg{stroke:#FFD37A}
+
+/* ---------- สรุปโค้ช + สถิติ ---------- */
+.cdweak{display:flex;align-items:center;gap:.6rem;width:100%;text-align:left;font:inherit;cursor:pointer;background:none;border:0;border-bottom:1px solid var(--rule);padding:.45rem .1rem}
+.cdweak:last-child{border-bottom:0}
+.cdweak .zh{flex:none;min-width:4.2rem;font-size:1.3rem;font-weight:600}
+.cdweak .info{flex:1;min-width:0;line-height:1.35}
+.cdweak .info b{display:block;font-size:.85rem}
+.cdweak .info span{display:block;font-size:.78rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cdweak .why{flex:none;font-size:.8rem;color:var(--warn);font-weight:700}
+.trend-up{color:var(--warn)} .trend-down{color:var(--ok)}
+.cbars{display:flex;align-items:flex-end;gap:.25rem;height:5.5rem;margin-top:.6rem;border-bottom:1px solid var(--rule)}
+.cbars>div{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%}
+.cbars i{display:block;width:100%;background:var(--t1);border-radius:.25rem .25rem 0 0;min-height:2px}
+.cbars i.goal{background:var(--ok)}
+.cbars i.zero{background:var(--rule)}
+.cbarlab{display:flex;gap:.25rem;font-size:.62rem;color:var(--muted);margin-top:.2rem}
+.cbarlab span{flex:1;text-align:center}
+
+/* ---------- ฟังออกไหม ---------- */
+.lisbox{background:var(--card);border-radius:.9rem;padding:1.1rem;box-shadow:var(--shadow);text-align:center}
+.lisbox .plab{font-size:.8rem;color:var(--muted);letter-spacing:.02em}
+.lisbox .lisq{font-size:1.45rem;font-weight:700;margin:.35rem 0 .15rem}
+.lischoices{display:grid;grid-template-columns:1fr 1fr;gap:.5rem;margin-top:.9rem}
+.lisc{border:1px solid var(--rule);background:#fff;border-radius:.7rem;padding:.8rem .5rem;font:inherit;font-size:1rem;font-weight:600;cursor:pointer;min-height:3.4rem;line-height:1.3}
+.lisc.num{font-size:1.5rem;font-variant-numeric:tabular-nums}
+.lisc.ok{background:#E8F0E4;border-color:var(--ok);color:var(--ok)}
+.lisc.bad{background:#F8E3E0;border-color:var(--bad);color:var(--bad)}
+.lisc:disabled{cursor:default}
+.lisinput{display:flex;gap:.5rem;margin-top:.9rem}
+.lisinput input{flex:1;min-width:0;font:inherit;font-size:1.6rem;text-align:center;border:1px solid var(--rule);border-radius:.7rem;padding:.5rem}
+.lisans{margin-top:.9rem;padding-top:.8rem;border-top:1px solid var(--rule)}
+.lisans .zh{font-size:1.9rem;line-height:1.3}
+.lisans .py{font-size:1.1rem}
+.lisans .th{font-weight:600}
+
 /* ---------- modal / toast ---------- */
 .modal{position:fixed;inset:0;background:rgba(28,35,33,.5);display:none;align-items:flex-end;justify-content:center;z-index:60;padding:1rem}
 .modal.on{display:flex}
@@ -232,9 +287,20 @@ td.r,th.r{text-align:right}
 <body>
 <div class="app">
   <div id="banners"></div>
+  <div class="coachbar" id="coachBar" hidden><span id="cbBlock">🎯</span><span class="grow"></span><span id="cbTime">25:00</span></div>
 
   <!-- ==================== HOME ==================== -->
   <section id="scr-home" class="screen on">
+    <div class="card coachcard" id="coachCard">
+      <div class="row"><b class="grow">🎯 โค้ชวันนี้</b><span class="small" id="ccStreak"></span></div>
+      <div class="ccline" id="ccLine"></div>
+      <div class="row" style="margin-top:.65rem">
+        <button class="btn" id="btnCoach25" style="flex:2">▶ เริ่ม 25 นาที</button>
+        <button class="btn ghost" id="btnCoach10" style="flex:1">10 นาที</button>
+      </div>
+      <button class="btn ghost" id="btnSleep" hidden style="margin-top:.5rem">🌙 ทวนก่อนนอน (2 นาที)</button>
+    </div>
+
     <div class="card corecard">
       <div class="row"><b class="grow">พูดเองได้ (นึกเอง)</b><span class="small muted" id="coreSub"></span></div>
       <div style="text-align:center;margin:.35rem 0 .1rem">
@@ -389,10 +455,40 @@ td.r,th.r{text-align:right}
     <div class="reviewbar" id="reviewBar" hidden></div>
     <div class="miclane">
       <button class="mic" id="mic">แตะค้างแล้วพูด<small>ปล่อยเมื่อพูดจบ</small></button>
+      <div class="latring" id="latRing" hidden><svg viewBox="0 0 36 36"><circle class="bg" cx="18" cy="18" r="15.9"/><circle class="fg" id="latFg" cx="18" cy="18" r="15.9"/></svg><span id="latNum">3</span></div>
       <div class="row2">
         <button class="btn ghost" id="btnHear"><span class="ico">🔊</span> ฟังต้นแบบ</button>
         <button class="btn ghost" id="btnSelfPass">✓ ทวนเองแล้ว</button>
         <button class="btn ghost" id="btnSkip">ข้าม ›</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== LISTEN (โค้ช B3) ==================== -->
+  <section id="scr-listen" class="screen">
+    <div class="topbar">
+      <button class="iconbtn" id="btnListenQuit">✕</button>
+      <div class="pbar"><i id="lisBar" style="width:0%"></i></div>
+      <span class="small muted" id="lisCount">0</span>
+      <button class="chip" id="lisType" style="flex:none" title="ข้อราคา: พิมพ์ตัวเลขตอบแทนการเลือก">⌨ พิมพ์ตอบ</button>
+    </div>
+    <div class="stage">
+      <div class="lisbox">
+        <div class="plab" id="lisScene">👂 ฟังแล้วตอบ</div>
+        <div class="lisq" id="lisQ"></div>
+        <div class="small muted" id="lisRate"></div>
+        <div class="lischoices" id="lisChoices"></div>
+        <div class="lisinput" id="lisInputWrap" hidden>
+          <input id="lisInput" type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="off" placeholder="กี่หยวน">
+          <button class="btn sm" id="lisSubmit">ตอบ</button>
+        </div>
+        <div class="lisans" id="lisAns" hidden></div>
+      </div>
+    </div>
+    <div class="miclane">
+      <button class="mic" id="lisPlay">🔊 ฟังอีกครั้ง<small>ครั้งที่สองจะช้าลง · นับเป็นผ่านแบบมีตัวช่วย</small></button>
+      <div class="row2">
+        <button class="btn ghost" id="lisSkip">ข้าม ›</button>
       </div>
     </div>
   </section>
@@ -426,6 +522,29 @@ td.r,th.r{text-align:right}
     <button class="btn ghost" id="btnHome2" style="margin-top:.5rem">กลับหน้าแรก</button>
   </section>
 
+  <!-- ==================== COACH SUMMARY ==================== -->
+  <section id="scr-coachdone" class="screen">
+    <div style="text-align:center;padding-top:1.25rem">
+      <div style="font-size:2.6rem;line-height:1" id="cdIcon">🍅</div>
+      <div class="big" id="cdTitle" style="margin-top:.4rem">จบรอบแล้ว</div>
+      <div class="sub" id="cdSub"></div>
+    </div>
+    <div class="card" id="cdStats"></div>
+    <div class="card" id="cdWeakCard" hidden>
+      <div class="row"><b class="grow">5 ข้อที่ยังอ่อนที่สุดวันนี้</b></div>
+      <div id="cdWeak" style="margin-top:.35rem"></div>
+      <button class="btn ghost" id="btnSetSleep" style="margin-top:.6rem;white-space:normal">🌙 ตั้งเป็นทวนก่อนนอน</button>
+    </div>
+    <div class="card" id="cdBreak" hidden style="text-align:center">
+      <div class="small muted">พักสายตา ลุกเดิน ยืดเส้น — ไม่ต้องจับมือถือ</div>
+      <div class="big" id="cdBreakTime" style="font-variant-numeric:tabular-nums">5:00</div>
+      <div class="small muted" id="cdBreakMsg">สมองกำลังเก็บของที่เพิ่งฝึก (diffuse mode) ช่วงพักคือส่วนหนึ่งของการเรียน</div>
+    </div>
+    <button class="btn" id="btnCoachBreak">🍅 พัก 5 นาที แล้วเริ่มอีกรอบ</button>
+    <button class="btn" id="btnCoachAgain" hidden>▶ เริ่มรอบใหม่</button>
+    <button class="btn ghost" id="btnCoachHome" style="margin-top:.5rem">กลับหน้าแรก</button>
+  </section>
+
   <!-- ==================== STATS ==================== -->
   <section id="scr-stats" class="screen">
     <div class="topbar"><button class="iconbtn" data-back>←</button><b class="grow">สถิติ</b></div>
@@ -439,6 +558,15 @@ td.r,th.r{text-align:right}
         <tr><td>เวลาฝึกรวม</td><td class="r"><b id="sTime">0 นาที</b></td></tr>
         <tr><td>จำนวนวันที่ฝึก</td><td class="r"><b id="sDays">0</b></td></tr>
       </table>
+    </div>
+    <h2>🎯 โค้ช 14 วันล่าสุด</h2>
+    <div class="card" id="sCoach">
+      <div class="small muted">จำนวนรอบต่อวัน (สีเขียว = ครบเป้า)</div>
+      <div class="cbars" id="sCoachBars"></div>
+      <div class="cbarlab" id="sCoachLab"></div>
+      <div class="small muted" style="margin-top:.9rem">เวลาตอบเฉลี่ย (วินาที) — ยิ่งต่ำยิ่งดี เส้นประ = 3 วินาที</div>
+      <canvas id="sLatCanvas" width="640" height="200" style="width:100%;height:auto;margin-top:.35rem"></canvas>
+      <div id="sCoachText" style="margin-top:.6rem"></div>
     </div>
     <h2>คำที่ยังพลาดบ่อย 10 อันดับ</h2>
     <div class="card" id="sMistakes"></div>
@@ -470,6 +598,12 @@ td.r,th.r{text-align:right}
     </div>
     <div class="card">
       <div class="row"><b class="grow">สั่นตอบรับ</b><button class="chip" id="swVib">เปิด</button></div>
+    </div>
+    <div class="card">
+      <div class="row"><b class="grow">🎯 โค้ช: กฎ 3 วินาที</b><button class="chip" id="swStrict">เปิด</button></div>
+      <p class="small muted" style="margin:.4rem 0 .6rem">ในบล็อกนึกเอง ถ้าตอบถูกแต่ใช้เวลาเกิน 3 วินาที จะได้ 2 ดาวและยังไม่เลื่อนรอบทบทวน — ฝึกให้คำพูดออกมาเองโดยไม่ต้องคิด</p>
+      <div class="row"><span class="grow small">เป้าหมายโค้ชต่อวัน</span>
+        <div class="chips" id="goalChips"><button class="chip" data-g="1">1</button><button class="chip" data-g="2">2</button><button class="chip" data-g="3">3</button><button class="chip" data-g="4">4</button></div></div>
     </div>
 
     <div class="card">
@@ -2270,9 +2404,156 @@ const TALK = [
       { ask:"你没事吧？", askPy:"nǐ méi shì ba", askMean:"เป็นอะไรไหม",
         hint:"ขอความช่วยเหลือ หรือบอกว่าไม่เป็นไร", accept:["帮","没关系","医院","没事"],
         model:"请帮帮我，我要去医院。", modelPy:"qǐng bāng bang wǒ, wǒ yào qù yī yuàn", modelTh:"ฉิ่ง ปาง ปัง หว่อ, หว่อ เย่า ชวี่ อี เยวี่ยน" }
+    ]},
+  /* ---- ชุดที่มีตัวแปรสุ่ม (vars): {N} ในช่องจีน = ตัวเลขจีน · ในพินอิน = พินอิน · ในช่องไทย = ตัวเลข
+     ข้อที่ต้องทวนตัวเลข askMean จะไม่บอกตัวเลข ต้องฟังเอง ---- */
+  { id:'t7', icon:'🍲', title:'ร้านหม้อไฟเฉิงตู', desc:'บอกจำนวนคน เลือกน้ำซุป ระดับเผ็ด ทวนยอดเงิน',
+    turns:[
+      { ask:"你好，几位？", askPy:"nǐ hǎo, jǐ wèi", askMean:"สวัสดีค่ะ มากี่ท่าน",
+        hint:"บอกจำนวนคน เช่น 两个人", accept:["个人","位","两个","三个","四个"],
+        model:"两个人。", modelPy:"liǎng ge rén", modelTh:"เหลี่ยง เกอะ เหริน" },
+      { ask:"要鸳鸯锅吗？", askPy:"yào yuān yang guō ma", askMean:"เอาหม้อแบ่งสองน้ำซุปไหม",
+        hint:"ตอบเอา แล้วขอให้ครึ่งหนึ่งไม่เผ็ด", accept:["要","鸳鸯","不要","不辣","清汤"],
+        model:"要，一半不辣。", modelPy:"yào, yí bàn bú là", modelTh:"เย่า, อี๋ ป้าน ปู๋ ล่า" },
+      { ask:"微辣、中辣还是特辣？", askPy:"wēi là, zhōng là hái shi tè là", askMean:"เผ็ดน้อย เผ็ดกลาง หรือเผ็ดมาก",
+        hint:"เลือกระดับความเผ็ด", accept:["微辣","中辣","特辣","不辣"],
+        model:"微辣，谢谢。", modelPy:"wēi là, xiè xie", modelTh:"เวย ล่า, เซี่ย เสียะ" },
+      { ask:"一共{N}块。", askPy:"yí gòng {N} kuài", askMean:"ทั้งหมดกี่หยวน? (ฟังตัวเลขให้ดี)", vars:{N:[128,156,235,298]},
+        hint:"ทวนยอดเงินให้ตรง แล้วบอกว่าจ่ายวีแชท", accept:["{N}"],
+        model:"{N}块，微信可以吗？", modelPy:"{N} kuài, wēi xìn kě yǐ ma", modelTh:"{N} ไคว่, เวย ซิ่น เข่อ อี่ มะ" }
+    ]},
+  { id:'t8', icon:'🏸', title:'ร้านอุปกรณ์แบดมินตัน', desc:'ถามรุ่น บอกไซซ์ ขอลองไม้ ต่อราคา',
+    turns:[
+      { ask:"你好，想看什么？", askPy:"nǐ hǎo, xiǎng kàn shén me", askMean:"สวัสดีครับ อยากดูอะไร",
+        hint:"บอกว่าอยากดูไม้แบด ถามว่ามีรุ่นนี้ไหม", accept:["球拍","羽毛球","我想看","这个","型号"],
+        model:"我想看羽毛球拍，有这个型号吗？", modelPy:"wǒ xiǎng kàn yǔ máo qiú pāi, yǒu zhè ge xíng hào ma", modelTh:"หว่อ เสี่ยง ค่าน ยวี่ เหมา ฉิว ไพ, โหย่ว เจ้อ เกอะ ซิง ฮ่าว มะ" },
+      { ask:"你穿多大的鞋？", askPy:"nǐ chuān duō dà de xié", askMean:"ใส่รองเท้าเบอร์อะไร",
+        hint:"บอกเบอร์รองเท้า ลงท้ายด้วย 号", accept:["号","码"],
+        model:"我穿四十二号。", modelPy:"wǒ chuān sì shí èr hào", modelTh:"หว่อ ชวน ซื่อ สือ เอ้อร์ ฮ่าว" },
+      { ask:"这支拍子不错。", askPy:"zhè zhī pāi zi bú cuò", askMean:"ไม้นี้ดีนะครับ",
+        hint:"ขอลองตีดูก่อน", accept:["试","可以"],
+        model:"可以试一下吗？", modelPy:"kě yǐ shì yí xià ma", modelTh:"เข่อ อี่ ซื่อ อี๋ เซี่ย มะ" },
+      { ask:"这支{N}块。", askPy:"zhè zhī {N} kuài", askMean:"ไม้นี้ … หยวน", vars:{N:[380,450,599,680]},
+        hint:"บอกว่าแพงไป ขอลดหน่อย", accept:["太贵","便宜","少一点","打折"],
+        model:"太贵了，便宜一点吧。", modelPy:"tài guì le, pián yi yì diǎn ba", modelTh:"ไท่ กุ้ย เลอะ, เผียน อี อี้ เตี่ยน ปะ" },
+      { ask:"最低{M}块，不能再少了。", askPy:"zuì dī {M} kuài, bù néng zài shǎo le", askMean:"ต่ำสุดกี่หยวน? (ฟังตัวเลขให้ดี)", vars:{M:[320,350,399]},
+        hint:"ทวนราคาให้ตรง แล้วตกลงซื้อ", accept:["{M}"],
+        model:"{M}块？好，我要了。", modelPy:"{M} kuài? hǎo, wǒ yào le", modelTh:"{M} ไคว่? ห่าว, หว่อ เย่า เลอะ" }
+    ]},
+  { id:'t9', icon:'🚖', title:'เรียก DiDi / แท็กซี่', desc:'ยืนยันเลขท้าย บอกที่หมาย ทวนเวลา จ่ายเงิน',
+    turns:[
+      { ask:"你好，你是尾号{T}吗？", askPy:"nǐ hǎo, nǐ shì wěi hào {T} ma", askMean:"สวัสดีครับ เบอร์ลงท้าย … ใช่ไหม",
+        vars:{T:[{zh:'三八五六',py:'sān bā wǔ liù',th:'3856'},{zh:'七二零九',py:'qī èr líng jiǔ',th:'7209'},{zh:'四一六八',py:'sì yī liù bā',th:'4168'}]},
+        hint:"ตอบว่าใช่ (ถ้าจะทวนเลขด้วยยิ่งดี)", accept:["对","是的","是我","{T}"],
+        model:"对，是我。", modelPy:"duì, shì wǒ", modelTh:"ตุ้ย, ซื่อ หว่อ" },
+      { ask:"去哪里？", askPy:"qù nǎ lǐ", askMean:"ไปไหนครับ",
+        hint:"บอกที่หมาย เช่น 广州塔", accept:["去","广州塔","机场","酒店","火车站"],
+        model:"去广州塔。", modelPy:"qù guǎng zhōu tǎ", modelTh:"ชวี่ กว่าง โจว ถ่า" },
+      { ask:"大概{N}分钟。", askPy:"dà gài {N} fēn zhōng", askMean:"ประมาณกี่นาที? (ฟังตัวเลขให้ดี)", vars:{N:[15,20,30,40]},
+        hint:"ทวนเวลาให้ตรง แล้วตอบตกลง", accept:["{N}"],
+        model:"{N}分钟？好的。", modelPy:"{N} fēn zhōng? hǎo de", modelTh:"{N} เฟิน จง? ห่าว เตอะ" },
+      { ask:"到了，前面停可以吗？", askPy:"dào le, qián miàn tíng kě yǐ ma", askMean:"ถึงแล้ว จอดข้างหน้าได้ไหม",
+        hint:"ตอบได้ แล้วขอบคุณ", accept:["可以","好","谢谢"],
+        model:"可以，谢谢师傅。", modelPy:"kě yǐ, xiè xie shī fu", modelTh:"เข่อ อี่, เซี่ย เสียะ ซือ ฟุ" },
+      { ask:"一共{P}块。", askPy:"yí gòng {P} kuài", askMean:"ทั้งหมดกี่หยวน? (ฟังตัวเลขให้ดี)", vars:{P:[36,48,55,72]},
+        hint:"ทวนราคาให้ตรง แล้วบอกว่าจ่ายวีแชท", accept:["{P}"],
+        model:"{P}块，微信付。", modelPy:"{P} kuài, wēi xìn fù", modelTh:"{P} ไคว่, เวย ซิ่น ฟู่" }
     ]}
 ];
 
+
+/* ============================================================
+   1.75 ฟังออกไหม — ประโยคที่คนจีนจะพูดกับเรา (ใช้ในบล็อก B3 ของโหมดโค้ช)
+   ตัวเลือกทั้ง 4 ต้องเป็นสิ่งที่เป็นไปได้ในฉากเดียวกัน จะได้เดาจากฉากไม่ได้ ต้องฟังจริง
+   choices[0] คือคำตอบที่ถูก (สลับตำแหน่งตอนแสดง)
+   ============================================================ */
+const LISTEN = [
+  /* ---- ร้านอาหาร / หม้อไฟ ---- */
+  { id:'L1', scene:'ร้านอาหาร', zh:'几位？', py:'jǐ wèi', th:'มากี่ท่านคะ', q:'พนักงานถามอะไร?',
+    choices:['มากี่คน','จองไว้หรือเปล่า','จะสั่งอะไร','กินเผ็ดได้ไหม'] },
+  { id:'L2', scene:'ร้านอาหาร', zh:'要辣的还是不辣的？', py:'yào là de hái shi bú là de', th:'เอาเผ็ดหรือไม่เผ็ด', q:'เขาถามอะไร?',
+    choices:['เผ็ดหรือไม่เผ็ด','กินที่นี่หรือห่อกลับ','เอากี่ที่','จ่ายยังไง'] },
+  { id:'L3', scene:'ร้านอาหาร', zh:'在这儿吃还是带走？', py:'zài zhèr chī hái shi dài zǒu', th:'ทานที่นี่หรือห่อกลับ', q:'เขาถามอะไร?',
+    choices:['ทานที่นี่หรือห่อกลับ','เผ็ดหรือไม่เผ็ด','มากี่คน','ดื่มอะไร'] },
+  { id:'L4', scene:'หม้อไฟ', zh:'微辣、中辣还是特辣？', py:'wēi là, zhōng là hái shi tè là', th:'เผ็ดน้อย เผ็ดกลาง หรือเผ็ดมาก', q:'เขาให้เลือกอะไร?',
+    choices:['ระดับความเผ็ด','ขนาดหม้อ','จำนวนคน','ชนิดน้ำซุป'] },
+  { id:'L5', scene:'หม้อไฟ', zh:'要鸳鸯锅吗？', py:'yào yuān yang guō ma', th:'เอาหม้อแบ่งสองน้ำซุปไหม', q:'เขาถามอะไร?',
+    choices:['เอาหม้อแบ่งสองซุปไหม','เพิ่มข้าวไหม','ย้ายโต๊ะไหม','ใส่น้ำแข็งไหม'] },
+  { id:'L6', scene:'ร้านอาหาร', zh:'请扫码点菜。', py:'qǐng sǎo mǎ diǎn cài', th:'สแกนคิวอาร์เพื่อสั่งอาหาร', q:'เขาบอกให้ทำอะไร?',
+    choices:['สแกนคิวอาร์สั่งอาหาร','รอโต๊ะสักครู่','จ่ายเงินก่อน','ไปนั่งข้างนอก'] },
+  { id:'L7', scene:'ร้านอาหาร', zh:'这个没有了。', py:'zhè ge méi yǒu le', th:'อันนี้หมดแล้ว', q:'เขาบอกอะไร?',
+    choices:['อันนี้หมดแล้ว','อันนี้เผ็ดมาก','อันนี้อร่อยที่สุด','อันนี้ราคาแพง'] },
+  { id:'L8', scene:'ร้านอาหาร', zh:'还要别的吗？', py:'hái yào bié de ma', th:'รับอะไรเพิ่มไหม', q:'เขาถามอะไร?',
+    choices:['เอาอะไรเพิ่มไหม','อร่อยไหม','จะจ่ายยังไง','มากี่คน'] },
+  { id:'L9', scene:'ร้านเครื่องดื่ม', zh:'要不要加冰？', py:'yào bu yào jiā bīng', th:'ใส่น้ำแข็งไหม', q:'เขาถามอะไร?',
+    choices:['ใส่น้ำแข็งไหม','ใส่น้ำตาลไหม','เอาร้อนหรือเย็น','เอาแก้วใหญ่ไหม'] },
+  { id:'L10', scene:'ร้านอาหาร', zh:'请稍等，马上来。', py:'qǐng shāo děng, mǎ shàng lái', th:'รอสักครู่ เดี๋ยวมาเลย', q:'เขาบอกอะไร?',
+    choices:['รอสักครู่ กำลังมา','อาหารหมดแล้ว','ร้านปิดแล้ว','ต้องจองก่อน'] },
+  /* ---- ซื้อของ / จ่ายเงิน ---- */
+  { id:'L11', scene:'จ่ายเงิน', zh:'微信还是支付宝？', py:'wēi xìn hái shi zhī fù bǎo', th:'วีแชทหรืออาลีเพย์', q:'เขาถามเรื่องอะไร?',
+    choices:['จ่ายด้วยแอปไหน','เอาถุงไหม','เอาใบเสร็จไหม','เอาสีไหน'] },
+  { id:'L12', scene:'ซื้อของ', zh:'要袋子吗？', py:'yào dài zi ma', th:'เอาถุงไหม', q:'เขาถามอะไร?',
+    choices:['เอาถุงไหม','เอาใบเสร็จไหม','ลองได้ไหม','เอาไซซ์ไหน'] },
+  { id:'L13', scene:'จ่ายเงิน', zh:'只收现金。', py:'zhǐ shōu xiàn jīn', th:'รับเงินสดเท่านั้น', q:'เขาบอกอะไร?',
+    choices:['รับแต่เงินสด','รับแต่บัตร','ลดราคาไม่ได้','ของหมดแล้ว'] },
+  { id:'L14', scene:'ต่อราคา', zh:'不能便宜了。', py:'bù néng pián yi le', th:'ลดให้อีกไม่ได้แล้ว', q:'แม่ค้าตอบว่าอะไร?',
+    choices:['ลดให้อีกไม่ได้แล้ว','ลดให้ได้อีก','ซื้อสองแถมหนึ่ง','วันนี้ลดราคา'] },
+  { id:'L15', scene:'ต่อราคา', zh:'买两个打八折。', py:'mǎi liǎng ge dǎ bā zhé', th:'ซื้อสองชิ้นจ่าย 80% (ลด 20%)', q:'โปรโมชันคืออะไร?',
+    choices:['ซื้อสองชิ้นลด 20%','ซื้อสองชิ้นแถมหนึ่ง','ลดแปดหยวน','ลด 80%'] },
+  { id:'L16', scene:'ซื้อของ', zh:'你要多大的？', py:'nǐ yào duō dà de', th:'เอาขนาดไหน', q:'เขาถามอะไร?',
+    choices:['เอาไซซ์ไหน','เอากี่ชิ้น','เอาสีอะไร','ซื้อให้ใคร'] },
+  { id:'L17', scene:'ซื้อของ', zh:'这个颜色没有了。', py:'zhè ge yán sè méi yǒu le', th:'สีนี้หมดแล้ว', q:'เขาบอกอะไร?',
+    choices:['สีนี้หมดแล้ว','ไซซ์นี้หมดแล้ว','สีนี้ขายดีที่สุด','สีนี้ถูกกว่า'] },
+  { id:'L18', scene:'ซื้อของ', zh:'可以试一下。', py:'kě yǐ shì yí xià', th:'ลองได้เลย', q:'เขาตอบว่าอะไร?',
+    choices:['ลองได้','ลองไม่ได้','ต้องซื้อก่อน','ห้องลองเต็ม'] },
+  { id:'L19', scene:'จ่ายเงิน', zh:'扫这里就可以了。', py:'sǎo zhè lǐ jiù kě yǐ le', th:'สแกนตรงนี้ได้เลย', q:'เขาบอกให้ทำอะไร?',
+    choices:['สแกนตรงนี้ได้เลย','จ่ายเงินสดตรงนี้','เซ็นชื่อตรงนี้','รอตรงนี้ก่อน'] },
+  /* ---- แท็กซี่ / DiDi ---- */
+  { id:'L20', scene:'แท็กซี่', zh:'你去哪儿？', py:'nǐ qù nǎr', th:'ไปไหนครับ', q:'คนขับถามอะไร?',
+    choices:['ไปไหน','มากี่คน','จ่ายยังไง','ถึงหรือยัง'] },
+  { id:'L21', scene:'แท็กซี่', zh:'到了。', py:'dào le', th:'ถึงแล้ว', q:'คนขับบอกอะไร?',
+    choices:['ถึงแล้ว','รถติด','ไปผิดทาง','อีกนิดเดียว'] },
+  { id:'L22', scene:'แท็กซี่', zh:'前面停可以吗？', py:'qián miàn tíng kě yǐ ma', th:'จอดข้างหน้าได้ไหม', q:'คนขับถามอะไร?',
+    choices:['จอดข้างหน้าได้ไหม','เลี้ยวซ้ายได้ไหม','เปิดแอร์ได้ไหม','ขึ้นทางด่วนไหม'] },
+  { id:'L23', scene:'DiDi', zh:'你的手机尾号是多少？', py:'nǐ de shǒu jī wěi hào shì duō shao', th:'เบอร์มือถือคุณลงท้ายด้วยอะไร', q:'คนขับถามอะไร?',
+    choices:['เลขท้ายเบอร์มือถือ','ชื่อโรงแรม','จำนวนกระเป๋า','ราคาที่ตกลงกัน'] },
+  { id:'L24', scene:'แท็กซี่', zh:'这里不能停车。', py:'zhè lǐ bù néng tíng chē', th:'ตรงนี้จอดไม่ได้', q:'คนขับบอกอะไร?',
+    choices:['ตรงนี้จอดไม่ได้','ตรงนี้รถติดมาก','ตรงนี้คือสนามบิน','ตรงนี้ต้องจ่ายเงิน'] },
+  { id:'L25', scene:'แท็กซี่', zh:'堵车了，要四十分钟。', py:'dǔ chē le, yào sì shí fēn zhōng', th:'รถติด ต้องใช้ 40 นาที', q:'ต้องใช้เวลาเท่าไหร่?',
+    choices:['40 นาที','14 นาที','4 นาที','10 นาที'] },
+  { id:'L26', scene:'แท็กซี่', zh:'要走高速吗？', py:'yào zǒu gāo sù ma', th:'จะขึ้นทางด่วนไหม', q:'คนขับถามอะไร?',
+    choices:['ขึ้นทางด่วนไหม','จอดตรงนี้ไหม','เปิดแอร์ไหม','มีกระเป๋าไหม'] },
+  { id:'L27', scene:'DiDi', zh:'你在哪个门？', py:'nǐ zài nǎ ge mén', th:'คุณอยู่ประตูไหน', q:'คนขับถามอะไร?',
+    choices:['อยู่ประตูไหน','จะไปประตูไหน','อยู่ชั้นไหน','ขึ้นรถแล้วหรือยัง'] },
+  /* ---- โรงแรม ---- */
+  { id:'L28', scene:'โรงแรม', zh:'请给我看一下护照。', py:'qǐng gěi wǒ kàn yí xià hù zhào', th:'ขอดูพาสปอร์ตหน่อยค่ะ', q:'พนักงานขออะไร?',
+    choices:['ขอดูพาสปอร์ต','ขอเบอร์โทร','ขอเงินมัดจำ','ขอชื่อผู้จอง'] },
+  { id:'L29', scene:'โรงแรม', zh:'押金两百块。', py:'yā jīn liǎng bǎi kuài', th:'เงินมัดจำ 200 หยวน', q:'เขาพูดถึงอะไร?',
+    choices:['เงินมัดจำ 200 หยวน','ค่าห้อง 200 หยวน','อาหารเช้า 200 หยวน','ค่าจอดรถ 200 หยวน'] },
+  { id:'L30', scene:'โรงแรม', zh:'中午十二点退房。', py:'zhōng wǔ shí èr diǎn tuì fáng', th:'เช็คเอาต์เที่ยงวัน', q:'เช็คเอาต์กี่โมง?',
+    choices:['เที่ยงวัน','สิบโมงเช้า','สองทุ่ม','บ่ายสองโมง'] },
+  { id:'L31', scene:'โรงแรม', zh:'早餐在二楼。', py:'zǎo cān zài èr lóu', th:'อาหารเช้าอยู่ชั้น 2', q:'เขาบอกอะไร?',
+    choices:['อาหารเช้าอยู่ชั้น 2','ห้องอยู่ชั้น 2','สระว่ายน้ำอยู่ชั้น 2','อาหารเช้าเริ่มตีสอง'] },
+  { id:'L32', scene:'โรงแรม', zh:'你的房间是八零五。', py:'nǐ de fáng jiān shì bā líng wǔ', th:'ห้องของคุณเบอร์ 805', q:'ห้องเบอร์อะไร?',
+    choices:['805','508','850','815'] },
+  { id:'L33', scene:'โรงแรม', zh:'电梯在那边。', py:'diàn tī zài nà biān', th:'ลิฟต์อยู่ทางนั้น', q:'อะไรอยู่ทางนั้น?',
+    choices:['ลิฟต์','ห้องน้ำ','ทางออก','ร้านอาหาร'] },
+  { id:'L34', scene:'โรงแรม', zh:'需要叫醒服务吗？', py:'xū yào jiào xǐng fú wù ma', th:'ต้องการให้โทรปลุกไหม', q:'พนักงานถามอะไร?',
+    choices:['ให้โทรปลุกไหม','ให้ทำความสะอาดไหม','ให้เรียกแท็กซี่ไหม','ให้ยกกระเป๋าไหม'] },
+  /* ---- ถามทาง ---- */
+  { id:'L35', scene:'ถามทาง', zh:'一直走，然后左转。', py:'yì zhí zǒu, rán hòu zuǒ zhuǎn', th:'ตรงไป แล้วเลี้ยวซ้าย', q:'ต้องไปทางไหน?',
+    choices:['ตรงไปแล้วเลี้ยวซ้าย','ตรงไปแล้วเลี้ยวขวา','เลี้ยวซ้ายแล้วตรงไป','กลับรถแล้วเลี้ยวซ้าย'] },
+  { id:'L36', scene:'ถามทาง', zh:'地铁站在右边。', py:'dì tiě zhàn zài yòu biān', th:'สถานีรถไฟใต้ดินอยู่ทางขวา', q:'สถานีอยู่ตรงไหน?',
+    choices:['อยู่ทางขวา','อยู่ทางซ้าย','อยู่ข้างหลัง','อยู่ใต้ตึกนี้'] },
+  { id:'L37', scene:'ถามทาง', zh:'走路十分钟就到。', py:'zǒu lù shí fēn zhōng jiù dào', th:'เดิน 10 นาทีก็ถึง', q:'ไปยังไง ใช้เวลาเท่าไหร่?',
+    choices:['เดิน 10 นาที','นั่งรถ 10 นาที','เดิน 4 นาที','เดินไกลมาก'] },
+  { id:'L38', scene:'ถามทาง', zh:'过马路就是。', py:'guò mǎ lù jiù shì', th:'ข้ามถนนไปก็ถึงแล้ว', q:'ต้องทำยังไง?',
+    choices:['ข้ามถนนไปก็ถึง','เลี้ยวซ้ายก็ถึง','ขึ้นบันไดก็ถึง','ลงไปชั้นใต้ดิน'] },
+  { id:'L39', scene:'ถามทาง', zh:'坐三号线。', py:'zuò sān hào xiàn', th:'นั่งรถไฟใต้ดินสาย 3', q:'ต้องทำอะไร?',
+    choices:['นั่งรถไฟใต้ดินสาย 3','นั่งรถเมล์สาย 3','ลงสถานีที่ 3','ออกทางออก 3'] },
+  { id:'L40', scene:'ถามทาง', zh:'从四号出口出去。', py:'cóng sì hào chū kǒu chū qù', th:'ออกทางออกหมายเลข 4', q:'ต้องออกทางไหน?',
+    choices:['ทางออก 4','ทางออก 10','ทางออก 14','ทางออก 40'] }
+];
 
 /* ============================================================
    1.8 การ์ดโครงสร้างประโยค — ความรู้สั้นๆ ต่อบท (ไม่ใช่หน้าไวยากรณ์ยาว)
@@ -2790,7 +3071,7 @@ const MILESTONES = [
 /* ============================================================
    2.5 บันทึกปัญหา (diagnostics) — ไว้ส่งให้ผู้พัฒนาดูเวลาไมค์มีปัญหา
    ============================================================ */
-const BUILD='2026-09-23b';                     // เปลี่ยนทุกครั้งที่แก้ไฟล์ จะได้รู้ว่า log มาจากรุ่นไหน
+const BUILD='2026-09-25g';                     // เปลี่ยนทุกครั้งที่แก้ไฟล์ จะได้รู้ว่า log มาจากรุ่นไหน
 const DIAG=[], STUCK={}, T0=Date.now();
 function dlog(tag, msg, extra){
   const line={t:Date.now()-T0, tag:tag, msg:msg===undefined?'':String(msg), extra:extra};
@@ -2835,7 +3116,8 @@ function renderDiag(){
 const SKEY='zhgame.v1';
 function blank(){return{
   v:1,
-  settings:{showThai:true, rate:0.8, autoListen:false, vibrate:true, sv:2},
+  settings:{showThai:true, rate:0.8, autoListen:false, vibrate:true, sv:2,
+             coachMin:25, coachStrict:true, coachGoal:2},
   progress:{},   // levelId -> {best, stars, plays, done}
   words:{},      // hanzi -> {py,th,mean,lv,att,fails,d2:[],d3:[]}
   mistakes:{},   // hanzi -> count
@@ -2844,6 +3126,9 @@ function blank(){return{
   core:{},       // CORE100: hanzi -> {box, next, last, tries, ok}  (โหมดนึกเองเท่านั้น)
   coreDay:{d:'', n:0},   // โควตาคำใหม่ต่อวัน
   stats:{utter:0, stars:0, ms:0, days:[]},
+  coach:{days:{}, sleep:{d:'', items:[], used:''}, sessions:0},  // days: 'YYYY-MM-DD' -> {rounds, partial, min, lat:[], lis:[ok,total]}
+  srx:{},        // ตารางทบทวนรวม สำหรับทุกอย่างที่ไม่ใช่ CORE100: hanzi -> {box,next,last,tries,ok,src,slot,lat:[]}
+  listen:{rate:0.9, streak:0, hist:[], typeMode:false},
   log:[]
 };}
 let S = load();
@@ -2855,7 +3140,17 @@ function load(){
     const b = blank();
     const st = Object.assign(b.settings, o.settings||{});
     if(st.sv!==2){ st.autoListen=false; st.sv=2; }   // ของเดิมเปิดไมค์เองทุกข้อจนปุ่มกดค้างไร้ความหมาย -> ย้ายมาโหมดกดค้าง
-    return Object.assign(b, o, {settings:st, stats:Object.assign(b.stats,o.stats||{})});
+    const oc=o.coach||{};
+    return Object.assign(b, o, {
+      settings:st,
+      stats:Object.assign(b.stats,o.stats||{}),
+      coach:Object.assign(b.coach, oc, {
+        days:Object.assign({}, oc.days||{}),
+        sleep:Object.assign(b.coach.sleep, oc.sleep||{})
+      }),
+      srx:(o.srx && typeof o.srx==='object') ? o.srx : {},
+      listen:Object.assign(b.listen, o.listen||{})
+    });
   }catch(e){ return blank(); }
 }
 let saveT=null;
@@ -2891,13 +3186,19 @@ function nextMilestone(n){ return MILESTONES.find(x=>x.n>n) || MILESTONES[MILEST
 const SRS_MS=[10*60000, 24*3600000, 3*24*3600000, 7*24*3600000, 30*24*3600000];
 const SRS_LABEL=['10 นาที','1 วัน','3 วัน','7 วัน','30 วัน'];
 const NEW_PER_DAY=7;
-function srsRec(h){
-  return S.core[h] || (S.core[h]={box:0, next:0, last:0, tries:0, ok:0, firstDay:today()});
+function srsRec(h, store){
+  store=store||S.core;                         // ไม่ส่ง store มา = CORE100 เหมือนเดิมทุกประการ
+  return store[h] || (store[h]={box:0, next:0, last:0, tries:0, ok:0, firstDay:today()});
 }
-function srsUpdate(h, stars, neutral){
-  const r=srsRec(h);
+function srsUpdate(h, stars, neutral, store){
+  const r=srsRec(h, store);
   r.tries=(r.tries||0)+1;
   r.last=stars;
+  if(neutral==='keep'){                        // ถูกแต่ยังช้า: คงกล่อง นัดรอบถัดไปตามระยะของกล่องนั้น
+    r.box=Math.max(1, r.box||1);
+    r.next=Date.now()+SRS_MS[r.box-1];
+    return r;
+  }
   if(neutral){                                 // พูดถูกแล้วแต่ใช้ตัวช่วย: ไม่เลื่อนขั้น แต่ห้ามถอยหลัง
     r.box=Math.max(1, r.box||1);
     r.next=Date.now()+SRS_MS[0];               // กลับมาถามใหม่ใน 10 นาที แบบไม่ใบ้
@@ -2959,9 +3260,9 @@ function numToHan(n){
       const d=+str[i], u=units[str.length-1-i];
       if(d===0){ z=true; } else { if(z&&s) s+='零'; z=false; s+=HAN_NUM[d]+u; }
     }
-    return s.replace(/^一十/,'十');
+    return s.replace(/^一十/,'十').replace(/^二(?=[百千])/,'两');   // 200 พูดว่า 两百 ไม่มีใครพูด 二百
   }
-  if(n<100000000){ const w=Math.floor(n/10000), r=n%10000; return numToHan(w)+'万'+(r? (r<1000?'零':'')+numToHan(r):''); }
+  if(n<100000000){ const w=Math.floor(n/10000), r=n%10000; return (w===2?'两':numToHan(w))+'万'+(r? (r<1000?'零':'')+numToHan(r):''); }
   return String(n);
 }
 /* ---- ตัวเลขจีน -> ค่าตัวเลข (ใช้เทียบว่าพูดเลขถูกไหม แทนการเทียบตัวอักษร) ---- */
@@ -3017,7 +3318,7 @@ function numScore(t, tNum, h){
 /* iPhone ถอด "หกโมง" ออกมาเป็น 6:00 — ถ้าปล่อยไว้ 点 กับ 分 จะหายไปทั้งที่ผู้ใช้พูดครบ */
 function timeFix(str){
   return String(str).replace(/(\d{1,2})\s*[:\uff1a]\s*(\d{2})/g, function(m, h, mm){
-    const H = numToHan(String(+h)) + '点';
+    const H = (+h===2 ? '两' : numToHan(String(+h))) + '点';     // บอกเวลา 2 โมง = 两点
     const M = +mm;
     return M===0 ? H : H + numToHan(String(M)) + '分';
   });
@@ -3636,6 +3937,7 @@ function unlocked(id){
   return !!(prev && prev.best>=PASS_AVG);
 }
 function renderHome(){
+  renderCoachCard();
   // --- CORE 100 (โหมดนึกเอง) ---
   const cm=coreMastered(), due=coreDue().length, left=coreQuotaLeft(), pool=coreNewPool().length;
   $('#coreNum').textContent=cm;
@@ -3706,6 +4008,7 @@ function renderLevels(){
   section('📚 บทเรียน 1–52','ปลดล็อกทีละด่านเมื่อทำได้เฉลี่ย '+PASS_AVG+'% ขึ้นไป', lessonLevels());
 }
 function renderStats(){
+  renderCoachStats();
   const c=countWords();
   $('#sMastered').textContent=c.mastered;
   $('#sSpoken').textContent=c.spoken;
@@ -3732,19 +4035,20 @@ function renderStats(){
    9. เสียง (TTS) + การฟัง (ASR)
    ============================================================ */
 let speaking=false;
-function speak(text, done){
+function speak(text, done, rate){
   if(!window.speechSynthesis){ done&&done(); return; }
   try{ speechSynthesis.cancel(); }catch(e){}
   if(!zhVoice) pickVoice();
+  const rt = rate || S.settings.rate;          // ส่งความเร็วมาชั่วคราวได้ ค่าที่ตั้งไว้ไม่เปลี่ยน
   const u=new SpeechSynthesisUtterance(String(text).replace(/[A-Za-z]+/g,''));
-  u.lang='zh-CN'; u.rate=S.settings.rate; u.pitch=1;
+  u.lang='zh-CN'; u.rate=rt; u.pitch=1;
   if(zhVoice) u.voice=zhVoice;
   speaking=true;
   let fired=false;
   const fin=()=>{ if(fired) return; fired=true; speaking=false; done&&done(); };
   u.onend=fin; u.onerror=fin;
   // กันกรณี onend ไม่ยิงบน Android
-  setTimeout(fin, 1200 + text.length*220/Math.max(.5,S.settings.rate));
+  setTimeout(fin, 1200 + String(text).length*220/Math.max(.5,rt));
   try{ speechSynthesis.speak(u); }
   catch(e){ fin(); }
   if(!zhVoice && voicesChecked) setTimeout(()=>{ if(!zhVoice) openM('mTts'); }, 300);
@@ -3827,6 +4131,7 @@ const SILENCE_MS=1100;  // พูดจบแล้วเงียบเท่�
 
 /* เปิดไมค์ต่อจากเสียงต้นแบบ เว้นจังหวะสั้นๆ กันไมค์ไปได้ยินเสียงต้นแบบเอง */
 function armMic(){
+  if(COACH.active && IS_IOS) return;          // โค้ชบน iPhone: ห้ามเปิดไมค์เองโดยไม่มีการแตะ ใช้ปุ่มกดค้างเท่านั้น
   setTimeout(()=>{
     if(playing && S.settings.autoListen && HAS_SR && !manualMode && !recActive && !recStarting) startRec();
   }, 400);
@@ -3851,6 +4156,7 @@ function startRec(keepHeard){
   if(!navigator.onLine){ setHeard('ไม่ได้ต่อเน็ต ระบบตรวจเสียงใช้ไม่ได้','bad'); return; }
   try{ speechSynthesis.cancel(); }catch(e){}
   if(!keepHeard){ segAlts=[]; gotAlts=null; }
+  if(latT0 && !latPress) latPress=Date.now();    // โค้ช: สำรองไว้ถ้าไม่มีผลระหว่างพูดให้จับเวลา
   judged=false; interimText='';
   recAborted=false; pendingStop=false; stopRequested=false; clearTimeout(stopTimer);
   try{ rec=new SR(); }catch(e){ return; }
@@ -3887,6 +4193,10 @@ function startRec(keepHeard){
       }
     }
     gotAlts=combineAlts(segAlts);
+    if(latT0 && !latT1){                            // โค้ช: เวลาตอบ = ตั้งแต่โจทย์ขึ้นจอ ถึงตอนได้ยินตัวจีนตัวแรก
+      const any=(segAlts.length? segAlts[segAlts.length-1][0] : '')+interimText;
+      if(/[\u4e00-\u9fff]/.test(any)){ latT1=Date.now(); coachRingStop(latT1-latT0); }
+    }
     if(sawFinal && gotAlts) dlog('mic','ได้ผลถอดเสียง', gotAlts);
     // ได้ยินครบแล้วก็ตัดสินเลย ไม่ต้องรอปล่อยนิ้ว/รอปิดไมค์
     const joined=(segAlts.map(x=>x[0]).join('')||'')+interimText;
@@ -3927,7 +4237,7 @@ function startRec(keepHeard){
       setTimeout(()=>{ if(holding && playing) startRec(true); }, 60);
       return;
     }
-    if(gotAlts && gotAlts.length){ emptyStreak=0; (MODE==='talk'?judgeTalk:judge)(gotAlts); }
+    if(gotAlts && gotAlts.length){ emptyStreak=0; judgeFn()(gotAlts); }
     else {
       micState(''); emptyStreak++;
       const it0=cur();
@@ -3990,8 +4300,9 @@ function instantJudge(extra){
   dlog('mic','ตรวจทันทีตอนได้ยินครบ ('+(Date.now()-(startedAt||Date.now()))+'ms หลังเริ่มอัด)');
   abortRec();
   emptyStreak=0;
-  (MODE==='talk'?judgeTalk:judge)(all);
+  judgeFn()(all);
 }
+function judgeFn(){ return MODE==='talk' ? judgeTalk : MODE==='shadow' ? judgeShadow : judge; }
 let lastStopAt=0;
 function scheduleStop(){
   clearTimeout(stopTimer);
@@ -4099,6 +4410,7 @@ function renderItem(autoPlay){
   const it=cur();
   if(!it){ finishRun(); return; }
   if(MODE==='prod' || MODE==='pattern'){ renderProd(it); return; }
+  if(MODE==='shadow'){ renderShadow(it); return; }
   tries=0;
   dlog('ข้อ','('+(qi+1)+'/'+Q.length+') '+it.hanzi+(it.lap2?' [รอบ2]':'')+(it.review?' [ทบทวน]':''));
   $('#pKind').textContent = it.review ? '🔁 ทบทวนคำที่เคยพลาด'
@@ -4188,27 +4500,44 @@ function judge(alts){
   const rawScore=r0.score;                             // คะแนนจริงก่อนหักตัวช่วย
   let score=rawScore;
   if(prod && hintUsed){ score=Math.min(score, 50); }   // ขอใบ้แล้ว ข้อนี้ได้สูงสุด 1 ดาว
-  const st = starsOf(score);
+  let st = starsOf(score);
   const rawSt = starsOf(rawScore);
   const hintedButRight = prod && hintUsed && rawSt>=3; // พูดถูกแล้ว แค่ใช้ตัวช่วย — ห้ามวนซ้ำ
-  dlog('คะแนน', it.hanzi+' -> '+score+'% '+st+'ดาว  (ได้ยิน: '+(heard||'—')+')');
+  // ---- โหมดโค้ช: เวลาตอบของความพยายามครั้งแรก (ครั้งต่อไปเห็นเฉลยแล้ว ไม่ใช่การนึกเอง) ----
+  let lat=null, slow='';
+  if(COACH.active && prod && latFirst){ lat=coachLatency(); latFirst=false; if(lat!==null) coachRingStop(lat); }
+  if(lat!==null && !hintUsed && rawSt>=3 && coachBlockIs('B2') && S.settings.coachStrict){
+    if(lat>6000) slow='vslow'; else if(lat>3000) slow='slow';
+    if(slow){ st=2; score=Math.min(score, 80); }        // ถูกแต่ช้า = 2 ดาว
+  }
+  dlog('คะแนน', it.hanzi+' -> '+score+'% '+st+'ดาว  (ได้ยิน: '+(heard||'—')+')'+(lat!==null?'  ⏱ '+(lat/1000).toFixed(1)+' วิ':''));
   if(rawSt<2){                                // ใช้คะแนนจริง ไม่งั้นคำที่พูดถูกแต่ขอใบ้จะมาโผล่ด้วย
     STUCK[it.hanzi]=STUCK[it.hanzi]||[];
     if(STUCK[it.hanzi].length<6) STUCK[it.hanzi].push(heard||'(เงียบ)');
   }
   tries++; sessUtter++; sessStars+=st;
   S.stats.utter++; S.stats.stars+=st;
-  S.log.push({levelId, hanzi:it.hanzi, heard, score, stars:st, ts:Date.now()});
+  if(COACH.active) coachLog({h:it.hanzi, st:st, lat:lat, heard:heard, score:score});
+  else S.log.push({levelId, hanzi:it.hanzi, heard, score, stars:st, ts:Date.now()});
   if(S.log.length>2000) S.log=S.log.slice(-1500);
   bestPer[qi]=Math.max(bestPer[qi]||0, score);
   if(it.kind==='vocab' && !prod) recordWord(it, st, levelId);   // โหมดพูดตาม -> คลังคำบทเรียน
-  if(MODE==='prod'){                                            // โหมดนึกเอง -> CORE100 + ตารางทบทวน
-    if(!S.core[it.hanzi]){                                      // คำใหม่ นับโควตาวันนี้ตอนพูดจริงเท่านั้น
+  if(MODE==='prod'){                                            // โหมดนึกเอง -> CORE100 / ตารางทบทวนรวม
+    const store = it.store==='srx' ? S.srx : S.core;
+    if(store===S.core && !S.core[it.hanzi]){                    // คำใหม่ นับโควตาวันนี้ตอนพูดจริงเท่านั้น
       if(!S.coreDay || S.coreDay.d!==today()) S.coreDay={d:today(), n:0};
       S.coreDay.n=(S.coreDay.n||0)+1;
     }
-    const r=srsUpdate(it.hanzi, st, hintedButRight);
-    dlog('ทบทวน', it.hanzi+' -> box '+r.box+' ('+SRS_LABEL[r.box-1]+')'+(hintedButRight?'  [ใช้ตัวช่วย — คงระดับเดิม]':''));
+    // ถูกแต่ช้า 3–6 วิ: คงกล่อง นัดตามระยะเดิม · เกิน 6 วิ: คงกล่อง ถามใหม่ใน 10 นาที
+    const neutral = slow==='slow' ? 'keep' : (slow==='vslow' || hintedButRight);
+    const r=srsUpdate(it.hanzi, st, neutral, store);
+    if(store===S.srx){ r.src=it.src; if(it.slotRaw) r.slot=it.slotRaw; }
+    if(lat!==null){
+      r.lat=(r.lat||[]).concat(lat).slice(-10);
+      const day=coachDay(); day.lat.push(lat); if(day.lat.length>400) day.lat=day.lat.slice(-400);
+    }
+    dlog('ทบทวน', it.hanzi+' -> box '+r.box+' ('+SRS_LABEL[r.box-1]+')'+(store===S.srx?' [รวม '+(it.src||'')+']':'')+
+      (hintedButRight?'  [ใช้ตัวช่วย — คงระดับเดิม]':'')+(slow?'  [ถูกแต่ช้า — คงระดับเดิม]':''));
   }
   save();
 
@@ -4223,9 +4552,14 @@ function judge(alts){
     '<div class="small muted zh">'+(heard?esc(heard):'')+'</div>'+
     '<div class="stars" style="color:var(--'+(st>=3?'ok':st>=2?'warn':'bad')+')">'+starStr(st)+' <span class="small">'+score+'%</span></div>'+
     (hints&&hints.length ? '<div class="nearTip">ใกล้แล้ว — '+hints.map(esc).join('<br>')+'</div>' : '')+
-    (prod&&hintUsed ? '<div class="nearTip">ใช้ตัวช่วยแล้ว ข้อนี้จึงได้สูงสุด 1 ดาว</div>' : '');
+    (prod&&hintUsed ? '<div class="nearTip">ใช้ตัวช่วยแล้ว ข้อนี้จึงได้สูงสุด 1 ดาว</div>' : '')+
+    (slow==='slow' ? '<div class="nearTip">ถูก แต่ยังช้า ⏱ '+(lat/1000).toFixed(1)+' วิ — ลองให้คำออกมาภายใน 3 วิ รอบทบทวนจะยังไม่เลื่อน</div>' : '')+
+    (slow==='vslow' ? '<div class="nearTip">ถูก แต่ช้ามาก ⏱ '+(lat/1000).toFixed(1)+' วิ — อีก 10 นาทีจะกลับมาถามใหม่</div>' : '');
 
-  if(hintedButRight){                         // ถูกแล้วแต่ใช้ตัวช่วย ไปข้อต่อไปเลย อย่าให้ติดหล่ม
+  if(slow){                                   // ถูกแล้ว แค่ช้า — ไปข้อต่อไป ไม่ต้องพูดซ้ำ
+    vib([30,40,30]); micState('ok');
+    setTimeout(()=>{ if(playing) next(); }, 2200);
+  }else if(hintedButRight){                         // ถูกแล้วแต่ใช้ตัวช่วย ไปข้อต่อไปเลย อย่าให้ติดหล่ม
     vib([30,40,30]); micState('ok');
     $('#heard').insertAdjacentHTML('beforeend','<div class="nearTip">พูดถูกแล้ว! ข้อนี้ใช้ตัวช่วยเลยได้ 1 ดาว <b>แต่ไม่ถูกลดขั้น</b> — อีก 10 นาทีจะกลับมาถามใหม่แบบไม่ใบ้</div>');
     setTimeout(()=>{ if(playing) next(); }, 2200);
@@ -4278,8 +4612,9 @@ function checkMilestone(){
   const hit=MILESTONES.find(m=>m.n===c.mastered);
   if(hit && lastMile!==hit.n){ lastMile=hit.n; vib([40,60,40,60,80]); toast(hit.n+' คำแล้ว!', hit.label, 2000); }
 }
-function next(){ qi++; if(qi>=Q.length) finishRun(); else renderItem(true); }
+function next(){ qi++; if(qi>=Q.length || coachTimeUp()) finishRun(); else renderItem(true); }
 function finishRun(){
+  if(MODE==='shadow') return finishShadow();
   if(MODE==='prod') return finishProd();
   if(MODE==='pattern') return finishProd();
   return finishLevel();
@@ -4343,13 +4678,37 @@ function renderTalkList(){
   });
 }
 function talkTurn(){ return TSC ? TSC.turns[ti] : null; }
+/* ชุดที่มี vars: สุ่มค่าครั้งเดียวต่อรอบ แล้วแทนในทุกช่อง — ชุดที่ไม่มี vars ได้ของเดิมทุกอย่าง */
+function materializeScenario(sc){
+  const pools={};
+  const grab=v=>{ if(v) for(const k in v) pools[k]=v[k]; };
+  grab(sc.vars); (sc.turns||[]).forEach(t=>grab(t.vars));
+  const vals={};
+  for(const k in pools){ const a=pools[k]; if(a && a.length) vals[k]=a[Math.floor(Math.random()*a.length)]; }
+  const sub=(str, mode)=>String(str==null?'':str).replace(/\{(\w+)\}/g, (m,k)=>{
+    const v=vals[k]; if(v===undefined) return m;
+    if(typeof v==='number') return mode==='zh' ? priceToHan(v) : mode==='py' ? priceToPy(v) : String(v);
+    return mode==='zh' ? v.zh : mode==='py' ? v.py : v.th;
+  });
+  const turns=(sc.turns||[]).map(t=>{
+    if(!Object.keys(vals).length) return t;
+    return Object.assign({}, t, {
+      ask:sub(t.ask,'zh'), askPy:sub(t.askPy,'py'), askMean:sub(t.askMean,'th'), hint:sub(t.hint,'th'),
+      model:sub(t.model,'zh'), modelPy:sub(t.modelPy,'py'), modelTh:sub(t.modelTh,'th'),
+      accept:(t.accept||[]).map(a=>sub(a,'zh'))
+    });
+  });
+  return Object.assign({}, sc, {turns:turns, _mat:true, _vals:vals});
+}
 async function startTalk(id){
   if(HAS_SR && !manualMode && micPerm!=='granted'){
     const st=await ensureMic();
     if(st==='denied'){ openM('mMic'); return; }
   }
-  TSC=TALK.find(x=>x.id===id); if(!TSC) return;
-  MODE='talk'; ti=0; tTries=0; sessUtter=0; sessStars=0; bestPer=[]; levelId='talk:'+id;
+  const base = (id && typeof id==='object') ? id : TALK.find(x=>x.id===id);
+  if(!base) return;
+  TSC = base._mat ? base : materializeScenario(base);   // สุ่มค่าตัวแปรใหม่ทุกครั้งที่เริ่ม
+  MODE='talk'; ti=0; tTries=0; sessUtter=0; sessStars=0; bestPer=[]; levelId='talk:'+TSC.id;
   playing=true; t0=Date.now();
   const d=today(); if(!S.stats.days.includes(d)) S.stats.days.push(d);
   requestWake(); show('scr-play'); renderMode();
@@ -4411,7 +4770,8 @@ function judgeTalk(alts){
   tTries++; sessUtter++; sessStars+=st;
   S.stats.utter++; S.stats.stars+=st;
   bestPer[ti]=Math.max(bestPer[ti]||0, score);
-  S.log.push({levelId, hanzi:t.ask, heard:best, score, stars:st, ts:Date.now()});
+  if(COACH.active) coachLog({h:t.ask, st:st, lat:null, heard:best, score:score, hit:hit||''});
+  else S.log.push({levelId, hanzi:t.ask, heard:best, score, stars:st, ts:Date.now()});
   dlog('ตอบโต้', t.ask+' -> '+score+'% '+(hit?('เจอคำตอบ '+hit+(nearHit?' (เสียงเพี้ยน)':'')):'ไม่ตรงคำตอบที่รับได้')+' (ได้ยิน: '+(best||'—')+')');
   save();
 
@@ -4436,8 +4796,9 @@ function judgeTalk(alts){
     setTimeout(()=>{ if(!playing) return; speak(talkTurn().model, ()=>{ if(S.settings.autoListen) armMic(); }); }, 700);
   }
 }
-function nextTurn(){ ti++; if(!TSC||ti>=TSC.turns.length) finishTalk(); else renderTurn(); }
+function nextTurn(){ ti++; if(!TSC||ti>=TSC.turns.length||coachTimeUp()) finishTalk(); else renderTurn(); }
 function finishTalk(){
+  if(COACH.active) return coachNextBlock();
   const ms=Date.now()-t0; S.stats.ms+=ms;
   const scores=TSC.turns.map((_,i)=>bestPer[i]||0);
   const avg=Math.round(scores.reduce((a,b)=>a+b,0)/Math.max(1,scores.length));
@@ -4668,12 +5029,14 @@ function toneStop(){
   const r=analyseTone(toneRaw);
   dlog('เสียง', it.py+' -> '+(r.ok?('ตรวจได้เสียง '+r.tone+' (ช่วง '+r.range.toFixed(1)+' ครึ่งเสียง)'):'จับเสียงไม่ได้'));
   if(!r.ok){
+    if(COACH.active) coachLog({h:it.zh, st:0, lat:null, heard:'(จับเสียงไม่ได้)', tone:it.tone, got:0});
     $('#toneVerdict').innerHTML='<b style="color:var(--bad)">ยังจับเสียงไม่ได้</b><div class="small muted">ออกเสียงให้ดังและยาวขึ้น ประมาณ 1 วินาที ในที่เงียบๆ</div>';
     drawTone(null, it.tone, 0);
     return;
   }
   drawTone(r.st, it.tone, r.tone);
   S.stats.utter++; save();
+  if(COACH.active) coachLog({h:it.zh, st:r.tone===it.tone?3:0, lat:null, heard:'เสียง '+r.tone, tone:it.tone, got:r.tone});
   if(r.tone===it.tone){
     toneSet._hit=(toneSet._hit||0)+1;
     vib([30,40,30]);
@@ -4686,8 +5049,9 @@ function toneStop(){
       '<div class="small muted">ต้องการ '+TONE_NAME[it.tone]+' — '+TONE_TIP[it.tone]+'</div>';
   }
 }
-function toneNext(){ tIdx++; if(!toneSet||tIdx>=toneSet.items.length) finishTone(); else renderToneItem(); }
+function toneNext(){ tIdx++; if(!toneSet||tIdx>=toneSet.items.length||coachTimeUp()) finishTone(); else renderToneItem(); }
 function finishTone(){
+  if(COACH.active) return coachNextBlock();
   releaseWake();
   const hit=toneSet._hit||0, n=toneSet.items.length;
   S.tone=S.tone||{};
@@ -4760,12 +5124,13 @@ function hideAllBoxes(){
 }
 function renderProd(it){
   tries=0; hintUsed=false;
+  const asPat = MODE==='pattern' || !!it.isPattern;   // คิวโค้ชมีข้อประกอบประโยคปนอยู่
   $('#prompt').hidden=true; $('#talkbox').hidden=true;
   $('#gloss').hidden=true; $('#pNote').hidden=true; $('#reviewBar').hidden=true;
   $('#prodBox').hidden=false;
-  $('#prodLab').textContent = MODE==='pattern' ? 'ประกอบประโยคนี้เป็นภาษาจีน' : 'พูดเป็นภาษาจีนว่า';
-  $('#prodThai').textContent = MODE==='pattern' ? (it.frameThai||it.meaning) : it.meaning;
-  if(MODE==='pattern' && it.slotThai){
+  $('#prodLab').textContent = asPat ? 'ประกอบประโยคนี้เป็นภาษาจีน' : 'พูดเป็นภาษาจีนว่า';
+  $('#prodThai').textContent = asPat ? (it.frameThai||it.meaning) : it.meaning;
+  if(asPat && it.slotThai){
     $('#prodSlot').hidden=false;
     $('#prodSlot').innerHTML='<b>'+esc(it.slotThai)+'</b><span>เติมคำนี้ลงในช่องว่าง</span>';
   }else $('#prodSlot').hidden=true;
@@ -4787,9 +5152,13 @@ function renderProd(it){
   $('#playCount').textContent=(qi+1)+'/'+Q.length;
   $('#btnSkip').style.visibility='visible';
   $('#btnSelfPass').style.visibility='hidden';
-  const r=S.core[it.hanzi];
+  const r=(it.store==='srx'?S.srx:S.core)[it.hanzi];
   $('#prodLab').textContent += r ? ('  ·  ทบทวนรอบที่ '+((r.tries||0)+1)) : '  ·  คำใหม่';
   micState('');
+  if(COACH.active){                            // โค้ช: เริ่มจับเวลาตอบตอนโจทย์ขึ้นจอ
+    latT0=Date.now(); latT1=0; latPress=0; latFirst=true;
+    if(coachBlockIs('B2') && S.settings.coachStrict) coachRingStart(); else coachRingHide();
+  }else{ latT0=0; latFirst=false; coachRingHide(); }
   if(S.settings.autoListen) armMic();        // ห้ามเล่นเสียงต้นแบบก่อน ไม่งั้นเฉลยตั้งแต่ยังไม่พูด
 }
 function revealProd(it, heardNorm){
@@ -4839,6 +5208,7 @@ function startProdNew(){
   startProd(q,'นึกเอง');
 }
 function finishProd(){
+  if(COACH.active) return coachNextBlock();     // อยู่ในโหมดโค้ช: ไม่เปิดหน้าสรุปของโหมดนี้
   const ms=Date.now()-t0; S.stats.ms+=ms;
   const scores=Q.map((_,i)=>bestPer[i]||0);
   const avg=Math.round(scores.reduce((a,b)=>a+b,0)/Math.max(1,scores.length));
@@ -5003,6 +5373,772 @@ function manual(st){
 }
 
 /* ============================================================
+   10.9 โหมดโค้ช 25 นาที — ปุ่มเดียว จัด session ให้อัตโนมัติเป็นบล็อกสลับกัน
+   ใช้เอนจิ้นเดิมของแต่ละโหมด แล้วดักที่ finishX ให้เด้งกลับมาที่ตัวคุมนี้
+   ============================================================ */
+const COACH_BLOCKS={
+  B0:{icon:'🌙', name:'ทวนข้อที่พลาดเมื่อวาน', sr:true},
+  B1:{icon:'🎧', name:'วอร์มอัพ พูดตามให้ทัน', sr:true},
+  B2:{icon:'🧠', name:'นึกเองแบบสลับ', sr:true},
+  B3:{icon:'👂', name:'ฟังออกไหม', sr:false},
+  B4:{icon:'🎵', name:'เจาะวรรณยุกต์', sr:false},
+  B5:{icon:'🗣️', name:'ภารกิจสั้น', sr:true}
+};
+// [บล็อก, นาที] — รวมกันได้ 25 / 10 พอดี
+const COACH_PLAN={
+  25:[['B0',2],['B1',3],['B2',9],['B3',5],['B4',3],['B5',3]],
+  10:[['B0',1],['B1',1.5],['B2',4],['B3',2],['B4',1],['B5',0.5]]
+};
+const COACH_RUN={};            // บล็อกไหนมีตัวรันแล้วค่อยเล่นได้ ที่ยังไม่มีจะถูกข้าม
+const COACH={active:false, plan:[], bi:-1, sessT0:0, blockT0:0, blockEnd:0, minutes:25, items:[], tick:null, queueB2:[]};
+
+const mmss = ms => { const t=Math.max(0,Math.round(ms/1000)); return Math.floor(t/60)+':'+String(t%60).padStart(2,'0'); };
+function coachTimeUp(){ return !!(COACH.active && COACH.blockEnd && Date.now()>=COACH.blockEnd); }
+function coachBlock(){ return COACH.active ? COACH.plan[COACH.bi] : null; }
+function coachDay(d){
+  d=d||today();
+  const day=S.coach.days[d]||(S.coach.days[d]={rounds:0, partial:0, min:0, lat:[], lis:[0,0]});
+  day.lat=day.lat||[]; day.lis=day.lis||[0,0];
+  return day;
+}
+/* บันทึกทุกข้อในโหมดโค้ชลง log ให้ดาวน์โหลดไปวิเคราะห์ได้ */
+function coachLog(e){
+  const blk=coachBlock();
+  const row=Object.assign({t:'coach', b:blk?blk.b:'', ts:Date.now()}, e);
+  COACH.items.push(row);
+  S.log.push(row);
+  if(S.log.length>2000) S.log=S.log.slice(-1500);
+}
+
+async function coachStart(minutes){
+  if(COACH.active) return;
+  if(S.coach.breakUntil && Date.now()<S.coach.breakUntil){
+    toast('ยังอยู่ในช่วงพัก','อีก '+mmss(S.coach.breakUntil-Date.now())+' ค่อยเริ่มรอบใหม่',2200); return;
+  }
+  // ปลดล็อกเสียงอ่านบน iOS ต้องเกิดตอนแตะเท่านั้น (ก่อน await ใดๆ)
+  try{ if(window.speechSynthesis){ const u=new SpeechSynthesisUtterance(' '); u.volume=0; speechSynthesis.speak(u); } }catch(e){}
+  minutes = minutes===10 ? 10 : 25;
+  if(HAS_SR && !manualMode && micPerm!=='granted'){
+    const st=await ensureMic();
+    if(st==='denied'){ openM('mMic'); return; }
+  }
+  S.settings.coachMin=minutes;
+  COACH.active=true; COACH.minutes=minutes; COACH.sessT0=Date.now(); COACH.bi=-1; COACH.items=[];
+  COACH.plan=COACH_PLAN[minutes].map(x=>({b:x[0], ms:Math.round(x[1]*60000), used:0, skipped:false}));
+  COACH.queueB0=buildSleepQueue();
+  const b0=new Set(COACH.queueB0.map(x=>norm(x.hanzi,false)));
+  COACH.queueB2=buildCoachQueue(minutes===10?14:30).filter(x=>!b0.has(norm(x.hanzi,false)));
+  const d=today(); if(!S.stats.days.includes(d)) S.stats.days.push(d);
+  requestWake();
+  $('#coachBar').hidden=false;
+  clearInterval(COACH.tick); COACH.tick=setInterval(coachHud,1000);
+  dlog('coach','เริ่ม '+minutes+' นาที · แผน '+COACH.plan.map(p=>p.b).join(' ')+' · คิว B2 '+COACH.queueB2.length+' ข้อ');
+  save();
+  coachNextBlock();
+}
+function coachHud(){
+  if(!COACH.active) return;
+  const left=COACH.minutes*60000-(Date.now()-COACH.sessT0);
+  const blk=coachBlock(), info=blk?COACH_BLOCKS[blk.b]:null;
+  $('#cbBlock').textContent='🎯 '+(COACH.bi+1)+'/'+COACH.plan.length+(info?' '+info.icon+' '+info.name:'');
+  $('#cbTime').textContent=mmss(left);
+}
+/* ปิดของที่โหมดก่อนหน้าเปิดค้างไว้ ก่อนเริ่มบล็อกถัดไป */
+function coachHaltTone(){
+  if(!toneRec) return;
+  toneRec=false; clearInterval(toneTimer); toneTimer=null;
+  try{ toneStream.getTracks().forEach(t=>t.stop()); }catch(e){}
+  try{ toneCtx.close(); }catch(e){}
+  toneStream=null; toneCtx=null;
+}
+function coachCleanupMode(){
+  playing=false; abortRec(); try{ speechSynthesis.cancel(); }catch(e){}
+  latT0=0; latFirst=false; coachRingHide();
+  coachHaltTone();
+  if(typeof lisCleanup==='function') lisCleanup();
+  hideAllBoxes(); $('#talkbox').hidden=true; $('#prompt').hidden=false;
+  MODE='lesson';
+}
+function coachNextBlock(){
+  if(!COACH.active) return;
+  coachCleanupMode();
+  const prev=coachBlock();
+  if(prev && COACH.blockT0){ prev.used+=Date.now()-COACH.blockT0; }
+  COACH.blockT0=0; COACH.blockEnd=0;
+  COACH.bi++;
+  if(COACH.bi>=COACH.plan.length) return coachFinish(true);
+  const blk=COACH.plan[COACH.bi], info=COACH_BLOCKS[blk.b];
+  const skip=why=>{ blk.skipped=why; dlog('coach','ข้าม '+blk.b+' — '+why); return coachNextBlock(); };
+  if(!COACH_RUN[blk.b]) return skip('ยังไม่มีบล็อกนี้');
+  if(info.sr && (!HAS_SR || manualMode)) return skip('เครื่องนี้ไม่มีระบบตรวจเสียง');
+  if(info.sr && !navigator.onLine){ toast('ออฟไลน์อยู่','ข้าม '+info.name+' เพราะตรวจเสียงต้องใช้เน็ต',2200); return skip('ออฟไลน์'); }
+  COACH.blockT0=Date.now(); COACH.blockEnd=COACH.blockT0+blk.ms;
+  coachHud();
+  const ok=COACH_RUN[blk.b](blk);
+  if(ok===false) return skip('ไม่มีข้อ');
+  dlog('coach','บล็อก '+(COACH.bi+1)+'/'+COACH.plan.length+' '+blk.b+' '+info.name+' (งบ '+Math.round(blk.ms/1000)+' วิ)');
+  toast(info.icon+' '+info.name, 'บล็อก '+(COACH.bi+1)+'/'+COACH.plan.length+' · '+mmss(blk.ms), 1500);
+}
+function coachFinish(complete){
+  clearInterval(COACH.tick); COACH.tick=null;
+  const ms=Date.now()-COACH.sessT0;
+  S.stats.ms+=ms;
+  const day=coachDay();
+  if(complete) day.rounds=(day.rounds||0)+1; else day.partial=(day.partial||0)+1;
+  day.min=Math.round(((day.min||0)+ms/60000)*10)/10;
+  S.coach.sessions=(S.coach.sessions||0)+1;
+  S.coach.last={ts:Date.now(), complete:complete, ms:ms, minutes:COACH.minutes,
+    blocks:COACH.plan.map(p=>({b:p.b, used:p.used, skipped:p.skipped||false}))};
+  COACH.active=false; COACH.blockEnd=0;
+  releaseWake(); $('#coachBar').hidden=true;
+  save(true);
+  dlog('coach',(complete?'จบครบรอบ':'ออกกลางทาง')+' · '+mmss(ms)+' · '+COACH.items.length+' ข้อ');
+  if(complete) renderCoachDone(ms);
+  else { screenStack=['scr-home']; renderHome(); show('scr-home',false); }
+}
+function coachAskQuit(){
+  if(!confirm('ออกจากโค้ชตอนนี้?\n\nผลที่ทำไปแล้วจะถูกบันทึก แต่นับเป็นรอบไม่ครบ')) return;
+  coachCleanupMode();
+  const blk=coachBlock(); if(blk && COACH.blockT0) blk.used+=Date.now()-COACH.blockT0;
+  coachFinish(false);
+  toast('บันทึกแล้ว','นับเป็นรอบไม่ครบ',1600);
+}
+
+/* ---------- การ์ดหน้าแรก ---------- */
+function coachStreak(){
+  const has=d=>{ const x=S.coach.days[d]; return !!(x && x.rounds>0); };
+  const dt=new Date(); let n=0;
+  if(!has(today())) dt.setDate(dt.getDate()-1);       // วันนี้ยังไม่ได้ทำ ไม่ถือว่าขาด นับถึงเมื่อวาน
+  while(has(dt.toISOString().slice(0,10))){ n++; dt.setDate(dt.getDate()-1); }
+  return n;
+}
+function coachDueCount(){
+  const n=Date.now();
+  let c=coreDue().length;
+  for(const k in S.srx){ const r=S.srx[k]; if(r && r.next<=n && !String(r.src||'').startsWith('L:')) c++; }
+  return c;
+}
+function renderCoachCard(){
+  const day=S.coach.days[today()]||{};
+  const goal=S.settings.coachGoal||2, streak=coachStreak();
+  $('#ccStreak').textContent= streak ? '🔥 '+streak+' วัน' : '';
+  $('#ccLine').textContent='🍅 '+(day.rounds||0)+' / '+goal+' รอบ   ·   ถึงกำหนดทวน '+coachDueCount()+' ข้อ';
+  const resting=S.coach.breakUntil && Date.now()<S.coach.breakUntil;
+  $('#btnCoach25').textContent = resting ? '☕ พักอยู่ อีก '+mmss(S.coach.breakUntil-Date.now()) : '▶ เริ่ม 25 นาที';
+  $('#btnCoach25').disabled=!!resting; $('#btnCoach10').disabled=!!resting;
+  if(resting && !breakT) breakT=setInterval(breakTick,1000);
+  const bed=bedtimeReady();
+  $('#btnSleep').hidden=!bed;
+  if(bed) $('#btnSleep').textContent='🌙 ทวนก่อนนอน ('+S.coach.sleep.items.length+' ข้อ · 2 นาที)';
+}
+
+/* ---------- สรุปหลังจบรอบ ---------- */
+const dayKey = off => { const d=new Date(); d.setDate(d.getDate()+off); return d.toISOString().slice(0,10); };
+const avgOf = a => a&&a.length ? a.reduce((x,y)=>x+y,0)/a.length : null;
+function latWindow(from, to){                     // รวมเวลาตอบของช่วงวัน (off เป็นลบ = ย้อนหลัง)
+  let all=[];
+  for(let o=from;o<=to;o++){ const d=S.coach.days[dayKey(o)]; if(d&&d.lat) all=all.concat(d.lat); }
+  return all;
+}
+/* ข้อที่ยังอ่อนที่สุดของวันนี้: ไม่ผ่านก่อน แล้วค่อยช้าสุด — เฉพาะข้อที่ถามซ้ำได้ใน B0 */
+function coachResolve(h){
+  if(CORE_BY_HANZI[h]) return coreItem(CORE_BY_HANZI[h]);
+  if(S.srx[h]) return srxItem(h, S.srx[h]);
+  if(S.words[h]) return srxItem(h, {src:'mist'});
+  return null;
+}
+function coachWeakToday(n){
+  const t0=new Date(); t0.setHours(0,0,0,0);
+  const by={};
+  S.log.forEach(x=>{
+    if(x.t!=='coach' || x.ts<t0.getTime() || (x.b!=='B0' && x.b!=='B2') || !x.h) return;
+    const r=by[x.h]||(by[x.h]={h:x.h, st:3, lat:0, n:0});
+    r.st=Math.min(r.st, x.st||0); if(x.lat) r.lat=Math.max(r.lat, x.lat); r.n++;
+  });
+  return Object.values(by)
+    .filter(r=>r.st<3 || r.lat>3000)
+    .sort((a,b)=>(a.st-b.st) || (b.lat-a.lat))
+    .map(r=>Object.assign(r, {it:coachResolve(r.h)}))
+    .filter(r=>r.it).slice(0, n||5);
+}
+function renderCoachDone(ms){
+  const day=coachDay(), goal=S.settings.coachGoal||2, streak=coachStreak();
+  const reached=day.rounds>=goal;
+  $('#cdIcon').textContent = reached ? '🏆' : '🍅';
+  $('#cdTitle').textContent = reached ? 'ครบเป้าวันนี้แล้ว!' : 'จบรอบแล้ว';
+  $('#cdSub').textContent='ใช้เวลา '+mmss(ms)+' · พูดออกเสียงไป '+COACH.items.filter(x=>x.b!=='B3'&&x.b!=='B4').length+' ครั้ง';
+  // เวลาตอบ: วันนี้เทียบกับ 7 วันก่อนหน้า
+  const lt=day.lat||[], la=avgOf(lt), prev=avgOf(latWindow(-7,-1));
+  const fast=lt.length ? Math.round(lt.filter(x=>x<=3000).length/lt.length*100) : null;
+  let latHtml='—';
+  if(la!==null){
+    latHtml=(la/1000).toFixed(1)+' วิ';
+    if(prev!==null){
+      const d=(la-prev)/1000;
+      latHtml+=' <span class="'+(d<=0?'trend-down':'trend-up')+'">'+(d<=0?'↓ เร็วขึ้น ':'↑ ช้าลง ')+Math.abs(d).toFixed(1)+' วิ</span>';
+    }
+  }
+  // ฟัง: ความแม่นรอบนี้ + ความเร็วปัจจุบัน
+  const lis=COACH.items.filter(x=>x.b==='B3'), lisOk=lis.filter(x=>x.st>=2).length;
+  // วรรณยุกต์ที่พลาดบ่อยสุด (รอบนี้ ถ้าไม่มีดูจากชุดที่ทำได้แย่สุด)
+  const miss={}; COACH.items.filter(x=>x.b==='B4' && x.st<3 && x.tone).forEach(x=>{ miss[x.tone]=(miss[x.tone]||0)+1; });
+  const worstTone=Object.keys(miss).sort((a,b)=>miss[b]-miss[a])[0];
+  let toneTxt='—';
+  if(worstTone) toneTxt=TONE_NAME[worstTone]+' (พลาด '+miss[worstTone]+')';
+  else if(S.tone && Object.keys(S.tone).length){
+    const w=TONE_SETS.filter(x=>S.tone[x.id]).sort((a,b)=>S.tone[a.id].best/a.items.length-S.tone[b.id].best/b.items.length)[0];
+    if(w) toneTxt=w.title+' ถูก '+S.tone[w.id].best+'/'+w.items.length;
+  }
+  $('#cdStats').innerHTML=
+    '<div class="cdrow"><span>✅ รอบวันนี้</span><b>'+day.rounds+' / '+goal+' 🍅</b></div>'+
+    '<div class="cdrow"><span>🔥 ทำต่อเนื่อง</span><b>'+streak+' วัน</b></div>'+
+    '<div class="cdrow"><span>⏱ เวลาตอบเฉลี่ยวันนี้</span><b>'+latHtml+'</b></div>'+
+    '<div class="cdrow"><span>⚡ ตอบได้ใน 3 วินาที</span><b>'+(fast===null?'—':fast+'%')+'</b></div>'+
+    '<div class="cdrow"><span>👂 ฟังถูก (รอบนี้)</span><b>'+(lis.length?lisOk+'/'+lis.length:'—')+' · '+S.listen.rate.toFixed(1)+'×</b></div>'+
+    '<div class="cdrow"><span>🎵 วรรณยุกต์ที่ต้องเจาะ</span><b>'+esc(toneTxt)+'</b></div>';
+  // 5 ข้อที่อ่อนที่สุด -> ตั้งเป็นทวนก่อนนอน
+  const weak=coachWeakToday(5);
+  $('#cdWeakCard').hidden=!weak.length;
+  $('#cdWeak').innerHTML=weak.map(w=>
+    '<button class="cdweak" data-h="'+esc(w.h)+'"><span class="zh">'+esc(w.h)+'</span>'+
+    '<span class="info"><b>'+esc(w.it.thaiRead||'')+'</b><span>'+esc(shortMean(w.it.meaning||w.it.frameThai||''))+'</span></span>'+
+    '<span class="why">'+(w.st<2?'✗ ยังไม่ผ่าน':w.st<3?'★★ ยังไม่คล่อง':'⏱ '+(w.lat/1000).toFixed(1)+' วิ')+'</span></button>').join('');
+  $('#btnSetSleep').disabled=false;
+  $('#btnSetSleep').textContent = (S.coach.sleep.d===today() && S.coach.sleep.items.length)
+    ? '🌙 ตั้งแล้ว '+S.coach.sleep.items.length+' ข้อ · แตะเพื่ออัปเดต' : '🌙 ตั้งเป็นทวนก่อนนอน';
+  coachWeakCache=weak;
+  $('#cdBreak').hidden=true; $('#btnCoachBreak').hidden=false; $('#btnCoachAgain').hidden=true;
+  screenStack=['scr-home','scr-coachdone']; show('scr-coachdone',false);
+  renderHome();
+}
+let coachWeakCache=[];
+$('#cdWeak').addEventListener('click', e=>{
+  const b=e.target.closest('.cdweak'); if(!b) return;
+  const w=coachWeakCache.find(x=>x.h===b.dataset.h);
+  speak(w && w.it ? sayText(w.it) : b.dataset.h);
+});
+$('#btnSetSleep').onclick=()=>{
+  if(!coachWeakCache.length) return;
+  S.coach.sleep={d:today(), items:coachWeakCache.map(x=>x.h), used:'', bed:''};
+  save(true);
+  $('#btnSetSleep').textContent='🌙 ตั้งแล้ว — '+S.coach.sleep.items.length+' ข้อ';
+  toast('ตั้งเป็นทวนก่อนนอนแล้ว','หลัง 2 ทุ่มจะมีปุ่มที่หน้าแรก พรุ่งนี้โค้ชจะเริ่มจากข้อเหล่านี้',2600);
+  dlog('coach','ตั้งทวนก่อนนอน: '+S.coach.sleep.items.join(' '));
+};
+
+/* ---------- พัก 5 นาที (diffuse mode) — ห้ามเริ่มรอบใหม่ทันที ---------- */
+const BREAK_MS=5*60000;
+let breakT=null;
+function breakTick(){
+  const left=(S.coach.breakUntil||0)-Date.now();
+  if($('#scr-coachdone').classList.contains('on')){
+    $('#cdBreakTime').textContent=mmss(left);
+    if(left<=0){ $('#cdBreak').hidden=true; $('#btnCoachAgain').hidden=false; $('#btnCoachBreak').hidden=true; }
+  }
+  if($('#scr-home').classList.contains('on')) renderCoachCard();
+  if(left<=0){ clearInterval(breakT); breakT=null; S.coach.breakUntil=0; save(); vib([40,60,40]); toast('พักครบแล้ว','พร้อมเริ่มรอบใหม่',2000); renderCoachCard(); }
+}
+$('#btnCoachBreak').onclick=()=>{
+  S.coach.breakUntil=Date.now()+BREAK_MS; save();
+  $('#cdBreak').hidden=false; $('#btnCoachBreak').hidden=true; $('#btnCoachAgain').hidden=true;
+  clearInterval(breakT); breakT=setInterval(breakTick,1000); breakTick();
+  dlog('coach','เริ่มพัก 5 นาที');
+};
+$('#btnCoachAgain').onclick=()=>coachStart(S.settings.coachMin||25);
+
+/* ---------- ทวนก่อนนอน / B0 ---------- */
+function sleepItems(list){ return (list||[]).map(coachResolve).filter(Boolean).slice(0,5); }
+/* B0: ลิสต์ทวนก่อนนอนของวันก่อน (ใช้ได้ครั้งเดียว) ถ้าไม่ได้ตั้งไว้ ใช้ข้อที่อ่อนสุดของเมื่อวานจาก log */
+function buildSleepQueue(){
+  const sl=S.coach.sleep||{};
+  if(sl.d && sl.d<today() && sl.used!==today() && (sl.items||[]).length) return sleepItems(sl.items);
+  const y0=new Date(); y0.setHours(0,0,0,0); const t1=y0.getTime(), t0=t1-86400000;
+  const by={};
+  S.log.forEach(x=>{
+    if(x.t!=='coach' || x.ts<t0 || x.ts>=t1 || (x.b!=='B0'&&x.b!=='B2') || !x.h) return;
+    const r=by[x.h]||(by[x.h]={h:x.h, st:3, lat:0}); r.st=Math.min(r.st,x.st||0); if(x.lat) r.lat=Math.max(r.lat,x.lat);
+  });
+  const weak=Object.values(by).filter(r=>r.st<3||r.lat>3000).sort((a,b)=>(a.st-b.st)||(b.lat-a.lat)).map(r=>r.h);
+  return sleepItems(weak);
+}
+COACH_RUN.B0=blk=>{
+  const q=(COACH.queueB0||[]).slice();
+  if(!q.length) return false;
+  if(S.coach.sleep && S.coach.sleep.d && S.coach.sleep.d<today()) S.coach.sleep.used=today();
+  startProd(q, 'โค้ช · ทวนข้อเมื่อวาน');
+  return true;
+};
+function bedtimeReady(){
+  const sl=S.coach.sleep||{};
+  return new Date().getHours()>=20 && sl.d===today() && (sl.items||[]).length>0 && sl.bed!==today();
+}
+$('#btnSleep').onclick=()=>{
+  const q=sleepItems(S.coach.sleep.items);
+  if(!q.length){ toast('ไม่มีข้อให้ทวน','',1400); return; }
+  S.coach.sleep.bed=today(); save();
+  dlog('coach','ทวนก่อนนอน '+q.length+' ข้อ');
+  startProd(q, 'ทวนก่อนนอน');
+};
+
+/* ---------- การ์ดสถิติ ---------- */
+function renderCoachStats(){
+  const goal=S.settings.coachGoal||2, days=[];
+  for(let o=-13;o<=0;o++){ const k=dayKey(o); days.push({k:k, d:S.coach.days[k]||null}); }
+  const mx=Math.max(goal, ...days.map(x=>(x.d&&x.d.rounds)||0));
+  $('#sCoachBars').innerHTML=days.map(x=>{
+    const r=(x.d&&x.d.rounds)||0;
+    return '<div title="'+x.k+' · '+r+' รอบ"><i class="'+(r>=goal?'goal':r?'':'zero')+'" style="height:'+(r? Math.max(8, r/mx*100) : 2)+'%"></i></div>';
+  }).join('');
+  $('#sCoachLab').innerHTML=days.map((x,i)=>'<span>'+(i%2===1||i===13 ? +x.k.slice(8) : '')+'</span>').join('');
+  // เส้นเวลาตอบเฉลี่ยต่อวัน
+  const cv=$('#sLatCanvas'), g=cv.getContext('2d'), W=cv.width, H=cv.height;
+  g.clearRect(0,0,W,H);
+  const pts=days.map((x,i)=>{ const a=avgOf(x.d&&x.d.lat); return a===null?null:{i:i, v:a/1000}; }).filter(Boolean);
+  const vmax=Math.max(6, ...pts.map(p=>p.v));
+  const X=i=>20+i*(W-40)/13, Y=v=>H-24-(v/vmax)*(H-40);
+  g.strokeStyle='#CBD1C8'; g.lineWidth=1; g.setLineDash([6,6]);
+  g.beginPath(); g.moveTo(20,Y(3)); g.lineTo(W-20,Y(3)); g.stroke(); g.setLineDash([]);
+  g.fillStyle='#5C6660'; g.font='20px sans-serif'; g.fillText('3 วิ', W-62, Y(3)-6);
+  if(pts.length){
+    g.strokeStyle='#1B6F8A'; g.lineWidth=4; g.beginPath();
+    pts.forEach((p,k)=>{ if(k) g.lineTo(X(p.i),Y(p.v)); else g.moveTo(X(p.i),Y(p.v)); }); g.stroke();
+    g.fillStyle='#1B6F8A'; pts.forEach(p=>{ g.beginPath(); g.arc(X(p.i),Y(p.v),6,0,Math.PI*2); g.fill(); });
+  }else{ g.fillStyle='#5C6660'; g.fillText('ยังไม่มีข้อมูล — เริ่มโค้ชแล้วเส้นจะขึ้นเอง', 24, H/2); }
+  // ฟัง 7 วัน
+  let ok=0, tot=0; for(let o=-6;o<=0;o++){ const d=S.coach.days[dayKey(o)]; if(d&&d.lis){ ok+=d.lis[0]||0; tot+=d.lis[1]||0; } }
+  const all7=latWindow(-6,0), fast7=all7.length? Math.round(all7.filter(x=>x<=3000).length/all7.length*100) : null;
+  $('#sCoachText').innerHTML=
+    '<div class="cdrow"><span>🔥 ทำต่อเนื่อง</span><b>'+coachStreak()+' วัน</b></div>'+
+    '<div class="cdrow"><span>👂 ความเร็วการฟังตอนนี้</span><b>'+S.listen.rate.toFixed(1)+'×</b></div>'+
+    '<div class="cdrow"><span>👂 ฟังถูก 7 วัน</span><b>'+(tot? Math.round(ok/tot*100)+'% ('+ok+'/'+tot+')' : '—')+'</b></div>'+
+    '<div class="cdrow"><span>⚡ ตอบได้ใน 3 วิ (7 วัน)</span><b>'+(fast7===null?'—':fast7+'%')+'</b></div>';
+}
+
+$('#btnCoachHome').onclick=()=>{ screenStack=['scr-home']; renderHome(); show('scr-home',false); };
+$('#btnCoach25').onclick=()=>coachStart(25);
+$('#btnCoach10').onclick=()=>coachStart(10);
+
+/* ---------- จับเวลาตอบ (กฎ 3 วินาที) ---------- */
+let latT0=0, latT1=0, latPress=0, latFirst=false, ringT=null;
+function coachBlockIs(b){ const k=coachBlock(); return !!k && k.b===b; }
+function coachLatency(){
+  if(!latT0) return null;
+  if(latT1) return Math.max(0, latT1-latT0);                 // ได้ยินตัวจีนตัวแรก
+  if(latPress) return Math.max(0, latPress+400-latT0);       // ไม่มีผลระหว่างพูด ใช้เวลากดไมค์ + 400ms
+  return null;
+}
+function coachRingStart(){
+  const el=$('#latRing'); el.hidden=false; el.className='latring';
+  clearInterval(ringT);
+  const t0=latT0;
+  const upd=()=>{
+    const e=Date.now()-t0;
+    $('#latFg').style.strokeDashoffset=String(Math.min(100, 100*e/3000));
+    $('#latNum').textContent = e<3000 ? String(Math.ceil((3000-e)/1000)) : '⏱';
+    if(e>=3000){ el.classList.add('late'); }
+    if(e>=9000){ clearInterval(ringT); ringT=null; }
+  };
+  upd(); ringT=setInterval(upd,100);
+}
+function coachRingStop(lat){
+  clearInterval(ringT); ringT=null;
+  const el=$('#latRing'); if(!el || el.hidden) return;
+  el.classList.toggle('late', lat>3000); el.classList.add('done');
+  $('#latNum').textContent=(lat/1000).toFixed(1);
+}
+function coachRingHide(){ clearInterval(ringT); ringT=null; const el=$('#latRing'); if(el) el.hidden=true; }
+
+/* ---------- ตารางทบทวนรวม: สร้างข้อกลับจาก src ที่เก็บไว้ ---------- */
+function srxItem(h, r){
+  const src=String((r&&r.src)||'');
+  if(src.indexOf('pat:')===0){
+    const i=+src.slice(4), pt=PATTERNS[i]; if(!pt) return null;
+    return Object.assign({kind:'line', isPattern:true}, buildPattern(pt, (r&&r.slot)||''), {src:src, store:'srx'});
+  }
+  if(src.indexOf('trip:')===0){
+    const L=getLevel(+src.slice(5)); if(!L) return null;
+    const v=(L.vocab||[]).concat(L.dialogue||[]).find(x=>x.hanzi===h);
+    return v ? Object.assign({kind:'core'}, v, {src:src, store:'srx'}) : null;
+  }
+  if(src==='mist'){
+    const w=S.words[h]; if(!w) return null;
+    return {hanzi:h, pinyin:w.py, thaiRead:w.th, meaning:w.mean, kind:'core', src:'mist', store:'srx'};
+  }
+  return null;                                  // 'L:' = ข้อฟัง ใช้ในบล็อก B3 เท่านั้น
+}
+function coreItem(w){ return Object.assign({kind:'core', src:'core:'+(w.group||''), store:'core'}, w); }
+const avgLat = r => { const a=(r&&r.lat)||[]; return a.length ? a.reduce((x,y)=>x+y,0)/a.length : 0; };
+
+/* ---------- สลับ: ห้ามสองข้อติดกันมาจาก src เดียวกัน และสลับ นึกคำ / ประกอบประโยค (เท่าที่ทำได้) ---------- */
+function coachInterleave(items){
+  const pool=items.slice(), out=[];
+  const typ=it=>it.isPattern?'pat':'word';
+  const cnt={}; pool.forEach(it=>{ cnt[it.src]=(cnt[it.src]||0)+1; });
+  while(pool.length){
+    const last=out[out.length-1], rem=pool.length;
+    // src ที่เหลือเยอะจนเกินครึ่งของที่เหลือ ต้องเริ่มวางสลับตั้งแต่ตอนนี้ ไม่งั้นท้ายคิวจะติดกันแน่
+    let heavy=null, hc=0;
+    for(const k in cnt){ if(cnt[k]>hc && (!last || k!==last.src)){ hc=cnt[k]; heavy=k; } }
+    let idx=-1;
+    if(heavy!==null && hc*2>=rem) idx=pool.findIndex(it=>it.src===heavy);
+    if(idx<0 && last){
+      idx=pool.findIndex(it=>it.src!==last.src && typ(it)!==typ(last));   // สลับ นึกคำ / ประกอบประโยค
+      if(idx<0) idx=pool.findIndex(it=>it.src!==last.src);
+    }
+    if(idx<0) idx=0;                                                      // ทำไม่ได้แล้วจริงๆ ค่อยยอมให้ติดกัน
+    const it=pool.splice(idx,1)[0]; cnt[it.src]--; out.push(it);
+  }
+  return out;
+}
+
+/* ---------- คิวบล็อก B2: ถึงกำหนด ~60% · ยังช้า/ยังอ่อน ~20% · ของใหม่ ~20% ---------- */
+function buildCoachQueue(nMax){
+  const n=nMax||30, now=Date.now();
+  // 1) ถึงกำหนด — CORE100 + ตารางรวม เรียงตามเลยกำหนดมากสุดก่อน
+  const due=[];
+  CORE100.forEach(w=>{ const r=S.core[w.hanzi]; if(r && r.next<=now) due.push({it:coreItem(w), over:now-r.next}); });
+  Object.keys(S.srx).forEach(h=>{
+    const r=S.srx[h]; if(!r || r.next>now) return;
+    const it=srxItem(h,r); if(it) due.push({it:it, over:now-r.next});
+  });
+  due.sort((a,b)=>b.over-a.over);
+  // 2) ยังช้า (เฉลี่ยเกิน 3 วิ) หรือพลาดบ่อย
+  const weak=[];
+  CORE100.forEach(w=>{ const r=S.core[w.hanzi]; const a=avgLat(r); if(r && r.next>now && a>3000) weak.push({it:coreItem(w), k:a}); });
+  Object.keys(S.srx).forEach(h=>{
+    const r=S.srx[h]; const a=avgLat(r); if(!r || r.next<=now || a<=3000) return;
+    const it=srxItem(h,r); if(it) weak.push({it:it, k:a});
+  });
+  Object.keys(S.mistakes).forEach(h=>{
+    if(CORE_BY_HANZI[h] || S.srx[h] || (S.mistakes[h]||0)<2) return;
+    const it=srxItem(h,{src:'mist'}); if(it) weak.push({it:it, k:3000+S.mistakes[h]*500});
+  });
+  weak.sort((a,b)=>b.k-a.k);
+  // 3) ของใหม่ — โควตา CORE100 ก่อน แทรกประโยคจากแพตเทิร์นที่ปลดล็อกแล้ว แล้วค่อยคำจากด่านทริปที่เคยเล่น
+  const coreNew=coreNewPool().slice(0, coreQuotaLeft()).map(coreItem);
+  const patNew=[];
+  PATTERNS.forEach((pt,i)=>{
+    if(!patReady(pt)) return;
+    const slots=(pt.slots&&pt.slots.length)? pt.slots.slice() : [''];
+    slots.sort(()=>Math.random()-0.5);
+    for(const sl of slots){
+      const it=Object.assign({kind:'line', isPattern:true}, buildPattern(pt, sl), {src:'pat:'+i, store:'srx'});
+      if(!S.srx[it.hanzi]){ patNew.push(it); break; }
+    }
+  });
+  const tripNew=[];
+  TRIP.levels.forEach(L=>{
+    if(!S.progress[L.id]) return;                 // เฉพาะด่านที่เคยเล่นแล้ว
+    (L.vocab||[]).forEach(v=>{
+      if(CORE_BY_HANZI[v.hanzi] || S.srx[v.hanzi]) return;
+      tripNew.push(Object.assign({kind:'core'}, v, {src:'trip:'+L.id, store:'srx'}));
+    });
+  });
+  tripNew.sort(()=>Math.random()-0.5);
+  const fresh=[];
+  let pi=0;
+  coreNew.forEach((it,i)=>{ fresh.push(it); if(i%2===1 && pi<patNew.length) fresh.push(patNew[pi++]); });
+  while(pi<patNew.length) fresh.push(patNew[pi++]);
+  tripNew.forEach(it=>fresh.push(it));
+
+  const pick=[], seen=new Set();
+  const add=(arr,k)=>{
+    for(const it of arr){
+      if(pick.length>=n || k<=0) break;
+      const key=norm(it.hanzi,false); if(!key || seen.has(key)) continue;
+      seen.add(key); pick.push(it); k--;
+    }
+  };
+  add(due.map(x=>x.it), Math.round(n*0.6));
+  add(weak.map(x=>x.it), Math.round(n*0.2));
+  add(fresh, n-pick.length);
+  add(due.map(x=>x.it), n-pick.length);         // ส่วนไหนขาด เติมจากส่วนที่เหลือ
+  add(weak.map(x=>x.it), n-pick.length);
+  return coachInterleave(pick);
+}
+COACH_RUN.B2=blk=>{
+  const q=COACH.queueB2.slice();
+  if(!q.length) return false;
+  startProd(q, 'โค้ช · นึกเองแบบสลับ');
+  return true;
+};
+
+/* ---------- B3 ฟังออกไหม — ไม่ใช้ไมค์ ใช้ได้ทุกเครื่อง ---------- */
+const PY_DIGIT={'零':'líng','一':'yī','二':'èr','两':'liǎng','三':'sān','四':'sì','五':'wǔ','六':'liù','七':'qī','八':'bā','九':'jiǔ','十':'shí','百':'bǎi','千':'qiān','万':'wàn'};
+/* ราคา: 2 หยวน พูดว่า 两块 · 200 = 两百 (numToHan จัดการแล้ว) */
+function priceToHan(n){ return n===2 ? '两' : numToHan(n); }
+function priceToPy(n){
+  const h=priceToHan(n), out=[];
+  for(let i=0;i<h.length;i++){
+    let p=PY_DIGIT[h[i]]||'';
+    if(h[i]==='一' && (h[i+1]==='百'||h[i+1]==='千')) p='yì';    // 一百 yì bǎi
+    out.push(p);
+  }
+  return out.join(' ');
+}
+const LIS_TPL=[
+  {zh:'一共{N}块', py:'yí gòng {N} kuài', th:'ทั้งหมด {N} หยวน'},
+  {zh:'{N}块钱',  py:'{N} kuài qián',   th:'{N} หยวน'},
+  {zh:'这个{N}块', py:'zhè ge {N} kuài', th:'อันนี้ {N} หยวน'},
+  {zh:'{N}块一斤', py:'{N} kuài yì jīn', th:'ครึ่งกิโล {N} หยวน'}
+];
+function lisPrice(){
+  const r=Math.random();
+  if(r<0.55) return 10+Math.floor(Math.random()*191);    // 10–200 ออกบ่อยสุด
+  if(r<0.72) return 1+Math.floor(Math.random()*9);
+  return 201+Math.floor(Math.random()*799);
+}
+/* ตัวลวงที่คนไทยสับสนจริง: สลับหลัก (58↔85) · 十五↔五十 · 四↔十 · 七↔一 · แล้วค่อยเลขใกล้เคียง */
+function lisDistract(n){
+  const s=String(n), conf=[], near=[];
+  const push=(arr,v)=>{ v=Math.round(v); if(v>=1 && v<=999 && v!==n && arr.indexOf(v)<0) arr.push(v); };
+  if(s.length>=2) push(conf, +s.split('').reverse().join(''));
+  if(s.length===3){ push(conf, +(s[0]+s[2]+s[1])); push(conf, +(s[1]+s[0]+s[2])); }
+  if(n>=11 && n<=19) push(conf, (n%10)*10);                 // 十五 -> 五十
+  if(n%10===0 && n>=20 && n<=90) push(conf, 10+n/10);       // 五十 -> 十五
+  if(n===4) push(conf,10); if(n===10) push(conf,4);
+  s.split('').forEach((d,i)=>{
+    const sub=to=>{ const t=s.split(''); t[i]=to; push(conf, +t.join('')); };
+    if(d==='4') sub('1'); if(d==='1') sub('4');             // 四 / 十 (四十五 vs 十五)
+    if(d==='7') sub('1'); if(d==='1'&&i>0) sub('7');         // 七 / 一
+  });
+  [10,-10,1,-1,100,-100,20,-20,5].forEach(k=>push(near, n+k));
+  conf.sort(()=>Math.random()-0.5);
+  const all=conf.concat(near.sort(()=>Math.random()-0.5));
+  const out=[]; for(const v of all){ if(out.length>=3) break; if(out.indexOf(v)<0) out.push(v); }
+  while(out.length<3){ const v=1+Math.floor(Math.random()*999); if(v!==n && out.indexOf(v)<0) out.push(v); }
+  return out;
+}
+function lisNumItem(){
+  const n=lisPrice(), t=LIS_TPL[Math.floor(Math.random()*LIS_TPL.length)];
+  return { kind:'num', id:'N'+n, n:n, scene:'ราคา',
+    zh:t.zh.replace('{N}', priceToHan(n)), py:t.py.replace('{N}', priceToPy(n)), th:t.th.replace('{N}', n),
+    q:'ราคาเท่าไหร่?', ans:String(n), choices:[n].concat(lisDistract(n)).map(String) };
+}
+function lisSentItem(L){
+  return Object.assign({kind:'sent', ans:L.choices[0]}, L, {choices:L.choices.slice()});
+}
+/* คิว: ข้อฟังที่เคยผิดและถึงกำหนดทวนก่อน แล้วสลับ ราคา / ประโยค */
+function lisBuildQueue(n){
+  const now=Date.now(), q=[], used=new Set();
+  Object.keys(S.srx).forEach(k=>{
+    const r=S.srx[k]; if(!r || String(r.src||'')!=='L:' || r.next>now) return;
+    const L=LISTEN.find(x=>'L:'+x.id===k); if(L){ q.push(lisSentItem(L)); used.add(L.id); }
+  });
+  const okIds=new Set((S.listen.hist||[]).slice(-60).filter(h=>h.ok && !h.as).map(h=>h.id));
+  const fresh=LISTEN.filter(L=>!used.has(L.id)).sort(()=>Math.random()-0.5);
+  fresh.sort((a,b)=>(okIds.has(a.id)?1:0)-(okIds.has(b.id)?1:0));   // ข้อที่ยังไม่เคยตอบถูกขึ้นก่อน
+  let fi=0;
+  while(q.length<n){
+    if(q.length%3===0) q.push(lisNumItem());
+    else if(fi<fresh.length) q.push(lisSentItem(fresh[fi++]));
+    else q.push(lisNumItem());
+  }
+  return q;
+}
+
+let LQ=[], lqi=0, lisReplays=0, lisDone=false, lisTimer=null, lisOk=0, lisN=0;
+function lisItem(){ return LQ[lqi]||null; }
+function lisCleanup(){ clearTimeout(lisTimer); lisTimer=null; }
+function lisStart(queue){
+  LQ=queue; lqi=0; lisOk=0; lisN=0;
+  show('scr-listen'); requestWake();
+  lisRender();
+}
+function lisRender(){
+  const it=lisItem(); if(!it){ lisFinish(); return; }
+  lisReplays=0; lisDone=false; clearTimeout(lisTimer);
+  const typed = it.kind==='num' && !!S.listen.typeMode;
+  $('#lisScene').textContent='👂 '+it.scene;
+  $('#lisQ').textContent=it.q;
+  $('#lisRate').textContent='ความเร็ว '+S.listen.rate.toFixed(1)+'×';
+  $('#lisBar').style.width=(lqi/Math.max(1,LQ.length)*100)+'%';
+  $('#lisCount').textContent=lisOk+'/'+lisN;
+  $('#lisType').classList.toggle('on', !!S.listen.typeMode);
+  $('#lisAns').hidden=true; $('#lisAns').innerHTML='';
+  $('#lisInputWrap').hidden=!typed;
+  $('#lisChoices').hidden=typed;
+  if(typed){ $('#lisInput').value=''; }
+  else{
+    const ch=it.choices.slice().sort(()=>Math.random()-0.5);
+    $('#lisChoices').innerHTML=ch.map(c=>'<button class="lisc'+(it.kind==='num'?' num':'')+'" data-c="'+esc(c)+'">'+esc(c)+'</button>').join('');
+  }
+  lisSay();
+}
+function lisSay(slow){
+  const it=lisItem(); if(!it) return;
+  const r = slow ? Math.max(0.5, S.listen.rate-0.2) : S.listen.rate;
+  speak(it.zh, null, r);
+}
+function lisAnswer(choice){
+  const it=lisItem(); if(!it || lisDone) return;
+  lisDone=true;
+  const ok = String(choice).trim()===String(it.ans);
+  const assisted = lisReplays>0;
+  const L=S.listen;
+  // ความเร็วปรับตามผู้ใช้: ถูกติดกัน 3 ข้อ +0.1 · ผิด −0.1 · ฟังซ้ำแล้วถูก ไม่ขยับ
+  if(ok && !assisted){ L.streak=(L.streak||0)+1; if(L.streak>=3){ L.rate=Math.min(1.3, Math.round((L.rate+0.1)*10)/10); L.streak=0; } }
+  else if(!ok){ L.rate=Math.max(0.7, Math.round((L.rate-0.1)*10)/10); L.streak=0; }
+  L.hist=(L.hist||[]).concat({id:it.id, ok:ok, as:assisted, r:L.rate, ts:Date.now()}).slice(-300);
+  const day=coachDay(); day.lis[1]++; if(ok) day.lis[0]++;
+  lisN++; if(ok) lisOk++;
+  // ข้อประโยคที่ผิดเข้าตารางทบทวนรวม · ที่อยู่ในตารางแล้วตอบถูกก็เลื่อนขั้น
+  if(it.kind==='sent'){
+    const key='L:'+it.id;
+    if(!ok || S.srx[key]){
+      const r=srsUpdate(key, ok?3:0, ok&&assisted, S.srx); r.src='L:';
+    }
+  }
+  if(COACH.active) coachLog({h:it.kind==='num'?('N:'+it.n):it.zh, st:ok?(assisted?2:3):0, lat:null, heard:String(choice), as:assisted});
+  save();
+  dlog('coach','B3 '+(it.kind==='num'?it.n:it.id)+' -> '+(ok?'ถูก':'ผิด (ตอบ '+choice+')')+(assisted?' [ฟังซ้ำ]':'')+' · ความเร็ว '+L.rate.toFixed(1));
+  // เฉลย: ทำสีปุ่ม + โชว์ตัวจีน/พินอิน/ความหมาย แล้วเล่นซ้ำ 1 รอบเพื่อผูกเสียงกับความหมาย
+  $$('#lisChoices .lisc').forEach(b=>{
+    b.disabled=true;
+    if(b.dataset.c===String(it.ans)) b.classList.add('ok');
+    else if(b.dataset.c===String(choice)) b.classList.add('bad');
+  });
+  $('#lisAns').hidden=false;
+  $('#lisAns').innerHTML=
+    '<div class="stars" style="color:var(--'+(ok?'ok':'bad')+')">'+(ok?(assisted?'✓ ถูก (ฟังซ้ำ)':'✓ ถูก'):'✗ คำตอบคือ '+esc(it.ans))+'</div>'+
+    '<div class="zh">'+esc(it.zh)+'</div><div class="py">'+pyHTML(it.py)+'</div><div class="th">'+esc(it.th)+'</div>';
+  $('#lisCount').textContent=lisOk+'/'+lisN;
+  vib(ok?[30,40,30]:140);
+  speak(it.zh, ()=>{ lisTimer=setTimeout(lisNext, ok?900:1600); }, L.rate);
+}
+function lisNext(){
+  clearTimeout(lisTimer); lisTimer=null;
+  lqi++;
+  if(lqi>=LQ.length || coachTimeUp()) lisFinish(); else lisRender();
+}
+function lisFinish(){
+  lisCleanup(); try{ speechSynthesis.cancel(); }catch(e){}
+  save();
+  if(COACH.active) return coachNextBlock();
+  screenStack=['scr-home']; renderHome(); show('scr-home',false);
+}
+$('#lisChoices').addEventListener('click', e=>{ const b=e.target.closest('.lisc'); if(b && !b.disabled) lisAnswer(b.dataset.c); });
+$('#lisSubmit').onclick=()=>{ const v=($('#lisInput').value||'').replace(/[^0-9]/g,''); if(v) lisAnswer(String(+v)); };
+$('#lisInput').addEventListener('keydown', e=>{ if(e.key==='Enter') $('#lisSubmit').click(); });
+$('#lisPlay').onclick=()=>{ const it=lisItem(); if(!it) return; if(!lisDone){ lisReplays++; lisSay(true); } else speak(it.zh, null, S.listen.rate); };
+$('#lisSkip').onclick=()=>{ if(!lisDone){ const it=lisItem(); if(it && COACH.active) coachLog({h:it.kind==='num'?('N:'+it.n):it.zh, st:0, lat:null, heard:'(ข้าม)'}); } lisNext(); };
+$('#lisType').onclick=()=>{ S.listen.typeMode=!S.listen.typeMode; save(); if(!lisDone) lisRender(); };
+$('#btnListenQuit').onclick=()=>{ if(COACH.active){ coachAskQuit(); return; } lisFinish(); };
+
+COACH_RUN.B3=blk=>{
+  const n = COACH.minutes===10 ? 16 : 36;
+  lisStart(lisBuildQueue(n));
+  return true;
+};
+
+/* ---------- B1 พูดตามไล่ความเร็ว (shadowing) — ประโยคเดียวกับที่จะนึกเองใน B2 = ได้ยินก่อน ---------- */
+const SH_RATES=[0.7, 1.0, 1.2];
+let shStage=0, shRounds=0, shIdx=-1;
+function shadowItems(){
+  const want = COACH.minutes===10 ? 4 : 6, out=[], seen=new Set();
+  for(const it of COACH.queueB2){
+    if(out.length>=want) break;
+    const nch=[...String(it.hanzi)].filter(c=>/[一-鿿]/.test(c)).length;
+    let t=it;
+    if(nch===1){                              // คำเดี่ยวฟังไม่ออก ใช้วลีที่มีคำนั้นแทน
+      const car=carrierOf(it); if(!car) continue;
+      t={hanzi:car.raw, pinyin:car.py, thaiRead:car.th, meaning:car.mean};
+    }
+    const k=norm(t.hanzi,false); if(!k || seen.has(k)) continue; seen.add(k);
+    out.push({hanzi:t.hanzi, pinyin:t.pinyin, thaiRead:t.thaiRead, meaning:t.meaning, kind:'line', shadow:true});
+  }
+  return out;
+}
+function renderShadow(it){
+  if(shIdx!==qi){ shIdx=qi; shStage=0; shRounds=0; }
+  tries=0;
+  hideAllBoxes();
+  const rt=SH_RATES[shStage];
+  $('#pKind').textContent='🎧 พูดตามให้ทัน · ความเร็ว '+rt.toFixed(1)+'× · รอบ '+(shRounds+1)+'/3';
+  const nch=[...String(it.hanzi)].filter(c=>/[一-鿿]/.test(c)).length;
+  $('#pHan').className='han zh'+(nch>14?' xlong':nch>9?' long':'');
+  $('#pHan').innerHTML='<span class="zh">'+esc(it.hanzi)+'</span>';
+  $('#pPy').innerHTML=pyHTML(it.pinyin);
+  $('#pThai').textContent=it.thaiRead||'';
+  $('#pMean').textContent=it.meaning||'';
+  $('#heard').innerHTML='';
+  $('#playBar').style.width=(qi/Q.length*100)+'%';
+  $('#playCount').textContent=(qi+1)+'/'+Q.length;
+  $('#btnSkip').style.visibility='visible';
+  $('#btnSelfPass').style.visibility='hidden';
+  micState('');
+  speak(it.hanzi, armMic, rt);
+}
+function judgeShadow(alts){
+  const it=cur(); if(!it) return;
+  const r=scoreAll(it.hanzi, alts), st=starsOf(r.score), rt=SH_RATES[shStage];
+  shRounds++; sessUtter++; sessStars+=st; S.stats.utter++; S.stats.stars+=st;
+  coachLog({h:it.hanzi, st:st, lat:null, heard:r.heard, score:r.score, rate:rt});
+  save();
+  dlog('coach','B1 '+it.hanzi+' @'+rt+' -> '+r.score+'% (ได้ยิน: '+(r.heard||'—')+')');
+  $('#pHan').innerHTML='<span class="zh">'+markedHTML(it.hanzi, norm(r.heard,false))+'</span>';
+  $('#heard').innerHTML='<div class="lab">ได้ยินว่า</div><div class="small muted zh">'+esc(r.heard||'—')+'</div>'+
+    '<div class="stars" style="color:var(--'+(st>=3?'ok':st>=2?'warn':'bad')+')">'+starStr(st)+' <span class="small">'+r.score+'% @ '+rt.toFixed(1)+'×</span></div>'+
+    (r.hints&&r.hints.length ? '<div class="nearTip">ใกล้แล้ว — '+r.hints.map(esc).join('<br>')+'</div>' : '');
+  const done = shRounds>=3 || (st>=2 && shStage>=SH_RATES.length-1);
+  if(done){ vib(st>=2?[30,40,30]:140); micState(st>=2?'ok':''); setTimeout(()=>{ if(playing && MODE==='shadow') next(); }, 1300); return; }
+  if(st>=2){ shStage++; vib([30,40,30]); micState('ok'); }
+  else { vib(140); micState(''); }
+  setTimeout(()=>{ if(playing && MODE==='shadow') renderShadow(it); }, 1000);   // พูดซ้ำที่ความเร็วถัดไป (หรือเดิมถ้ายังไม่ผ่าน)
+}
+function finishShadow(){
+  if(COACH.active) return coachNextBlock();
+  endPlay(); MODE='lesson'; screenStack=['scr-home']; renderHome(); show('scr-home',false);
+}
+COACH_RUN.B1=blk=>{
+  const q=shadowItems(); if(!q.length) return false;
+  MODE='shadow'; levelId='coach:B1'; Q=q; qi=0; tries=0; sessUtter=0; sessStars=0; bestPer=[]; shIdx=-1;
+  playing=true; t0=Date.now();
+  show('scr-play'); renderMode();
+  document.body.classList.toggle('hidethai', !S.settings.showThai);
+  renderItem(true);
+  return true;
+};
+
+/* ---------- B4 เจาะวรรณยุกต์: ชุดที่ทำได้แย่สุด (ยังไม่เคยเล่นเลย = เจาะคู่ 2 กับ 3) ---------- */
+COACH_RUN.B4=blk=>{
+  const rec=id=>S.tone && S.tone[id];
+  const anyPlayed=TONE_SETS.some(x=>rec(x.id));
+  let pick=null;
+  if(!anyPlayed) pick=TONE_SETS.find(x=>x.id==='mix23');
+  else pick=TONE_SETS.slice().sort((a,b)=>{
+    const ra=rec(a.id), rb=rec(b.id);
+    return (ra? ra.best/a.items.length : 0) - (rb? rb.best/b.items.length : 0);
+  })[0];
+  if(!pick) return false;
+  dlog('coach','B4 เลือกชุด '+pick.id+' ('+pick.title+')');
+  startTone(pick.id);
+  return true;
+};
+
+/* ---------- B5 ภารกิจสั้น: ชุดที่ยังไม่เคยเล่น / เล่นนานสุด / ทำได้แย่สุด ตัดมา 2–3 turn สุ่มตัวแปรใหม่ ---------- */
+COACH_RUN.B5=blk=>{
+  const lastOf=id=>(S.coach.talkLast||{})[id]||0;
+  const best=id=>(S.talk&&S.talk[id]&&S.talk[id].best)||0;
+  const played=id=>!!(S.talk&&S.talk[id]) || !!lastOf(id);
+  const scs=TALK.slice().sort(()=>Math.random()-0.5).sort((a,b)=>{
+    const pa=played(a.id), pb=played(b.id);
+    if(pa!==pb) return pa?1:-1;                       // ยังไม่เคยเล่นขึ้นก่อน
+    if(lastOf(a.id)!==lastOf(b.id)) return lastOf(a.id)-lastOf(b.id);
+    return best(a.id)-best(b.id);
+  });
+  const sc=scs[0]; if(!sc) return false;
+  const n = COACH.minutes===10 ? 2 : 3;
+  const full=materializeScenario(sc);
+  const start=Math.floor(Math.random()*Math.max(1, full.turns.length-n+1));
+  const mission=Object.assign({}, full, {turns:full.turns.slice(start, start+n)});
+  S.coach.talkLast=Object.assign({}, S.coach.talkLast||{}); S.coach.talkLast[sc.id]=Date.now();
+  dlog('coach','B5 ภารกิจ '+sc.id+' turn '+(start+1)+'–'+(start+mission.turns.length)+' ค่า '+JSON.stringify(full._vals||{}));
+  startTalk(mission);
+  return true;
+};
+
+/* ============================================================
    11. ปุ่ม / เหตุการณ์
    ============================================================ */
 $('#btnPlay').onclick=()=>{
@@ -5018,7 +6154,7 @@ $('#btnTalk').onclick=()=>{ renderTalkList(); show('scr-talkpick'); };
 $('#btnTone').onclick=()=>{ renderToneList(); show('scr-tonepick'); };
 $('#toneHear').onclick=()=>{ const it=toneItem(); if(it) speak(it.zh); };
 $('#toneNext').onclick=()=>{ if(toneRec) toneStop(); toneNext(); };
-$('#btnToneQuit').onclick=()=>{ if(toneRec) toneStop(); releaseWake(); screenStack=['scr-home']; renderHome(); show('scr-home',false); };
+$('#btnToneQuit').onclick=()=>{ if(COACH.active){ coachAskQuit(); return; } if(toneRec) toneStop(); releaseWake(); screenStack=['scr-home']; renderHome(); show('scr-home',false); };
 (function(){
   const tm=$('#toneMic');
   tm.addEventListener('contextmenu', e=>e.preventDefault());
@@ -5032,6 +6168,7 @@ $('#btnSettings').onclick=()=>{ renderSettings(); show('scr-settings'); };
 $$('[data-back]').forEach(b=>b.onclick=back);
 $('#btnHome2').onclick=()=>{ MODE='lesson'; hideAllBoxes(); $('#talkbox').hidden=true; $('#prompt').hidden=false; screenStack=['scr-home']; renderHome(); show('scr-home',false); };
 $('#btnQuit').onclick=()=>{
+  if(COACH.active){ coachAskQuit(); return; }
   endPlay(); MODE='lesson'; hideAllBoxes();
   $('#talkbox').hidden=true; $('#prompt').hidden=false;
   screenStack=['scr-home']; renderHome(); show('scr-home',false);
@@ -5044,6 +6181,7 @@ $('#btnHear').onclick=()=>{
     return;
   }
   if(MODE==='talk'){ const t=talkTurn(); if(t){ abortRec(); speak(t.ask, armMic); } return; }
+  if(MODE==='shadow'){ const it=cur(); if(it){ abortRec(); speak(it.hanzi, armMic, SH_RATES[shStage]); } return; }
   const it=cur(); if(it){ abortRec(); speak(sayText(it), armMic); }
 };
 $('#reviewBar').addEventListener('click', e=>{
@@ -5198,11 +6336,15 @@ function renderSettings(){
   $('#swThai').textContent=S.settings.showThai?'เปิด':'ปิด'; $('#swThai').classList.toggle('on',S.settings.showThai);
   $('#swAuto').textContent=S.settings.autoListen?'เปิด':'ปิด'; $('#swAuto').classList.toggle('on',S.settings.autoListen);
   $('#swVib').textContent =S.settings.vibrate?'เปิด':'ปิด';  $('#swVib').classList.toggle('on',S.settings.vibrate);
+  $('#swStrict').textContent=S.settings.coachStrict?'เปิด':'ปิด'; $('#swStrict').classList.toggle('on',!!S.settings.coachStrict);
+  $$('#goalChips .chip').forEach(c=>c.classList.toggle('on', +c.dataset.g===(S.settings.coachGoal||2)));
 }
 $$('#rateChips .chip').forEach(c=>c.onclick=()=>{ S.settings.rate=+c.dataset.rate; save(); renderSettings(); speak('你好'); });
 $('#swThai').onclick=()=>{ S.settings.showThai=!S.settings.showThai; save(); document.body.classList.toggle('hidethai',!S.settings.showThai); renderSettings(); };
 $('#swAuto').onclick=()=>{ S.settings.autoListen=!S.settings.autoListen; save(); renderSettings(); if(playing) renderMode(); };
 $('#swVib').onclick =()=>{ S.settings.vibrate=!S.settings.vibrate; save(); renderSettings(); vib(30); };
+$('#swStrict').onclick=()=>{ S.settings.coachStrict=!S.settings.coachStrict; save(); renderSettings(); };
+$$('#goalChips .chip').forEach(c=>c.onclick=()=>{ S.settings.coachGoal=+c.dataset.g; save(); renderSettings(); renderHome(); });
 
 document.addEventListener('keydown',e=>{
   if(e.code==='Space' && playing && !e.repeat){ e.preventDefault(); if(HAS_SR && !recActive) startRec(); }
