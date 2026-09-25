@@ -255,6 +255,36 @@ td.r,th.r{text-align:right}
 .cbarlab{display:flex;gap:.25rem;font-size:.62rem;color:var(--muted);margin-top:.2rem}
 .cbarlab span{flex:1;text-align:center}
 
+/* ---------- Active recall ---------- */
+.pthink{margin-top:.6rem}
+.pthink .bar{height:.3rem;background:var(--rule);border-radius:1rem;overflow:hidden}
+.pthink .bar i{display:block;height:100%;width:0;background:var(--t3)}
+.pthink span{display:block;font-size:.78rem;color:var(--muted);margin-top:.25rem}
+.phbtns{display:flex;justify-content:center;gap:.5rem;flex-wrap:wrap;margin-top:.6rem}
+.phbtns .btn{margin:0}
+.btn:disabled{opacity:.45;cursor:default}
+
+/* ---------- การ์ดฟัง / การ์ดของฉัน / ภาพจำ ---------- */
+.rate3{display:flex;gap:.4rem;margin-top:.6rem}
+.rate3 .btn{flex:1;padding:.7rem .3rem;font-size:.95rem}
+.mynote{margin-top:.6rem;padding-top:.5rem;border-top:1px dashed var(--rule);text-align:left}
+.mynote .show{font-size:.95rem;background:#FBF1DC;border-radius:.5rem;padding:.35rem .55rem;margin:.25rem 0}
+.mynote .row input,.myform input{flex:1;min-width:0;font:inherit;border:1px solid var(--rule);border-radius:.5rem;padding:.45rem .55rem}
+.myform label{display:block;font-size:.8rem;color:var(--muted);margin:.5rem 0 .15rem}
+.myform input{width:100%}
+.myrow{display:flex;align-items:center;gap:.5rem;border-bottom:1px solid var(--rule);padding:.4rem 0}
+.myrow:last-child{border-bottom:0}
+
+/* ---------- ปิดบทแล้วเล่า ---------- */
+.frlist{display:flex;flex-wrap:wrap;gap:.35rem}
+.frw{border:1px solid var(--rule);border-radius:.5rem;padding:.3rem .55rem;font-size:.9rem;background:#fff;line-height:1.3}
+.frw.ok{background:#E8F0E4;border-color:var(--ok);color:var(--ok);font-weight:700}
+.frw .zh{margin-left:.3rem}
+.frmiss{display:flex;align-items:center;gap:.5rem;width:100%;text-align:left;font:inherit;cursor:pointer;background:none;border:0;border-bottom:1px solid var(--rule);padding:.4rem .1rem}
+.frmiss:last-child{border-bottom:0}
+.frmiss .zh{font-size:1.2rem;font-weight:600}
+.lv .rt{flex:none;font-size:1.15rem;padding:.2rem .35rem;border-radius:.4rem;background:#E6EFF2}
+
 /* ---------- เส้นทางคำศัพท์ ---------- */
 .lvline{display:flex;align-items:center;gap:.5rem;width:100%;margin-top:.6rem;border:1px solid var(--rule);background:#fff;border-radius:.6rem;padding:.5rem .7rem;font:inherit;font-size:.9rem;cursor:pointer;text-align:left;color:var(--ink)}
 .lvline .lvbar{flex:1;min-width:2.5rem;height:.35rem;background:var(--rule);border-radius:1rem;overflow:hidden}
@@ -321,6 +351,16 @@ td.r,th.r{text-align:right}
       <button class="btn ghost" id="btnSleep" hidden style="margin-top:.5rem">🌙 ทวนก่อนนอน (2 นาที)</button>
     </div>
 
+    <div class="card" id="examCard" hidden style="border:2px solid var(--t3)">
+      <div class="row"><b class="grow">📝 สอบประจำสัปดาห์พร้อมแล้ว</b><span class="small muted" id="exCardSub"></span></div>
+      <button class="btn ghost" id="btnExamOpen" style="margin-top:.5rem">▶ เริ่มสอบ (ห้ามใบ้ · เฉลยตอนจบ)</button>
+    </div>
+
+    <div class="card" id="retellCard" hidden>
+      <div class="row"><b class="grow" id="rtTitle">📕 เล่าบทซ้ำ</b><span class="small muted" id="rtSub"></span></div>
+      <button class="btn ghost" id="btnRetellDue" style="margin-top:.5rem">▶ ปิดบทแล้วเล่า (2 นาที)</button>
+    </div>
+
     <div class="card corecard">
       <div class="row"><b class="grow">พูดเองได้ (นึกเอง)</b><span class="small muted" id="coreSub"></span></div>
       <div style="text-align:center;margin:.35rem 0 .1rem">
@@ -333,6 +373,7 @@ td.r,th.r{text-align:right}
         <button class="btn ghost" id="btnProd">🧠 โหมดนึกเอง</button>
         <button class="btn ghost" id="btnPattern">🧩 ประกอบประโยค</button>
       </div>
+      <button class="btn ghost sm" id="btnMyCards" style="margin-top:.5rem;width:100%">➕ การ์ดของฉัน — ประโยคที่เจอจริง</button>
     </div>
 
     <div class="counter">
@@ -447,7 +488,11 @@ td.r,th.r{text-align:right}
         <div class="pth" id="prodThai"></div>
         <div class="pslot" id="prodSlot" hidden></div>
         <div class="ptip3" id="prodTip" hidden></div>
-        <button class="btn ghost sm" id="btnHint" style="margin-top:.6rem">💡 ขอใบ้ (ข้อนี้จะได้สูงสุด 1 ดาว)</button>
+        <div class="pthink" id="prodThink" hidden><div class="bar"><i id="prodThinkBar"></i></div><span>🤔 กำลังนึก… ลองพูดออกมาก่อน ผิดก็ไม่เป็นไร</span></div>
+        <div class="phbtns">
+          <button class="btn ghost sm" id="btnHint">💡 ขอใบ้ (ข้อนี้จะได้สูงสุด 1 ดาว)</button>
+          <button class="btn ghost sm" id="btnGiveUp" hidden>🤔 นึกไม่ออก</button>
+        </div>
         <div class="phint" id="prodHint" hidden></div>
         <div class="pans" id="prodAns" hidden></div>
       </div>
@@ -493,6 +538,38 @@ td.r,th.r{text-align:right}
       <span class="muted">เล่นผ่าน 🎯 โค้ช · วันละไม่เกิน 2 เลเวล ให้สมองได้นอนเก็บ · แตะคำเพื่อฟังเสียง</span>
     </div>
     <div id="lvList"></div>
+  </section>
+
+  <!-- ==================== สอบประจำสัปดาห์ ==================== -->
+  <section id="scr-exam" class="screen">
+    <div class="topbar"><button class="iconbtn" id="btnExamBack">←</button><b class="grow">📝 สอบประจำสัปดาห์</b></div>
+    <div class="card" id="exIntro">
+      <b>ก่อนเริ่ม: คิดว่าจะได้กี่ %</b>
+      <p class="small muted" style="margin:.35rem 0 .6rem">ทายตามความรู้สึก — ท้ายชุดจะเทียบกับคะแนนจริง ดูว่าความรู้สึกว่า "จำได้" ตรงกับความจริงแค่ไหน</p>
+      <div class="row"><input type="range" id="exGuess" min="0" max="100" step="5" value="70" style="flex:1"><b id="exGuessV" style="min-width:3.2rem;text-align:right">70%</b></div>
+      <p class="small muted" id="exInfo" style="margin:.6rem 0"></p>
+      <button class="btn" id="exStart">เริ่มสอบ</button>
+    </div>
+    <div id="exResult" hidden></div>
+  </section>
+
+  <!-- ==================== ปิดบทแล้วเล่า: เล่าอิสระ ==================== -->
+  <section id="scr-free" class="screen">
+    <div class="topbar"><button class="iconbtn" id="btnFreeQuit">✕</button><b class="grow">📕 เล่าอิสระ</b><span class="small muted" id="frClock">0:30</span></div>
+    <div class="stage">
+      <div class="card">
+        <div class="small muted" id="frTitle"></div>
+        <div id="frGoal" style="font-weight:700;font-size:1.1rem;margin:.2rem 0 .4rem"></div>
+        <p class="small muted" style="margin:0 0 .6rem">ปิดบทแล้ว <b>เล่าเองอะไรก็ได้</b> ไม่เกิน 30 วินาที ใช้คำในรายการให้ได้มากที่สุด — ผ่านเมื่อใช้ได้ 3 คำ หรือ 40%</p>
+        <div class="frlist" id="frList"></div>
+        <div class="small muted zh" id="frHeard" style="margin-top:.6rem;min-height:1.4rem"></div>
+      </div>
+      <div class="card" id="frResult" hidden></div>
+    </div>
+    <div class="miclane">
+      <button class="mic" id="frMic">แตะค้างแล้วเล่า<small>ปล่อยเมื่อพูดจบ · รวมไม่เกิน 30 วินาที</small></button>
+      <div class="row2"><button class="btn ghost" id="frDone">จบแล้ว ›</button></div>
+    </div>
   </section>
 
   <!-- ==================== LISTEN (โค้ช B3) ==================== -->
@@ -549,6 +626,7 @@ td.r,th.r{text-align:right}
     </div>
     <button class="btn" id="btnWeak" hidden style="background:var(--t3)">🔁 ทวนเฉพาะคำที่ยังไม่ผ่าน</button>
     <button class="btn" id="btnNext">ไปด่านถัดไป</button>
+    <button class="btn ghost" id="btnRetell" hidden style="margin-top:.5rem">📕 ปิดบทแล้วเล่า (2 นาที)</button>
     <button class="btn ghost" id="btnAgain" style="margin-top:.5rem">เล่นด่านนี้ซ้ำ</button>
     <button class="btn ghost" id="btnHome2" style="margin-top:.5rem">กลับหน้าแรก</button>
   </section>
@@ -599,6 +677,12 @@ td.r,th.r{text-align:right}
       <canvas id="sLatCanvas" width="640" height="200" style="width:100%;height:auto;margin-top:.35rem"></canvas>
       <div id="sCoachText" style="margin-top:.6rem"></div>
     </div>
+    <h2>📝 สอบประจำสัปดาห์</h2>
+    <div class="card" id="sExam">
+      <div class="small muted">คะแนนจริง (เส้นทึบ) เทียบกับที่ทายไว้ก่อนสอบ (เส้นประ)</div>
+      <canvas id="sExamCanvas" width="640" height="200" style="width:100%;height:auto;margin-top:.35rem"></canvas>
+      <div id="sExamText" class="small muted" style="margin-top:.4rem"></div>
+    </div>
     <h2>คำที่ยังพลาดบ่อย 10 อันดับ</h2>
     <div class="card" id="sMistakes"></div>
     <h2>หมุดหมาย</h2>
@@ -631,6 +715,14 @@ td.r,th.r{text-align:right}
       <div class="row"><b class="grow">สั่นตอบรับ</b><button class="chip" id="swVib">เปิด</button></div>
     </div>
     <div class="card">
+      <div class="row"><b class="grow">🧠 บังคับนึกก่อนดูใบ้</b><button class="chip" id="swRecall">เปิด</button></div>
+      <p class="small muted" style="margin:.4rem 0 0">ปุ่มใบ้ล็อก 5 วินาทีแรก (หรือจนกว่าจะลองพูด) ใบ้ได้ 3 ขั้น: ตัวแรกของแต่ละพยางค์ → พินอินไม่มีวรรณยุกต์ → คำอ่านไทย · ปิด = แบบเดิม</p>
+    </div>
+    <div class="card">
+      <div class="row"><b class="grow">🔮 ลองเดาก่อนเรียนด่านใหม่</b><button class="chip" id="swPretest">เปิด</button></div>
+      <p class="small muted" style="margin:.4rem 0 0">ก่อนเข้าด่านที่ยังไม่เคยเล่น ลองนึก 3 คำก่อน ผิดคือเรื่องปกติ — การลองก่อนช่วยให้สมองเตรียมรับของใหม่</p>
+    </div>
+    <div class="card">
       <div class="row"><b class="grow">🎯 โค้ช: กฎ 3 วินาที</b><button class="chip" id="swStrict">เปิด</button></div>
       <p class="small muted" style="margin:.4rem 0 .6rem">ในบล็อกนึกเอง ถ้าตอบถูกแต่ใช้เวลาเกิน 3 วินาที จะได้ 2 ดาวและยังไม่เลื่อนรอบทบทวน — ฝึกให้คำพูดออกมาเองโดยไม่ต้องคิด</p>
       <div class="row"><span class="grow small">เป้าหมายโค้ชต่อวัน</span>
@@ -659,6 +751,18 @@ td.r,th.r{text-align:right}
 </div>
 
 <!-- ==================== MODALS ==================== -->
+<div class="modal" id="mMy"><div class="box myform">
+  <h3>➕ การ์ดของฉัน</h3>
+  <p class="small muted" style="margin:0">เจอประโยคจริงระหว่างทริป พิมพ์เก็บไว้ แล้วมันจะเข้ารอบทบทวนแบบนึกเอง (เห็นไทย → พูดจีน)</p>
+  <label for="myZh">ตัวจีน</label><input id="myZh" autocomplete="off" placeholder="เช่น 可以便宜一点吗">
+  <label for="myTh">ความหมายไทย</label><input id="myTh" autocomplete="off" placeholder="เช่น ลดหน่อยได้ไหม">
+  <label for="myPy">พินอิน (เว้นว่างได้ ระบบจะลองเติมให้)</label><input id="myPy" autocomplete="off" placeholder="kě yǐ pián yi yì diǎn ma">
+  <div class="small" id="myMsg" style="margin:.5rem 0;min-height:1.2rem"></div>
+  <button class="btn" id="mySave">บันทึกการ์ด</button>
+  <div id="myList" style="margin-top:.8rem"></div>
+  <button class="btn ghost" data-close style="margin-top:.6rem">ปิด</button>
+</div></div>
+
 <div class="modal" id="mMic"><div class="box">
   <h3>ไมโครโฟนถูกปิดอยู่</h3>
   <p class="small">เกมยังเล่นได้ แต่จะไม่มีระบบตรวจเสียง วิธีเปิดสิทธิ์บน Chrome (Android):</p>
@@ -3132,7 +3236,7 @@ const MILESTONES = [
 /* ============================================================
    2.5 บันทึกปัญหา (diagnostics) — ไว้ส่งให้ผู้พัฒนาดูเวลาไมค์มีปัญหา
    ============================================================ */
-const BUILD='2026-09-26b';                     // เปลี่ยนทุกครั้งที่แก้ไฟล์ จะได้รู้ว่า log มาจากรุ่นไหน
+const BUILD='2026-09-27d';                     // เปลี่ยนทุกครั้งที่แก้ไฟล์ จะได้รู้ว่า log มาจากรุ่นไหน
 const DIAG=[], STUCK={}, T0=Date.now();
 function dlog(tag, msg, extra){
   const line={t:Date.now()-T0, tag:tag, msg:msg===undefined?'':String(msg), extra:extra};
@@ -3178,7 +3282,7 @@ const SKEY='zhgame.v1';
 function blank(){return{
   v:1,
   settings:{showThai:true, rate:0.8, autoListen:false, vibrate:true, sv:2,
-             coachMin:25, coachStrict:true, coachGoal:2},
+             coachMin:25, coachStrict:true, coachGoal:2, recallStrict:true, pretest:true},
   progress:{},   // levelId -> {best, stars, plays, done}
   words:{},      // hanzi -> {py,th,mean,lv,att,fails,d2:[],d3:[]}
   mistakes:{},   // hanzi -> count
@@ -3191,6 +3295,10 @@ function blank(){return{
   srx:{},        // ตารางทบทวนรวม สำหรับทุกอย่างที่ไม่ใช่ CORE100: hanzi -> {box,next,last,tries,ok,src,slot,lat:[]}
   listen:{rate:0.9, streak:0, hist:[], typeMode:false},
   lv:{cur:1, st:{}, seen:{}, ups:[]},   // เส้นทางคำศัพท์: cur = เลเวลปัจจุบัน · st[n] = {stage, weak, best, tries, pass}
+  retell:{},     // ปิดบทแล้วเล่า: levelId -> {box, next, best, plays}
+  exams:[],      // สอบประจำสัปดาห์: [{d, n, score, guess}]
+  lastExam:'',
+  notes:{},      // ภาพจำของผู้ใช้: hanzi -> ข้อความ
   log:[]
 };}
 let S = load();
@@ -3212,6 +3320,9 @@ function load(){
       }),
       srx:(o.srx && typeof o.srx==='object') ? o.srx : {},
       listen:Object.assign(b.listen, o.listen||{}),
+      retell:Object.assign({}, o.retell||{}),
+      exams:Array.isArray(o.exams) ? o.exams.slice() : [],
+      notes:Object.assign({}, o.notes||{}),
       lv:Object.assign(b.lv, o.lv||{}, {
         st:Object.assign({}, (o.lv||{}).st||{}),
         seen:Object.assign({}, (o.lv||{}).seen||{}),
@@ -4005,13 +4116,15 @@ function unlocked(id){
 }
 function renderHome(){
   renderCoachCard();
+  renderRetellCard();
+  renderExamCard();
   // --- CORE 100 (โหมดนึกเอง) ---
   const cm=coreMastered(), due=coreDue().length, left=coreQuotaLeft(), pool=coreNewPool().length;
   $('#coreNum').textContent=cm;
   $('#coreBar').style.width=(cm)+'%';
   $('#coreOnce').textContent='เคยผ่านแล้ว '+coreOnce()+' คำ';
   $('#coreSub').textContent=pool? ('ยังไม่เริ่ม '+pool+' คำ') : 'เริ่มครบทุกคำแล้ว';
-  const todayN=coreTodayCount();
+  const todayN=coreTodayCount()+srxDueList().length;
   $('#btnReview').innerHTML = todayN
     ? '🔁 ทบทวนวันนี้ ('+todayN+' คำ)'
     : '🔁 ทบทวนวันนี้ — ครบแล้ว';
@@ -4068,6 +4181,11 @@ function renderLevels(){
       const row=levelRow(l);
       const p=S.progress[l.id];
       if(p&&p.best!=null) row.querySelector('.gg').textContent = l.goal+' · ดีที่สุด '+p.best+'%';
+      if(p && p.best>=PASS_AVG && ((l.dialogue||[]).length || (l.vocab||[]).length)){
+        const rt=document.createElement('span'); rt.className='rt'; rt.title='ปิดบทแล้วเล่า'; rt.textContent='📕';
+        rt.onclick=e=>{ e.stopPropagation(); startRetell(l.id); };
+        row.insertBefore(rt, row.querySelector('.st'));
+      }
       box.appendChild(row);
     });
   };
@@ -4076,6 +4194,7 @@ function renderLevels(){
 }
 function renderStats(){
   renderCoachStats();
+  renderExamStats();
   const c=countWords();
   $('#sMastered').textContent=c.mastered;
   $('#sSpoken').textContent=c.spoken;
@@ -4224,6 +4343,7 @@ function startRec(keepHeard){
   try{ speechSynthesis.cancel(); }catch(e){}
   if(!keepHeard){ segAlts=[]; gotAlts=null; }
   if(latT0 && !latPress) latPress=Date.now();    // โค้ช: สำรองไว้ถ้าไม่มีผลระหว่างพูดให้จับเวลา
+  if(rcLocked) recallUnlock('mic');              // ลองพูดแล้ว = พยายามนึกแล้ว ใบ้ได้
   judged=false; interimText='';
   recAborted=false; pendingStop=false; stopRequested=false; clearTimeout(stopTimer);
   try{ rec=new SR(); }catch(e){ return; }
@@ -4369,7 +4489,8 @@ function instantJudge(extra){
   emptyStreak=0;
   judgeFn()(all);
 }
-function judgeFn(){ return MODE==='talk' ? judgeTalk : MODE==='shadow' ? judgeShadow : judge; }
+function judgeFn(){ return MODE==='talk' ? judgeTalk : MODE==='shadow' ? judgeShadow : MODE==='retell' ? judgeRetell
+  : MODE==='pretest' ? judgePretest : MODE==='exam' ? judgeExam : judge; }
 let lastStopAt=0;
 function scheduleStop(){
   clearTimeout(stopTimer);
@@ -4443,10 +4564,14 @@ function releaseWake(){ try{ wakeLock&&wakeLock.release(); }catch(e){} wakeLock=
 document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible' && playing) requestWake(); });
 
 let masteredBefore=0;
-async function startLevel(id, customQ){
+async function startLevel(id, customQ, skipPre){
   if(HAS_SR && !manualMode && micPerm!=='granted'){
     const st=await ensureMic();
     if(st==='denied'){ openM('mMic'); return; }
+  }
+  // 🔮 R4.1 ด่านที่ยังไม่เคยเล่น: ลองนึกก่อนเรียน (pretesting effect)
+  if(!customQ && !skipPre && S.settings.pretest && !S.progress[id] && !COACH.active && pretestItems(id).length){
+    return startPretest(id);
   }
   dlog('เกม','เริ่มด่าน '+id+' (สิทธิ์ไมค์='+micPerm+')');
   masteredBefore=countWords().mastered;
@@ -4463,6 +4588,7 @@ async function startLevel(id, customQ){
 }
 function endPlay(){
   dlog('เกม','ออกจากด่าน '+levelId);
+  latT0=0; latFirst=false; clearTimeout(rcTimer); rcLocked=false;
   playing=false; abortRec(); try{ speechSynthesis.cancel(); }catch(e){} releaseWake(); releaseHeld();
   document.body.classList.toggle('hidethai', !S.settings.showThai);
 }
@@ -4478,6 +4604,9 @@ function renderItem(autoPlay){
   if(!it){ finishRun(); return; }
   if(MODE==='prod' || MODE==='pattern'){ renderProd(it); return; }
   if(MODE==='shadow'){ renderShadow(it); return; }
+  if(MODE==='retell'){ renderRetell(it); return; }
+  if(MODE==='pretest'){ renderPretest(it); return; }
+  if(MODE==='exam'){ renderExam(it); return; }
   tries=0;
   dlog('ข้อ','('+(qi+1)+'/'+Q.length+') '+it.hanzi+(it.lap2?' [รอบ2]':'')+(it.review?' [ทบทวน]':''));
   $('#pKind').textContent = it.review ? '🔁 ทบทวนคำที่เคยพลาด'
@@ -4562,17 +4691,20 @@ function setHeard(msg, cls){
 function judge(alts){
   const it=cur(); if(!it) return;
   const prod = (MODE==='prod' || MODE==='pattern');
+  if(prod && gaveUp) return judgeRepeat(it, alts);     // นึกไม่ออกแล้ว: รอบนี้คือพูดตาม ไม่นับคะแนน
   const r0 = scoreAll(it.hanzi, alts);                 // เครื่องคิดคะแนนตัวเดียวกันทุกโหมด
   const heard=r0.heard, target=r0.target, hints=r0.hints;
   const rawScore=r0.score;                             // คะแนนจริงก่อนหักตัวช่วย
   let score=rawScore;
-  if(prod && hintUsed){ score=Math.min(score, 50); }   // ขอใบ้แล้ว ข้อนี้ได้สูงสุด 1 ดาว
+  if(prod && hintUsed){                                 // ใบ้ไล่ระดับ: ขั้น 1 = สูงสุด 2 ดาว · ขั้น 2–3 = 1 ดาว (ปิดโหมดนี้ = 1 ดาวแบบเดิม)
+    score = S.settings.recallStrict ? Math.min(score, hintN>=2 ? 60 : 80) : Math.min(score, 50);
+  }
   let st = starsOf(score);
   const rawSt = starsOf(rawScore);
   const hintedButRight = prod && hintUsed && rawSt>=3; // พูดถูกแล้ว แค่ใช้ตัวช่วย — ห้ามวนซ้ำ
   // ---- โหมดโค้ช: เวลาตอบของความพยายามครั้งแรก (ครั้งต่อไปเห็นเฉลยแล้ว ไม่ใช่การนึกเอง) ----
   let lat=null, slow='';
-  if(COACH.active && prod && latFirst){ lat=coachLatency(); latFirst=false; if(lat!==null) coachRingStop(lat); }
+  if((COACH.active || S.settings.recallStrict) && prod && latFirst){ lat=coachLatency(); latFirst=false; if(lat!==null) coachRingStop(lat); }
   if(lat!==null && !hintUsed && rawSt>=3 && (coachBlockIs('B2') || (LV.active && LV.stage===4)) && S.settings.coachStrict){
     if(lat>6000) slow='vslow'; else if(lat>3000) slow='slow';
     if(slow){ st=2; score=Math.min(score, 80); }        // ถูกแต่ช้า = 2 ดาว
@@ -4584,7 +4716,8 @@ function judge(alts){
   }
   tries++; sessUtter++; sessStars+=st;
   S.stats.utter++; S.stats.stars+=st;
-  if(COACH.active) coachLog({h:it.hanzi, st:st, lat:lat, heard:heard, score:score});
+  if(COACH.active) coachLog({h:it.hanzi, st:st, lat:lat, heard:heard, score:score, hintN:hintN});
+  else if(prod && S.settings.recallStrict) S.log.push({t:'recall', h:it.hanzi, hintN:hintN, gaveUp:false, st:st, lat:lat, heard:heard, score:score, levelId:levelId, ts:Date.now()});
   else S.log.push({levelId, hanzi:it.hanzi, heard, score, stars:st, ts:Date.now()});
   if(S.log.length>2000) S.log=S.log.slice(-1500);
   bestPer[qi]=Math.max(bestPer[qi]||0, score);
@@ -4601,8 +4734,10 @@ function judge(alts){
     if(store===S.srx){ r.src=it.src; if(it.slotRaw) r.slot=it.slotRaw; }
     if(lat!==null){
       r.lat=(r.lat||[]).concat(lat).slice(-10);
-      const day=coachDay(); day.lat.push(lat); if(day.lat.length>400) day.lat=day.lat.slice(-400);
+      if(COACH.active){ const day=coachDay(); day.lat.push(lat); if(day.lat.length>400) day.lat=day.lat.slice(-400); }
     }
+    if(rawSt<2) r.miss=(r.miss||0)+1;             // นับพลาด ใช้เปิดช่อง "ภาพจำของฉัน"
+    if((r.box||0)>=2) lcardEnsure(it.hanzi);       // จำได้แล้ว -> สร้างการ์ดฟังคู่กัน (จีน -> ไทย)
     if(LV.active && it.lv){ S.lv.seen=S.lv.seen||{}; if(!S.lv.seen[it.hanzi]) S.lv.seen[it.hanzi]=Date.now(); }
     dlog('ทบทวน', it.hanzi+' -> box '+r.box+' ('+SRS_LABEL[r.box-1]+')'+(store===S.srx?' [รวม '+(it.src||'')+']':'')+
       (hintedButRight?'  [ใช้ตัวช่วย — คงระดับเดิม]':'')+(slow?'  [ถูกแต่ช้า — คงระดับเดิม]':''));
@@ -4620,7 +4755,7 @@ function judge(alts){
     '<div class="small muted zh">'+(heard?esc(heard):'')+'</div>'+
     '<div class="stars" style="color:var(--'+(st>=3?'ok':st>=2?'warn':'bad')+')">'+starStr(st)+' <span class="small">'+score+'%</span></div>'+
     (hints&&hints.length ? '<div class="nearTip">ใกล้แล้ว — '+hints.map(esc).join('<br>')+'</div>' : '')+
-    (prod&&hintUsed ? '<div class="nearTip">ใช้ตัวช่วยแล้ว ข้อนี้จึงได้สูงสุด 1 ดาว</div>' : '')+
+    (prod&&hintUsed ? '<div class="nearTip">'+(S.settings.recallStrict ? 'ใช้ใบ้ขั้น '+hintN+' ข้อนี้จึงได้สูงสุด '+(hintN>=2?1:2)+' ดาว' : 'ใช้ตัวช่วยแล้ว ข้อนี้จึงได้สูงสุด 1 ดาว')+'</div>' : '')+
     (slow==='slow' ? '<div class="nearTip">ถูก แต่ยังช้า ⏱ '+(lat/1000).toFixed(1)+' วิ — ลองให้คำออกมาภายใน 3 วิ รอบทบทวนจะยังไม่เลื่อน</div>' : '')+
     (slow==='vslow' ? '<div class="nearTip">ถูก แต่ช้ามาก ⏱ '+(lat/1000).toFixed(1)+' วิ — อีก 10 นาทีจะกลับมาถามใหม่</div>' : '');
 
@@ -4640,7 +4775,7 @@ function judge(alts){
     setTimeout(()=>{ if(playing) next(); }, 2200);
   }else if(hintedButRight){                         // ถูกแล้วแต่ใช้ตัวช่วย ไปข้อต่อไปเลย อย่าให้ติดหล่ม
     vib([30,40,30]); micState('ok');
-    $('#heard').insertAdjacentHTML('beforeend','<div class="nearTip">พูดถูกแล้ว! ข้อนี้ใช้ตัวช่วยเลยได้ 1 ดาว <b>แต่ไม่ถูกลดขั้น</b> — อีก 10 นาทีจะกลับมาถามใหม่แบบไม่ใบ้</div>');
+    $('#heard').insertAdjacentHTML('beforeend','<div class="nearTip">พูดถูกแล้ว! ข้อนี้ใช้ตัวช่วย <b>แต่ไม่ถูกลดขั้น</b> — อีก 10 นาทีจะกลับมาถามใหม่แบบไม่ใบ้</div>');
     setTimeout(()=>{ if(playing) next(); }, 2200);
   }else if(st>=3){
     vib([30,40,30]); micState('ok');
@@ -4694,6 +4829,9 @@ function checkMilestone(){
 function next(){ qi++; if(qi>=Q.length || coachTimeUp()) finishRun(); else renderItem(true); }
 function finishRun(){
   if(MODE==='shadow') return finishShadow();
+  if(MODE==='retell') return retellRoleDone();
+  if(MODE==='pretest') return finishPretest();
+  if(MODE==='exam') return finishExam();
   if(MODE==='prod') return finishProd();
   if(MODE==='pattern') return finishProd();
   return finishLevel();
@@ -4732,7 +4870,14 @@ function finishLevel(){
     $('#dUnlock').innerHTML='<b style="color:var(--warn)">ต้องได้เฉลี่ย '+PASS_AVG+'% ขึ้นไปถึงจะปลดล็อกด่านถัดไป — เล่นซ้ำอีกรอบ</b>';
     $('#btnNext').style.display='none';
   }
+  if(avg>=PASS_AVG){                           // 🧠 R1: เรียนจบไม่ได้แปลว่าจำได้ — คำในด่านเข้ารอบทดสอบ
+    const added=lessonToSrs(levelId);
+    if(added) $('#dUnlock').insertAdjacentHTML('beforeend','<br><span style="color:var(--t1)">🧠 เพิ่ม '+added+' รายการเข้ารอบทดสอบแล้ว · ทดสอบครั้งแรกใน 10 นาที</span>');
+  }
   renderWordSummary();
+  const Ld=getLevel(levelId)||{};
+  $('#btnRetell').hidden=!((Ld.dialogue||[]).length || (Ld.vocab||[]).length);
+  $('#btnRetell').onclick=()=>startRetell(levelId);
   $('#btnNext').onclick=()=>startLevel(nextId);
   $('#btnAgain').onclick=()=>startLevel(levelId);
   show('scr-done');
@@ -4900,7 +5045,7 @@ function finishTalk(){
     ? '<b style="color:var(--ok)">ตอบได้เป็นเรื่องแล้ว ลองชุดอื่นต่อ</b>'
     : '<b style="color:var(--warn)">ยังไม่คล่อง ลองซ้ำชุดนี้อีกรอบ</b>';
   $('#btnNext').style.display='none';
-  $('#dWordsCard').hidden=true; $('#btnWeak').hidden=true;
+  $('#dWordsCard').hidden=true; $('#btnWeak').hidden=true; $('#btnRetell').hidden=true;
   $('#btnAgain').onclick=()=>startTalk(TSC.id);
   show('scr-done');
   renderHome();
@@ -5196,12 +5341,14 @@ $('#btnWeak').onclick=()=>{
    10.8 โหมดนึกเอง (production) + แบบฝึกประกอบประโยค
    เห็นแต่ความหมายไทย ต้องนึกคำจีนออกมาเอง — ใช้ scoreAll ตัวเดียวกับโหมดพูดตาม
    ============================================================ */
-let hintUsed=false, prodKind='', patIdx=-1;
+let hintUsed=false, prodKind='', patIdx=-1, hintN=0, gaveUp=false;
 function hideAllBoxes(){
   $('#prodBox').hidden=true; $('#talkbox').hidden=true;
+  $('#btnGiveUp').textContent='🤔 นึกไม่ออก'; $('#btnSelfPass').textContent='✓ ทวนเองแล้ว';   // โหมดลองก่อนเรียนเปลี่ยนป้ายไว้
   $('#prompt').hidden=false; $('#gloss').hidden=true; $('#pNote').hidden=true; $('#reviewBar').hidden=true;
 }
 function renderProd(it){
+  if(it && it.kind==='lcard') return renderLCard(it);   // การ์ดฟัง: จีน -> ไทย ไม่ใช้ไมค์
   tries=0; hintUsed=false;
   const asPat = MODE==='pattern' || !!it.isPattern;   // คิวโค้ชมีข้อประกอบประโยคปนอยู่
   $('#prompt').hidden=true; $('#talkbox').hidden=true;
@@ -5246,17 +5393,20 @@ function renderProd(it){
   if(COACH.active){                            // โค้ช: เริ่มจับเวลาตอบตอนโจทย์ขึ้นจอ
     latT0=Date.now(); latT1=0; latPress=0; latFirst=true;
     if((coachBlockIs('B2') || LV.active) && S.settings.coachStrict) coachRingStart(); else coachRingHide();
-  }else{ latT0=0; latFirst=false; coachRingHide(); }
+  }else if(recallOn()){ latT0=Date.now(); latT1=0; latPress=0; latFirst=true; coachRingHide(); }   // จับเวลาไว้ลง log
+  else{ latT0=0; latFirst=false; coachRingHide(); }
+  recallSetup(it);
   if(S.settings.autoListen) armMic();        // ห้ามเล่นเสียงต้นแบบก่อน ไม่งั้นเฉลยตั้งแต่ยังไม่พูด
 }
 function revealProd(it, heardNorm){
   $('#btnHint').hidden=true;
+  clearTimeout(rcTimer); rcLocked=false; $('#btnGiveUp').hidden=true; $('#prodThink').hidden=true;
   $('#prodAns').hidden=false;
   $('#prodAns').innerHTML=
     '<div class="small muted">เฉลย</div>'+
     '<div class="zh">'+markedHTML(it.hanzi, heardNorm)+'</div>'+
     '<div class="py">'+pyHTML(it.pinyin)+'</div>'+
-    '<div class="th">'+esc(it.thaiRead||'')+'</div>';
+    '<div class="th">'+esc(it.thaiRead||'')+'</div>'+noteHTML(it);
   speak(sayText(it));                         // เล่นเสียงต้นแบบตอนเฉลย
 }
 async function startProd(queue, label){
@@ -5274,7 +5424,7 @@ async function startProd(queue, label){
   renderItem(true);
 }
 function startReviewToday(){
-  const q=buildCoreQueue({});
+  const q=buildReviewQueue({});
   if(!q.length){
     const early=buildCoreQueue({early:true});
     if(!early.length){ toast('ยังไม่มีคำให้ทบทวน','กด "โหมดนึกเอง" เพื่อเริ่มคำใหม่',2200); return; }
@@ -5319,13 +5469,22 @@ function finishProd(){
     : '<b style="color:var(--ok)">พูดเองได้ '+coreMastered()+'/100 คำ</b>'+
       (due? '<br><span class="muted">ยังมีคำถึงกำหนดทบทวนอีก '+due+' คำ</span>' : '<br><span class="muted">ทบทวนครบแล้ว รอบถัดไปเดี๋ยวระบบเตือนเอง</span>');
   $('#btnNext').style.display='none';
-  $('#dWordsCard').hidden=true; $('#btnWeak').hidden=true;
+  $('#dWordsCard').hidden=true; $('#btnWeak').hidden=true; $('#btnRetell').hidden=true;
   $('#btnAgain').onclick=()=>{ if(wasPattern) startPattern(patIdx); else startReviewToday(); };
   show('scr-done');
   renderHome();
 }
 $('#btnHint').onclick=()=>{
   const it=cur(); if(!it) return;
+  if(recallOn()){                              // ใบ้ไล่ระดับ 3 ขั้น
+    if(rcLocked) return;
+    hintN=Math.min(3, hintN+1); hintUsed=true;
+    $('#prodHint').hidden=false;
+    $('#prodHint').innerHTML=hintLevel(it, hintN);
+    if(hintN>=3) $('#btnHint').hidden=true; else $('#btnHint').textContent='💡 ใบ้ขั้น '+(hintN+1)+'/3';
+    dlog('recall','ใบ้ขั้น '+hintN+': '+it.hanzi);
+    return;
+  }
   hintUsed=true;
   $('#prodHint').hidden=false;
   $('#prodHint').textContent='คำอ่าน: '+(it.thaiRead||'');
@@ -5407,6 +5566,9 @@ mic.addEventListener('pointerdown', e=>{
   if(!HAS_SR || manualMode) return;   // โหมดฟัง–ทวน: ปล่อยให้ click ทำงาน (กดฟังต้นแบบซ้ำ)
   e.preventDefault();
   if(!playing) return;
+  if(MODE==='retell'){ const c=cur(); if(c && !c.mine){ retellReplay(); return; } }   // บทของคู่สนทนา: แตะ = ฟังซ้ำ
+  if(MODE==='exam'){ const c=cur(); if(c && c.exType==='listen'){ speak(c.hanzi); return; } }  // ข้อฟัง: แตะ = ฟังซ้ำ
+  { const c=cur(); if(c && c.kind==='lcard'){ speak(sayText(c.base)); return; } }                 // การ์ดฟัง: แตะ = ฟังซ้ำ
   if(micPerm!=='granted'){            // ยังไม่ได้สิทธิ์ -> ขอก่อน ไม่ปล่อยให้พูดใส่ไมค์ที่ยังไม่เปิด
     ensureMic().then(st=>{ if(st==='granted') startRec(); else openM('mMic'); });
     return;
@@ -5470,13 +5632,14 @@ const COACH_BLOCKS={
   B1:{icon:'🎧', name:'วอร์มอัพ พูดตามให้ทัน', sr:true},
   BL:{icon:'🪜', name:'เลเวลคำศัพท์', sr:true},
   B2:{icon:'🧠', name:'ทบทวนสลับ', sr:true},
+  BR:{icon:'📕', name:'เล่าบทซ้ำ', sr:true},
   B3:{icon:'👂', name:'ฟังออกไหม', sr:false},
   B4:{icon:'🎵', name:'เจาะวรรณยุกต์', sr:false},
   B5:{icon:'🗣️', name:'ภารกิจสั้น', sr:true}
 };
 // [บล็อก, นาที] — รวมกันได้ 25 / 10 พอดี
 const COACH_PLAN={
-  25:[['B0',2],['B1',2],['BL',6],['B3',4],['B2',5],['B4',3],['B5',3]],
+  25:[['B0',2],['B1',2],['BL',6],['B3',3],['B2',4],['BR',2],['B4',3],['B5',3]],
   10:[['B0',0.5],['B1',1],['BL',3],['B3',1.5],['B2',2],['B4',1],['B5',1]]
 };
 const COACH_RUN={};            // บล็อกไหนมีตัวรันแล้วค่อยเล่นได้ ที่ยังไม่มีจะถูกข้าม
@@ -5546,6 +5709,8 @@ function coachCleanupMode(){
   LV.active=false; SH_PLAN=SH_B1;
   coachHaltTone();
   if(typeof lisCleanup==='function') lisCleanup();
+  if(typeof frCleanup==='function') frCleanup();
+  clearTimeout(retellT);
   hideAllBoxes(); $('#talkbox').hidden=true; $('#prompt').hidden=false;
   MODE='lesson';
 }
@@ -5862,6 +6027,19 @@ function srxItem(h, r){
     return v ? Object.assign({kind:'core'}, v, {src:src, store:'srx'}) : null;
   }
   if(src.indexOf('lv:')===0){ const it=lvFind(h); return it ? Object.assign({}, it) : null; }
+  if(src==='ฟัง'){                               // การ์ดฟังคู่กับข้อที่จำได้แล้ว
+    const b=coachResolve((r&&r.base)||''); if(!b || b.kind==='lcard') return null;
+    return {kind:'lcard', hanzi:h, base:b, pinyin:b.pinyin, meaning:b.meaning, thaiRead:b.thaiRead, src:'ฟัง', store:'srx'};
+  }
+  if(src==='my'){                                // การ์ดที่ผู้ใช้พิมพ์เอง
+    const m=r&&r.my; if(!m) return null;
+    return {hanzi:m.hanzi, pinyin:m.pinyin, thaiRead:m.thaiRead||'', meaning:m.meaning, kind:'line', src:'my', store:'srx'};
+  }
+  if(src.indexOf('les:')===0){                  // คำ/ประโยคจากด่านบทเรียนที่ผ่านแล้ว
+    const L=getLevel(+src.slice(4)); if(!L) return null;
+    const v=(L.vocab||[]).concat(L.dialogue||[]).find(x=>x.hanzi===h);
+    return v ? Object.assign({kind:v.who?'line':'core'}, v, {src:src, store:'srx'}) : null;
+  }
   if(src==='mist'){
     const w=S.words[h]; if(!w) return null;
     return {hanzi:h, pinyin:w.py, thaiRead:w.th, meaning:w.mean, kind:'core', src:'mist', store:'srx'};
@@ -6429,6 +6607,744 @@ COACH_RUN.B5=blk=>{
 };
 
 /* ============================================================
+   10.95 Active Recall Pack
+   R1 ด่านจบ → คำในด่านเข้ารอบทดสอบ · R2 นึกก่อนดูใบ้ + ใบ้ไล่ระดับ + นึกไม่ออก
+   ============================================================ */
+/* ---------- R1 ---------- */
+function lessonToSrs(id){
+  const L=getLevel(id); if(!L) return 0;
+  const now=Date.now(); let n=0;
+  (L.vocab||[]).concat(L.dialogue||[]).forEach(x=>{
+    const h=x.hanzi;
+    if(!h || /[A-Za-z]/.test(h)) return;                       // ประโยคที่มีช่องชื่อ ไม่เหมาะกับการนึกเอง
+    if(CORE_BY_HANZI[h] || S.core[h] || S.srx[h]) return;       // CORE100 มีตารางของตัวเองแล้ว
+    const nch=[...h].filter(c=>/[\u4e00-\u9fff]/.test(c)).length;
+    if(nch===1 && !carrierOf({hanzi:h})) return;                // คำเดี่ยวที่ไม่มีวลีให้เกาะ ถอดเสียงไม่ได้
+    S.srx[h]={box:0, next:now+SRS_MS[0], last:0, tries:0, ok:0, firstDay:today(), src:'les:'+id};
+    n++;
+  });
+  if(n){ save(); dlog('recall','ด่าน '+id+' ผ่าน → เพิ่ม '+n+' รายการเข้ารอบทดสอบ (ครั้งแรกใน 10 นาที)'); }
+  return n;
+}
+/* ข้อในตารางรวมที่ถึงกำหนด (ไม่รวมข้อฟังของโค้ช) */
+function srxDueList(){
+  const now=Date.now();
+  return Object.keys(S.srx)
+    .filter(h=>{ const r=S.srx[h]; return r && r.next<=now && String(r.src||'').indexOf('L:')!==0; })
+    .sort((a,b)=>S.srx[a].next-S.srx[b].next)
+    .map(h=>srxItem(h, S.srx[h])).filter(Boolean);
+}
+/* ทบทวนวันนี้ = CORE100 (ถึงกำหนด + คำใหม่ตามโควตา) + ตารางรวมที่ถึงกำหนด สลับกัน */
+function buildReviewQueue(opt){
+  const core=buildCoreQueue(opt).map(x=>CORE_BY_HANZI[x.hanzi] ? coreItem(CORE_BY_HANZI[x.hanzi]) : x);
+  const srx=srxDueList().slice(0, 20);
+  return srx.length ? coachInterleave(core.concat(srx)) : core;
+}
+
+/* ---------- R2 ---------- */
+const RECALL_MS=5000;
+let rcTimer=null, rcLocked=false;
+function recallOn(){
+  return !!S.settings.recallStrict && (MODE==='prod'||MODE==='pattern'||MODE==='retell') && !(LV.active && LV.stage===4);
+}
+const pyPlain = py => String(py||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+function pyInitial(syl){
+  const s=pyPlain(syl).toLowerCase();
+  const m=s.match(/^(zh|ch|sh|[bpmfdtnlgkhjqxrzcsyw])/);
+  return m ? m[1] : s.slice(0,1);
+}
+function hintLevel(it, n){
+  const syl=String(it.pinyin||'').split(/[\s,，.。?？!！]+/).filter(Boolean);
+  const l1=syl.map(x=>pyInitial(x)+'__').join(' ')+'  <span style="font-size:.8rem;font-weight:400">('+syl.length+' พยางค์)</span>';
+  if(n<=1) return esc('').concat(l1);
+  const l2=esc(pyPlain(it.pinyin));
+  if(n===2) return l2;
+  return l2+'<br><span style="font-size:1rem">คำอ่าน: '+esc(it.thaiRead||'—')+'</span>';
+}
+function recallSetup(it){
+  clearTimeout(rcTimer); hintN=0; gaveUp=false;
+  $('#btnGiveUp').hidden=true;
+  if(!recallOn()){
+    rcLocked=false; $('#prodThink').hidden=true;
+    $('#btnHint').disabled=false; $('#btnHint').textContent='💡 ขอใบ้ (ข้อนี้จะได้สูงสุด 1 ดาว)';
+    return;
+  }
+  rcLocked=true;
+  $('#btnHint').disabled=true; $('#btnHint').textContent='💡 ใบ้ (นึกก่อน 5 วิ)';
+  const bar=$('#prodThinkBar');
+  $('#prodThink').hidden=false;
+  bar.style.transition='none'; bar.style.width='0%'; void bar.offsetWidth;
+  bar.style.transition='width '+RECALL_MS+'ms linear'; bar.style.width='100%';
+  rcTimer=setTimeout(()=>{
+    recallUnlock('time');
+    if(!(MODE==='retell' && cur() && !cur().mine)) $('#btnGiveUp').hidden=false;
+  }, RECALL_MS);
+}
+function recallUnlock(why){
+  if(!rcLocked) return;
+  rcLocked=false;
+  $('#btnHint').disabled=false; $('#btnHint').textContent='💡 ใบ้ขั้น 1/3';
+  if(why==='time') $('#prodThink').hidden=true;
+  dlog('recall','ปลดล็อกใบ้ ('+(why==='mic'?'ลองพูดแล้ว':'ครบ 5 วิ')+')');
+}
+$('#btnGiveUp').onclick=()=>{
+  const it=cur(); if(!it || gaveUp || !playing) return;
+  if(MODE==='pretest'){ pretestReveal(it, ''); return; }
+  gaveUp=true; abortRec(); clearTimeout(rcTimer); rcLocked=false;
+  $('#prodThink').hidden=true; $('#btnGiveUp').hidden=true;
+  if(latFirst){ latFirst=false; coachRingHide(); }
+  if(MODE==='prod'){                                            // บันทึกเป็นไม่ผ่าน: กลับมาใน 10 นาที
+    const store=it.store==='srx'?S.srx:S.core;
+    const r=srsUpdate(it.hanzi, 0, false, store);
+    if(store===S.srx){ r.src=it.src; if(it.slotRaw) r.slot=it.slotRaw; }
+    r.miss=(r.miss||0)+1;
+    if(LV.active && it.lv){
+      S.lv.seen[it.hanzi]=S.lv.seen[it.hanzi]||Date.now();
+      if(LV.stage!==4 && !it._rq) Q.push(Object.assign({}, it, {_rq:true}));   // วนกลับมาท้ายขั้น
+    }
+  }
+  bestPer[qi]=Math.max(bestPer[qi]||0, 0);
+  const e={h:it.hanzi, hintN:hintN, gaveUp:true, st:0, lat:null};
+  if(COACH.active) coachLog(e); else S.log.push(Object.assign({t:'recall', levelId:levelId, ts:Date.now()}, e));
+  save();
+  dlog('recall','นึกไม่ออก: '+it.hanzi+' (ใบ้ไป '+hintN+' ขั้น) → กลับมาใน 10 นาที · ต้องพูดตามก่อน');
+  revealProd(it, '');
+  $('#heard').innerHTML='<div class="nearTip">ไม่เป็นไร การพยายามนึกก็ช่วยให้จำแล้ว 🙂<br>ฟังเฉลยแล้ว <b>พูดตาม 1 ครั้ง</b> ก่อนไปข้อต่อไป</div>';
+  $('#btnSkip').style.visibility='hidden'; $('#btnSelfPass').style.visibility='hidden';
+  micState('');
+};
+/* หลังกดนึกไม่ออก: พูดตามให้ได้ก่อน (ไม่นับคะแนน ไม่แตะตารางทบทวน) */
+function judgeRepeat(it, alts){
+  const r=scoreAll(it.hanzi, alts), st=starsOf(r.score);
+  tries++; sessUtter++; S.stats.utter++;
+  $('#prodAns').querySelector('.zh') && ($('#prodAns').querySelector('.zh').innerHTML=markedHTML(it.hanzi, norm(r.heard,false)));
+  $('#heard').innerHTML='<div class="lab">พูดตาม</div><div class="small muted zh">'+esc(r.heard||'—')+'</div>'+
+    '<div class="stars" style="color:var(--'+(st>=2?'ok':'bad')+')">'+starStr(st)+' <span class="small">'+r.score+'%</span></div>';
+  dlog('recall','พูดตามหลังนึกไม่ออก: '+it.hanzi+' → '+r.score+'%');
+  save();
+  if(st>=2 || tries>=2){
+    micState('ok'); vib([30,40,30]);
+    if(st<2) $('#heard').insertAdjacentHTML('beforeend','<div class="small muted">ไปต่อได้ ข้อนี้จะกลับมาให้ลองใหม่อีกครั้ง</div>');
+    setTimeout(()=>{ if(playing) next(); }, 1500);
+  }else{
+    micState(''); vib(140);
+    $('#heard').insertAdjacentHTML('beforeend','<div class="small muted">ฟังอีกครั้งแล้วพูดตามใหม่</div>');
+    $('#btnSkip').style.visibility='visible';
+    setTimeout(()=>{ if(playing) speak(sayText(it)); }, 600);
+  }
+}
+
+/* ---------- R3 📕 ปิดบทแล้วเล่า ----------
+   อ่านจบแล้วปิดหนังสือสรุปเอง = เรียนบทสนทนาจบแล้วเล่นบทนั้นเองโดยไม่ดูตัวจีน
+   ขั้น 1 เล่นบทบาท: แอปพูดบทคู่สนทนา (มีแค่เสียง ไม่มีตัวจีนบนจอ) · บทเราเห็นแค่ความหมายไทย
+   ขั้น 2 เล่าอิสระ: เห็นเป้าหมายด่าน + ความหมายไทยของคำศัพท์ แล้วเล่าเองไม่เกิน 30 วิ คำที่พูดถึงติ๊กทันที */
+const RETELL_DAYS=[1,3,7,30];
+let RT=null, retellT=null;
+async function startRetell(id){
+  const L=getLevel(id); if(!L) return;
+  if(HAS_SR && !manualMode && micPerm!=='granted'){
+    const st=await ensureMic();
+    if(st==='denied'){ openM('mMic'); return; }
+  }
+  RT={id:id, role:'A', swapped:false, scores:[]};
+  if(!(L.dialogue||[]).length) return startFreeRecall(id);
+  retellRole('A');
+}
+function retellRole(role){
+  const L=getLevel(RT.id); RT.role=role;
+  Q=L.dialogue.map(d=>Object.assign({kind:'line'}, d, {mine:(d.who||'A')===role}));
+  MODE='retell'; levelId='retell:'+RT.id; qi=0; tries=0; sessUtter=0; sessStars=0; bestPer=[];
+  playing=true; t0=Date.now();
+  const d=today(); if(!S.stats.days.includes(d)) S.stats.days.push(d);
+  requestWake(); show('scr-play'); renderMode();
+  dlog('recall','📕 ปิดบทแล้วเล่า ด่าน '+RT.id+' · รับบท '+role);
+  renderItem(true);
+}
+function retellReplay(){
+  const it=cur(); if(!it || it.mine) return;
+  clearTimeout(retellT);
+  speak(it.hanzi, ()=>{ retellT=setTimeout(()=>{ if(playing && MODE==='retell' && cur()===it) next(); }, 900); });
+}
+function renderRetell(it){
+  clearTimeout(retellT);
+  tries=0; hintUsed=false;
+  hideAllBoxes(); $('#prompt').hidden=true; $('#prodBox').hidden=false;
+  $('#prodSlot').hidden=true; $('#prodTip').hidden=true; $('#prodHint').hidden=true; $('#prodHint').textContent='';
+  $('#prodAns').hidden=true; $('#prodAns').innerHTML='';
+  $('#heard').innerHTML=''; $('#pKind').textContent='';
+  $('#playBar').style.width=(qi/Q.length*100)+'%'; $('#playCount').textContent=(qi+1)+'/'+Q.length;
+  $('#btnSelfPass').style.visibility='hidden'; $('#btnSkip').style.visibility='visible';
+  latT0=0; latFirst=false; coachRingHide();
+  if(!it.mine){                                  // บทของแอป: เสียงอย่างเดียว ห้ามมีตัวจีนบนจอ
+    $('#prodLab').textContent='📕 คู่สนทนาพูด (บท '+(it.who||'')+') — ฟังให้ดี แตะปุ่มไมค์เพื่อฟังซ้ำ';
+    $('#prodThai').textContent='🔊';
+    $('#btnHint').hidden=true; $('#btnGiveUp').hidden=true; $('#prodThink').hidden=true;
+    clearTimeout(rcTimer); rcLocked=false; gaveUp=false; hintN=0;
+    micState('');
+    $('#mic').innerHTML='🔊 ฟังซ้ำ<small>บทของคู่สนทนา · เดี๋ยวไปต่อเอง</small>';
+    retellReplay();
+    return;
+  }
+  $('#prodLab').textContent='📕 บทของคุณ (บท '+(it.who||'')+') · พูดเป็นจีนว่า';
+  $('#prodThai').textContent=it.meaning;
+  $('#btnHint').hidden=false;
+  recallSetup(it);
+  micState('');
+  if(S.settings.autoListen) armMic();
+}
+function judgeRetell(alts){
+  const it=cur(); if(!it || !it.mine) return;
+  if(gaveUp) return judgeRepeat(it, alts);
+  const r0=scoreAll(it.hanzi, alts);
+  let score=r0.score;
+  if(hintUsed) score = S.settings.recallStrict ? Math.min(score, hintN>=2?60:80) : Math.min(score, 50);
+  const st=starsOf(score);
+  tries++; sessUtter++; sessStars+=st; S.stats.utter++; S.stats.stars+=st;
+  bestPer[qi]=Math.max(bestPer[qi]||0, score);
+  S.log.push({t:'retell', id:RT.id, h:it.hanzi, st:st, hintN:hintN, heard:r0.heard, ts:Date.now()});
+  save();
+  dlog('recall','📕 บท '+RT.role+': '+it.hanzi+' -> '+score+'%'+(hintN?' (ใบ้ '+hintN+')':''));
+  revealProd(it, norm(r0.heard,false));
+  $('#heard').innerHTML='<div class="lab">ได้ยินว่า</div><div class="small muted zh">'+esc(r0.heard||'—')+'</div>'+
+    '<div class="stars" style="color:var(--'+(st>=3?'ok':st>=2?'warn':'bad')+')">'+starStr(st)+' <span class="small">'+score+'%</span></div>'+
+    (r0.hints&&r0.hints.length ? '<div class="nearTip">ใกล้แล้ว — '+r0.hints.map(esc).join('<br>')+'</div>' : '');
+  if(st>=2 || tries>=3){ vib(st>=2?[30,40,30]:140); micState(st>=2?'ok':''); setTimeout(()=>{ if(playing && MODE==='retell') next(); }, 1800); }
+  else { vib(140); micState(''); $('#heard').insertAdjacentHTML('beforeend','<div class="small muted">ฟังเฉลยแล้วลองพูดอีกครั้ง</div>'); }
+}
+function retellRoleDone(){
+  clearTimeout(retellT);
+  const mine=Q.map((it,i)=>it.mine?(bestPer[i]||0):null).filter(x=>x!==null);
+  const avg=mine.length ? Math.round(mine.reduce((a,b)=>a+b,0)/mine.length) : 0;
+  RT.scores.push(avg);
+  playing=false; abortRec(); try{ speechSynthesis.cancel(); }catch(e){}
+  const L=getLevel(RT.id), other=RT.role==='A'?'B':'A';
+  const hasOther=(L.dialogue||[]).some(d=>(d.who||'A')===other);
+  dlog('recall','📕 จบบท '+RT.role+' ('+avg+'%)');
+  if(!RT.swapped && hasOther){
+    hideAllBoxes(); $('#prompt').hidden=true; $('#prodBox').hidden=false;
+    $('#prodSlot').hidden=true; $('#prodTip').hidden=true; $('#prodHint').hidden=true; $('#prodAns').hidden=true;
+    $('#btnHint').hidden=true; $('#btnGiveUp').hidden=true; $('#prodThink').hidden=true;
+    $('#prodLab').textContent='📕 จบบท '+RT.role+' แล้ว · ได้ '+avg+'%';
+    $('#prodThai').textContent='สลับบทไหม?';
+    $('#heard').innerHTML='<div class="phbtns"><button class="btn sm" id="rtSwap">🔄 สลับเป็นบท '+other+'</button><button class="btn ghost sm" id="rtFree">ไปขั้นเล่าอิสระ ›</button></div>';
+    $('#rtSwap').onclick=()=>{ RT.swapped=true; retellRole(other); };
+    $('#rtFree').onclick=()=>{ MODE='lesson'; hideAllBoxes(); startFreeRecall(RT.id); };
+    micState(''); $('#mic').innerHTML='เลือกด้านบน<small>สลับบท หรือไปเล่าอิสระ</small>';
+    return;
+  }
+  MODE='lesson'; hideAllBoxes();
+  startFreeRecall(RT.id);
+}
+
+/* ---------- ขั้น 2 เล่าอิสระ (ตัวฟังแยกของตัวเอง ฟังต่อเนื่องได้ถึง 30 วิ) ---------- */
+const FR_MAX=30000;
+let FR={done:true};
+function frMatch(text, t){
+  if(!t) return false;
+  const h1=applyAlias(phraseFix(norm(latinFix(text,t),false),t),t);
+  if(h1.indexOf(t)>=0) return true;
+  const nf=nearFix(h1,t);
+  return nf.hints.length>0 && nf.text.indexOf(t)>=0;
+}
+function startFreeRecall(id, opt){
+  const L=getLevel(id); if(!L) return;
+  const words=(L.vocab||[]).filter(v=>v.hanzi && !/[A-Za-z]/.test(v.hanzi) && norm(v.hanzi,false))
+    .map(v=>({h:v.hanzi, t:norm(v.hanzi,false), mean:v.meaning, py:v.pinyin, th:v.thaiRead, used:false}));
+  FR={id:id, words:words, text:'', interim:'', alt:'', spent:0, seg0:0, rec:null, holding:false, done:false, coach:!!(opt&&opt.coach), tick:null};
+  RT=RT&&RT.id===id ? RT : {id:id, role:'A', swapped:false, scores:[]};
+  $('#frTitle').textContent=(isTrip(id)?'ชุดทริป · ':'ด่าน '+id+' · ')+(L.title||'');
+  $('#frGoal').textContent=L.goal||'';
+  $('#frList').innerHTML=words.map((w,i)=>'<span class="frw" id="frw'+i+'">'+esc(shortMean(w.mean)||w.th||'')+'</span>').join('');
+  $('#frHeard').textContent=''; $('#frResult').hidden=true; $('#frResult').innerHTML='';
+  $('#frClock').textContent=mmss(FR_MAX);
+  $('#frDone').textContent='จบแล้ว ›';
+  $('#frMic').className='mic'; $('#frMic').innerHTML='แตะค้างแล้วเล่า<small>ปล่อยเมื่อพูดจบ · รวมไม่เกิน 30 วินาที</small>';
+  if(!HAS_SR || manualMode) $('#frHeard').textContent='เครื่องนี้ไม่มีระบบตรวจเสียง — ลองเล่าออกเสียงเอง แล้วกดจบแล้ว';
+  show('scr-free'); requestWake();
+  dlog('recall','📕 เล่าอิสระ ด่าน '+id+' ('+words.length+' คำ)'+(FR.coach?' [โค้ช]':''));
+}
+function frLeft(){ return FR_MAX - FR.spent - (FR.rec && FR.seg0 ? Date.now()-FR.seg0 : 0); }
+function frCheck(){
+  const txt=FR.text+FR.interim+' '+FR.alt;
+  FR.words.forEach((w,i)=>{
+    if(w.used || !frMatch(txt, w.t)) return;
+    w.used=true;
+    const el=$('#frw'+i); if(el){ el.classList.add('ok'); el.innerHTML='✅ '+esc(shortMean(w.mean)||'')+'<span class="zh">'+esc(w.h)+'</span>'; }
+    vib(25);
+  });
+  $('#frHeard').textContent=FR.text+FR.interim;
+}
+function frStart(){
+  if(FR.done || !HAS_SR || manualMode || FR.rec) return;
+  if(frLeft()<=300){ frFinish(); return; }
+  let r; try{ r=new SR(); }catch(e){ return; }
+  r.lang='zh-CN'; r.continuous=true; r.interimResults=true; r.maxAlternatives=3;
+  FR.rec=r; FR.seg0=Date.now();
+  r.onresult=e=>{
+    let interim='';
+    for(let i=e.resultIndex;i<e.results.length;i++){
+      const x=e.results[i];
+      if(x.isFinal){ FR.text+=x[0].transcript; for(let k=1;k<x.length;k++) FR.alt+=' '+x[k].transcript; }
+      else interim+=x[0].transcript;
+    }
+    FR.interim=interim; frCheck();              // ติ๊กทันทีระหว่างพูด
+  };
+  r.onerror=e=>dlog('recall','เล่าอิสระ onerror: '+(e&&e.error));
+  r.onend=()=>{
+    if(FR.seg0){ FR.spent+=Date.now()-FR.seg0; FR.seg0=0; }
+    FR.rec=null; FR.text+=FR.interim; FR.interim='';
+    if(FR.holding && !FR.done && frLeft()>300) setTimeout(()=>{ if(FR.holding) frStart(); }, 80);
+    else frIdle();
+  };
+  try{ r.start(); }catch(e){ FR.rec=null; return; }
+  $('#frMic').className='mic rec'; $('#frMic').innerHTML='● เล่าได้เลย<small>ปล่อยนิ้วเมื่อจบ</small>';
+  clearInterval(FR.tick);
+  FR.tick=setInterval(()=>{
+    const l=frLeft(); $('#frClock').textContent=mmss(Math.max(0,l));
+    if(l<=0){ FR.holding=false; try{ FR.rec&&FR.rec.stop(); }catch(e){} frFinish(); }
+  }, 200);
+}
+function frIdle(){
+  clearInterval(FR.tick);
+  $('#frClock').textContent=mmss(Math.max(0,frLeft()));
+  if(!FR.done){ $('#frMic').className='mic'; $('#frMic').innerHTML='แตะค้างเพื่อเล่าต่อ<small>เหลือ '+Math.max(0,Math.ceil(frLeft()/1000))+' วินาที · หรือกดจบแล้ว</small>'; }
+}
+function frCleanup(){
+  if(!FR || FR.done) return;
+  FR.holding=false; FR.done=true; clearInterval(FR.tick);
+  try{ FR.rec && FR.rec.abort(); }catch(e){}
+  FR.rec=null;
+}
+function frFinish(){
+  if(FR.done) return;
+  FR.done=true; FR.holding=false; clearInterval(FR.tick);
+  try{ FR.rec && FR.rec.stop(); }catch(e){}
+  frCheck();
+  const n=FR.words.length, used=FR.words.filter(w=>w.used).length;
+  const pct=n ? Math.round(used/n*100) : 0;
+  const pass = used>=3 || (n>0 && used>=Math.ceil(n*0.4));
+  // ตารางเล่าซ้ำ 1 → 3 → 7 → 30 วัน
+  const R=S.retell[FR.id]||(S.retell[FR.id]={box:0, next:0, best:0, plays:0});
+  R.plays=(R.plays||0)+1; R.best=Math.max(R.best||0, pct);
+  R.box = pass ? Math.min(RETELL_DAYS.length, (R.box||0)+1) : 1;
+  R.next = Date.now()+RETELL_DAYS[R.box-1]*86400000;
+  S.log.push({t:'retell', id:FR.id, free:true, used:used, n:n, pass:pass, ts:Date.now()});
+  S.stats.utter++; save();
+  dlog('recall','📕 เล่าอิสระ ด่าน '+FR.id+': ใช้ได้ '+used+'/'+n+' คำ → '+(pass?'ผ่าน':'ยังไม่ผ่าน')+' · เล่าซ้ำอีก '+RETELL_DAYS[R.box-1]+' วัน');
+  const miss=FR.words.filter(w=>!w.used);
+  $('#frResult').hidden=false;
+  $('#frResult').innerHTML=
+    '<div class="stars" style="color:var(--'+(pass?'ok':'warn')+')">'+(pass?'✅ ผ่าน':'ยังไม่ถึงเกณฑ์')+' · ใช้ได้ '+used+'/'+n+' คำ</div>'+
+    '<div class="small muted" style="margin:.2rem 0 .5rem">จะชวนเล่าบทนี้อีกครั้งใน '+RETELL_DAYS[R.box-1]+' วัน</div>'+
+    (miss.length ? '<div class="small" style="font-weight:600;margin-bottom:.2rem">คำที่ยังไม่ได้ใช้ (แตะเพื่อฟัง)</div>'+
+      miss.map(w=>'<button class="frmiss" data-h="'+esc(w.h)+'"><span class="grow">'+esc(shortMean(w.mean))+'</span><span class="zh">'+esc(w.h)+'</span><span class="small muted">'+esc(w.py||'')+'</span> 🔊</button>').join('') : '');
+  $('#frMic').className='mic ok'; $('#frMic').innerHTML='จบแล้ว<small>'+(pass?'เก่งมาก':'ครั้งหน้าลองใช้คำให้มากขึ้น')+'</small>';
+  $('#frDone').textContent = FR.coach ? 'ต่อไป ›' : 'กลับหน้าแรก';
+  vib(pass?[30,40,30]:80);
+}
+$('#frResult').addEventListener('click', e=>{ const b=e.target.closest('.frmiss'); if(b) speak(b.dataset.h); });
+(function(){
+  const m=$('#frMic');
+  m.addEventListener('contextmenu', e=>e.preventDefault());
+  m.addEventListener('pointerdown', e=>{ e.preventDefault(); if(FR.done) return; FR.holding=true; frStart(); });
+  ['pointerup','pointercancel','pointerleave'].forEach(ev=>m.addEventListener(ev, e=>{
+    if(!FR.holding) return; e.preventDefault(); FR.holding=false;
+    try{ FR.rec && FR.rec.stop(); }catch(err){}
+  }));
+})();
+$('#frDone').onclick=()=>{
+  if(!FR.done){ frFinish(); return; }
+  if(FR.coach && COACH.active) return coachNextBlock();
+  releaseWake(); screenStack=['scr-home']; renderHome(); show('scr-home',false);
+};
+$('#btnFreeQuit').onclick=()=>{
+  if(COACH.active){ coachAskQuit(); return; }
+  frCleanup(); releaseWake(); screenStack=['scr-home']; renderHome(); show('scr-home',false);
+};
+/* ด่านที่ถึงกำหนดเล่าซ้ำ */
+function retellDue(){
+  const now=Date.now();
+  return Object.keys(S.retell||{}).filter(k=>S.retell[k] && S.retell[k].next<=now && getLevel(+k))
+    .sort((a,b)=>S.retell[a].next-S.retell[b].next).map(Number);
+}
+function renderRetellCard(){
+  const due=retellDue();
+  $('#retellCard').hidden=!due.length;
+  if(!due.length) return;
+  const L=getLevel(due[0]);
+  $('#rtTitle').textContent='📕 เล่าบทซ้ำ: '+(isTrip(due[0])?'ชุดทริป ':'ด่าน '+due[0]+' ')+(L.title||'');
+  $('#rtSub').textContent = due.length>1 ? 'ถึงกำหนด '+due.length+' ด่าน' : '';
+  $('#btnRetellDue').onclick=()=>startRetell(due[0]);
+}
+COACH_RUN.BR=blk=>{
+  const due=retellDue(); if(!due.length) return false;
+  startFreeRecall(due[0], {coach:true});
+  return true;
+};
+
+/* ---------- R4.1 🔮 ลองก่อนเรียน (pretest) ----------
+   ก่อนเข้าด่านที่ยังไม่เคยเล่น ให้ลองนึก 3 คำจากความหมายไทย ผิดคือเรื่องปกติ
+   ไม่คิดคะแนน ไม่เข้าตารางทบทวน เปิดเฉลยพร้อมเสียงทุกข้อ แล้วเข้าด่านตามปกติ */
+let PT=null;
+function pretestItems(id){
+  const L=getLevel(id); if(!L) return [];
+  const pool=(L.vocab||[]).filter(v=>v.hanzi && !/[A-Za-z]/.test(v.hanzi) && v.meaning).filter(v=>{
+    const n=[...v.hanzi].filter(c=>/[\u4e00-\u9fff]/.test(c)).length;
+    return n>=2 || carrierOf({hanzi:v.hanzi});
+  });
+  return pool.slice().sort(()=>Math.random()-0.5).slice(0,3).map(v=>Object.assign({kind:'core'}, v));
+}
+function startPretest(id){
+  const q=pretestItems(id); if(!q.length) return startLevel(id, null, true);
+  PT={id:id};
+  MODE='pretest'; levelId=id; Q=q; qi=0; tries=0; sessUtter=0; sessStars=0; bestPer=[];
+  playing=true; t0=Date.now(); requestWake(); show('scr-play'); renderMode();
+  dlog('recall','🔮 ลองก่อนเรียน ด่าน '+id+' ('+q.length+' คำ)');
+  renderItem(true);
+}
+function renderPretest(it){
+  tries=0; hintUsed=false; gaveUp=false; hintN=0;
+  hideAllBoxes(); $('#prompt').hidden=true; $('#prodBox').hidden=false;
+  $('#prodLab').textContent='🔮 ลองเดาดูก่อน ('+(qi+1)+'/'+Q.length+') — ผิดคือเรื่องปกติ';
+  $('#prodThai').textContent=it.meaning;
+  $('#prodSlot').hidden=true; $('#prodHint').hidden=true; $('#prodAns').hidden=true; $('#prodAns').innerHTML='';
+  $('#prodTip').hidden=false;
+  const car=carrierOf(it);
+  $('#prodTip').innerHTML='ยังไม่ได้เรียน ลองนึกดูก่อน — การลองก่อนเรียนช่วยให้สมองเตรียมรับของใหม่ <b>ไม่คิดคะแนน</b>'+
+    (car?'<br>คำนี้สั้น ลองพูดในวลีที่แปลว่า “'+esc(car.mean||'')+'”':'');
+  $('#btnHint').hidden=true; $('#prodThink').hidden=true; clearTimeout(rcTimer); rcLocked=false;
+  $('#btnGiveUp').hidden=false; $('#btnGiveUp').textContent='🤷 ไม่รู้ ดูเฉลย';
+  $('#heard').innerHTML=''; $('#pKind').textContent='';
+  $('#playBar').style.width=(qi/Q.length*100)+'%'; $('#playCount').textContent=(qi+1)+'/'+Q.length;
+  $('#btnSkip').style.visibility='visible';
+  $('#btnSelfPass').style.visibility='visible'; $('#btnSelfPass').textContent='ข้ามไปเรียนเลย ›';
+  latT0=0; latFirst=false; coachRingHide();
+  micState('');
+}
+function pretestReveal(it, heardNorm){
+  abortRec(); revealProd(it, heardNorm||'');
+  $('#btnGiveUp').hidden=true;
+  if(!heardNorm) $('#heard').innerHTML='<div class="nearTip">ไม่เป็นไร เดี๋ยวในด่านจะได้เจอคำนี้อีก — ตอนนี้แค่ฟังไว้ก่อน</div>';
+  setTimeout(()=>{ if(playing && MODE==='pretest' && cur()===it) next(); }, 2600);
+}
+function judgePretest(alts){
+  const it=cur(); if(!it) return;
+  const r=scoreAll(it.hanzi, alts), st=starsOf(r.score);
+  sessUtter++; S.stats.utter++;
+  S.log.push({t:'pretest', id:PT&&PT.id, h:it.hanzi, st:st, heard:r.heard, ts:Date.now()});
+  save();
+  dlog('recall','🔮 '+it.hanzi+' -> '+r.score+'% (ได้ยิน: '+(r.heard||'—')+')');
+  pretestReveal(it, norm(r.heard,false));
+  $('#heard').innerHTML='<div class="lab">คุณเดาว่า</div><div class="small muted zh">'+esc(r.heard||'—')+'</div>'+
+    '<div class="nearTip">'+(st>=2?'เดาถูกเลย! 👀':'ใกล้หรือไกลก็ไม่เป็นไร — สมองจำได้ว่าเคยลองนึกคำนี้แล้ว')+'</div>';
+}
+function finishPretest(){
+  const id=PT ? PT.id : levelId;
+  playing=false; abortRec(); hideAllBoxes();
+  $('#btnGiveUp').textContent='🤔 นึกไม่ออก'; $('#btnSelfPass').textContent='✓ ทวนเองแล้ว';
+  MODE='lesson'; PT=null;
+  toast('เริ่มเรียนด่านนี้','คำที่เพิ่งลองเดาจะอยู่ในด่าน',1400);
+  startLevel(id, null, true);
+}
+
+/* ---------- R4.2 📝 สอบประจำสัปดาห์ ----------
+   20 ข้อจากทุกอย่างที่เคยเรียน: เห็นไทย→พูดจีน 14 · ฟัง→เลือกความหมาย 4 · ฟังคำถาม→พูดตอบ 2
+   ห้ามใบ้ ห้ามพินอิน/คำอ่านไทย ไม่เฉลยระหว่างสอบ · ทายคะแนนก่อนสอบ เทียบกับของจริงท้ายชุด */
+let EX=null;
+const EXAM_GAP=7*86400000;
+function examPool(){
+  const out=[], seen=new Set();
+  const add=it=>{ if(!it || !it.hanzi || !it.meaning) return; const k=norm(it.hanzi,false); if(!k||seen.has(k)) return; seen.add(k); out.push(it); };
+  CORE100.forEach(w=>{ const r=S.core[w.hanzi]; if(r && (r.box||0)>=1) add(coreItem(w)); });
+  Object.keys(S.srx).forEach(h=>{
+    const r=S.srx[h], src=String((r&&r.src)||'');
+    if(!r || (r.box||0)<1 || src.indexOf('L:')===0 || src==='ฟัง') return;
+    add(srxItem(h, r));
+  });
+  return out;
+}
+function examReady(){
+  if(examPool().length<8) return false;
+  if(!S.lastExam) return true;
+  return Date.now()-new Date(S.lastExam+'T00:00:00').getTime() >= EXAM_GAP;
+}
+function examBuild(){
+  const shuf=a=>a.slice().sort(()=>Math.random()-0.5);
+  const pool=shuf(examPool());
+  const speak=pool.slice(0,14).map(it=>Object.assign({}, it, {exType:'speak'}));
+  const rest=pool.slice(14).concat(pool.slice(0,14));
+  const listen=[];
+  if(pool.length>=4){
+    for(const it of shuf(rest)){
+      if(listen.length>=4) break;
+      if(listen.some(x=>x.hanzi===it.hanzi)) continue;
+      const others=shuf(pool.filter(x=>x.meaning!==it.meaning)).map(x=>shortMean(x.meaning)).filter((m,i,a)=>m && m!==shortMean(it.meaning) && a.indexOf(m)===i).slice(0,3);
+      if(others.length<3) continue;
+      listen.push({exType:'listen', hanzi:it.hanzi, pinyin:it.pinyin, meaning:it.meaning, store:it.store, src:it.src,
+        ans:shortMean(it.meaning), choices:shuf([shortMean(it.meaning)].concat(others))});
+    }
+  }
+  const talk=shuf(TALK).slice(0,2).map(sc=>{
+    const m=materializeScenario(sc), t=m.turns[Math.floor(Math.random()*m.turns.length)];
+    return {exType:'talk', hanzi:t.model, ask:t.ask, accept:t.accept, meaning:t.askMean, model:t.model, modelPy:t.modelPy};
+  });
+  return shuf(speak.concat(listen, talk));
+}
+function renderExamCard(){
+  const ok=examReady();
+  $('#examCard').hidden=!ok;
+  if(ok) $('#exCardSub').textContent=Math.min(20, examPool().length+4+2)+' ข้อ';
+}
+function examOpen(){
+  const n=examBuild().length;
+  $('#exIntro').hidden=false; $('#exResult').hidden=true; $('#exResult').innerHTML='';
+  $('#exInfo').textContent=n+' ข้อ จากทุกอย่างที่เคยเรียน · ห้ามใบ้ ไม่มีพินอิน/คำอ่านไทย · ไม่เฉลยระหว่างสอบ (เฉลยรวมตอนจบ)';
+  $('#exGuessV').textContent=$('#exGuess').value+'%';
+  show('scr-exam');
+}
+$('#exGuess').oninput=()=>{ $('#exGuessV').textContent=$('#exGuess').value+'%'; };
+$('#btnExamOpen').onclick=examOpen;
+$('#btnExamBack').onclick=()=>{ screenStack=['scr-home']; renderHome(); show('scr-home',false); };
+$('#exStart').onclick=async ()=>{
+  if(HAS_SR && !manualMode && micPerm!=='granted'){
+    const st=await ensureMic();
+    if(st==='denied'){ openM('mMic'); return; }
+  }
+  const q=examBuild(); if(!q.length){ toast('ยังไม่มีข้อให้สอบ','เรียนเพิ่มอีกหน่อยก่อน',1600); return; }
+  EX={guess:+$('#exGuess').value, res:{}, t0:Date.now()};
+  MODE='exam'; levelId='exam'; Q=q; qi=0; tries=0; sessUtter=0; sessStars=0; bestPer=[];
+  playing=true; t0=Date.now(); requestWake(); show('scr-play'); renderMode();
+  dlog('recall','📝 เริ่มสอบ '+q.length+' ข้อ · ทายไว้ '+EX.guess+'%');
+  renderItem(true);
+};
+function renderExam(it){
+  tries=0; hintUsed=false; gaveUp=false; hintN=0;
+  hideAllBoxes(); $('#prompt').hidden=true; $('#prodBox').hidden=false;
+  $('#prodSlot').hidden=true; $('#prodTip').hidden=true; $('#prodHint').hidden=true; $('#prodAns').hidden=true; $('#prodAns').innerHTML='';
+  $('#btnHint').hidden=true; $('#btnGiveUp').hidden=true; $('#prodThink').hidden=true; clearTimeout(rcTimer); rcLocked=false;
+  $('#heard').innerHTML=''; $('#pKind').textContent='';
+  $('#playBar').style.width=(qi/Q.length*100)+'%'; $('#playCount').textContent=(qi+1)+'/'+Q.length;
+  $('#btnSkip').style.visibility='visible'; $('#btnSelfPass').style.visibility='hidden';
+  latT0=0; latFirst=false; coachRingHide();
+  const head='📝 สอบ ข้อ '+(qi+1)+'/'+Q.length+' · ';
+  if(it.exType==='listen'){
+    $('#prodLab').textContent=head+'ฟังแล้วเลือกความหมาย';
+    $('#prodThai').textContent='🔊';
+    $('#prodSlot').hidden=false;
+    $('#prodSlot').innerHTML='<div class="lischoices">'+it.choices.map(c=>'<button class="lisc" data-c="'+esc(c)+'">'+esc(c)+'</button>').join('')+'</div>';
+    micState(''); $('#mic').innerHTML='🔊 ฟังอีกครั้ง<small>ข้อนี้ไม่ต้องพูด แตะเลือกคำตอบด้านบน</small>';
+    speak(it.hanzi);
+    return;
+  }
+  if(it.exType==='talk'){
+    $('#prodLab').textContent=head+'ฟังคำถามแล้วพูดตอบ';
+    $('#prodThai').textContent='🔊';
+    micState('');
+    speak(it.ask);
+    return;
+  }
+  $('#prodLab').textContent=head+'พูดเป็นภาษาจีนว่า';
+  $('#prodThai').textContent=it.isPattern ? (it.frameThai||it.meaning) : it.meaning;
+  if(it.isPattern && it.slotThai){ $('#prodSlot').hidden=false; $('#prodSlot').innerHTML='<b>'+esc(it.slotThai)+'</b><span>เติมคำนี้ลงในช่องว่าง</span>'; }
+  const car=carrierOf(it);
+  if(car){ $('#prodTip').hidden=false; $('#prodTip').innerHTML='คำนี้สั้น — พูดทั้งวลีที่แปลว่า “'+esc(car.mean||'')+'”'; }
+  micState('');
+}
+$('#prodSlot').addEventListener('click', e=>{
+  const b=e.target.closest('.lisc'); if(!b || MODE!=='exam') return;
+  const it=cur(); if(!it || it.exType!=='listen' || EX.res[qi]) return;
+  examRecord(it, b.dataset.c===it.ans, b.dataset.c, b.dataset.c===it.ans?100:0);
+  $$('#prodSlot .lisc').forEach(x=>{ x.disabled=true; if(x===b) x.style.borderColor='var(--t1)'; });
+  $('#heard').innerHTML='<div class="small muted">บันทึกคำตอบแล้ว</div>';
+  setTimeout(()=>{ if(playing && MODE==='exam') next(); }, 700);
+});
+function talkScore(t, alts){
+  let score=0;
+  (alts||[]).forEach(a=>{
+    (t.accept||[]).forEach(acc=>{
+      const na=norm(acc,false); if(!na) return;
+      const h1=applyAlias(phraseFix(norm(latinFix(a,na),false),na),na);
+      if(h1.indexOf(na)>=0){ score=Math.max(score,95); return; }
+      const nf=nearFix(h1,na); if(nf.hints.length && nf.text.indexOf(na)>=0) score=Math.max(score,75);
+    });
+    score=Math.max(score, scoreAll(t.model||t.hanzi,[a]).score);
+  });
+  return score;
+}
+function examRecord(it, ok, heard, score){
+  if(!it || !EX || EX.res[qi]) return;
+  EX.res[qi]={ok:!!ok, heard:heard||'', score:score||0};
+  S.log.push({t:'exam', type:it.exType, h:it.hanzi, ok:!!ok, heard:heard||'', ts:Date.now()});
+}
+function judgeExam(alts){
+  const it=cur(); if(!it || it.exType==='listen' || EX.res[qi]) return;
+  const score = it.exType==='talk' ? talkScore(it, alts) : scoreAll(it.hanzi, alts).score;
+  const heard=(alts&&alts[0])||'';
+  sessUtter++; S.stats.utter++;
+  examRecord(it, score>=70, heard, score);
+  dlog('recall','📝 '+it.exType+' '+it.hanzi+' -> '+score+'%');
+  $('#heard').innerHTML='<div class="small muted">บันทึกคำตอบแล้ว</div>';     // ไม่บอกถูกผิดระหว่างสอบ
+  micState('ok');
+  setTimeout(()=>{ if(playing && MODE==='exam') next(); }, 800);
+}
+function finishExam(){
+  playing=false; abortRec(); releaseWake(); hideAllBoxes(); MODE='lesson';
+  const n=Q.length, ok=Q.filter((_,i)=>EX.res[i]&&EX.res[i].ok).length;
+  const score=n ? Math.round(ok/n*100) : 0, guess=EX.guess;
+  // ข้อที่ผิด -> กลับไปเริ่มกล่อง 1 (จะกลับมาในรอบทบทวน)
+  Q.forEach((it,i)=>{
+    if(EX.res[i] && EX.res[i].ok) return;
+    if(it.exType==='talk') return;
+    const store=it.store==='srx'?S.srx:S.core;
+    if(store[it.hanzi]){ const r=srsUpdate(it.hanzi, 0, false, store); r.miss=(r.miss||0)+1; }
+  });
+  S.exams=(S.exams||[]).concat({d:today(), n:n, score:score, guess:guess});
+  S.lastExam=today();
+  save(true);
+  dlog('recall','📝 จบสอบ: ได้ '+score+'% ('+ok+'/'+n+') · ทายไว้ '+guess+'%');
+  const gap=guess-score;
+  const msg = gap>=15 ? 'คุณทายสูงกว่าที่ทำได้จริง '+gap+'% — นี่คือ <b>ภาพลวงว่าเก่ง</b> (illusion of competence): เห็นเฉลยหรืออ่านซ้ำบ่อยทำให้รู้สึกว่าจำได้ ทั้งที่พอต้องนึกเองกลับนึกไม่ออก วิธีแก้คือทดสอบตัวเองแบบนี้บ่อยๆ'
+    : gap<=-15 ? 'คุณทำได้ดีกว่าที่คิด '+(-gap)+'% — เชื่อมั่นในตัวเองได้มากกว่านี้ และลองพูดกับคนจีนจริงได้แล้ว'
+    : 'ทายใกล้เคียงของจริงมาก — คุณรู้ตัวว่าจำอะไรได้แค่ไหน ซึ่งเป็นทักษะสำคัญของคนที่เรียนเก่ง';
+  const icon=t=>t==='listen'?'👂':t==='talk'?'🗣️':'🧠';
+  $('#exIntro').hidden=true; $('#exResult').hidden=false;
+  $('#exResult').innerHTML=
+    '<div style="text-align:center;padding:.6rem 0"><div class="big">'+score+'%</div><div class="sub">ได้จริง '+ok+'/'+n+' ข้อ · ทายไว้ '+guess+'%</div></div>'+
+    '<div class="card nearTip" style="margin:.5rem 0">'+msg+'</div>'+
+    '<div class="card"><b>เฉลยทั้งชุด</b><div style="margin-top:.3rem">'+Q.map((it,i)=>{
+      const r=EX.res[i]||{ok:false, heard:'(ไม่ได้ตอบ)'};
+      const q = it.exType==='listen' ? 'ฟัง: '+esc(it.hanzi) : it.exType==='talk' ? 'ถาม: '+esc(it.ask) : esc(shortMean(it.meaning));
+      const a = it.exType==='listen' ? esc(it.ans) : esc(it.hanzi);
+      return '<button class="frmiss" data-h="'+esc(it.exType==='talk'?it.ask:it.hanzi)+'"><span style="flex:none">'+(r.ok?'✅':'❌')+' '+icon(it.exType)+'</span>'+
+        '<span class="grow"><span class="small muted">'+q+'</span><br><b class="zh">'+a+'</b>'+(r.ok?'':' <span class="small muted">· คุณตอบ: '+esc(r.heard||'—')+'</span>')+'</span></button>';
+    }).join('')+'</div></div>'+
+    '<button class="btn ghost" id="exHome" style="margin-top:.5rem">กลับหน้าแรก</button>';
+  $('#exHome').onclick=()=>{ screenStack=['scr-home']; renderHome(); show('scr-home',false); };
+  show('scr-exam');
+  renderHome();
+}
+$('#exResult').addEventListener('click', e=>{ const b=e.target.closest('.frmiss'); if(b) speak(b.dataset.h); });
+function renderExamStats(){
+  const ex=S.exams||[], cv=$('#sExamCanvas'), g=cv.getContext('2d'), W=cv.width, H=cv.height;
+  g.clearRect(0,0,W,H);
+  const X=i=>30+(ex.length<2?0.5:i/(ex.length-1))*(W-60), Y=v=>H-20-(v/100)*(H-40);
+  g.strokeStyle='#CBD1C8'; g.lineWidth=1; [0,50,100].forEach(v=>{ g.beginPath(); g.moveTo(30,Y(v)); g.lineTo(W-30,Y(v)); g.stroke(); });
+  g.fillStyle='#5C6660'; g.font='18px sans-serif'; g.fillText('100%',0,Y(100)+6); g.fillText('50%',4,Y(50)+6);
+  if(!ex.length){ g.fillText('ยังไม่เคยสอบ — สอบครั้งแรกแล้วเส้นจะขึ้นเอง', 60, H/2); $('#sExamText').textContent=''; return; }
+  const line=(key,color,dash)=>{
+    g.strokeStyle=color; g.lineWidth=4; g.setLineDash(dash||[]); g.beginPath();
+    ex.forEach((e,i)=>{ const x=X(i), y=Y(e[key]); if(i) g.lineTo(x,y); else g.moveTo(x,y); }); g.stroke(); g.setLineDash([]);
+    g.fillStyle=color; ex.forEach((e,i)=>{ g.beginPath(); g.arc(X(i),Y(e[key]),6,0,Math.PI*2); g.fill(); });
+  };
+  line('guess','#A97400',[10,8]); line('score','#1B6F8A');
+  const last=ex[ex.length-1];
+  $('#sExamText').textContent='ล่าสุด '+last.d+': ได้ '+last.score+'% · ทายไว้ '+last.guess+'% · สอบไปแล้ว '+ex.length+' ครั้ง'+
+    (examReady()?' · พร้อมสอบครั้งถัดไปแล้ว':'');
+}
+
+/* ---------- R5 👂 การ์ดฟัง (จีน → ไทย) ----------
+   ข้อไหนถึงกล่อง 2 (จำได้แล้ว) จะมีการ์ดฟังคู่กัน: ได้ยินอย่างเดียว นึกความหมาย แล้วให้คะแนนตัวเอง */
+function lcardEnsure(h){
+  if(!h || String(h).indexOf('ฟัง:')===0) return;
+  const key='ฟัง:'+h;
+  if(S.srx[key]) return;
+  S.srx[key]={box:0, next:Date.now()+86400000, last:0, tries:0, ok:0, firstDay:today(), src:'ฟัง', base:h};
+  dlog('recall','👂 สร้างการ์ดฟัง: '+h+' (เริ่มพรุ่งนี้)');
+}
+function renderLCard(it){
+  tries=0; hintUsed=false; gaveUp=false; hintN=0;
+  $('#prompt').hidden=true; $('#talkbox').hidden=true; $('#gloss').hidden=true; $('#pNote').hidden=true; $('#reviewBar').hidden=true;
+  $('#prodBox').hidden=false;
+  $('#prodLab').textContent='👂 การ์ดฟัง · ฟังแล้วนึกความหมายเป็นภาษาไทย';
+  $('#prodThai').textContent='🔊';
+  $('#prodSlot').hidden=true; $('#prodTip').hidden=true; $('#prodHint').hidden=true; $('#prodAns').hidden=true; $('#prodAns').innerHTML='';
+  $('#btnHint').hidden=true; $('#btnGiveUp').hidden=true; $('#prodThink').hidden=true; clearTimeout(rcTimer); rcLocked=false;
+  $('#playBar').style.width=(qi/Q.length*100)+'%'; $('#playCount').textContent=(qi+1)+'/'+Q.length;
+  $('#btnSkip').style.visibility='visible'; $('#btnSelfPass').style.visibility='hidden';
+  latT0=0; latFirst=false; coachRingHide();
+  $('#heard').innerHTML='<button class="btn" id="lcShow">👀 ดูเฉลย</button>';
+  $('#lcShow').onclick=()=>lcardReveal(it);
+  micState(''); $('#mic').innerHTML='🔊 ฟังอีกครั้ง<small>การ์ดนี้ไม่ต้องพูด · นึกความหมายในใจแล้วกดดูเฉลย</small>';
+  speak(sayText(it.base));
+}
+function lcardReveal(it){
+  $('#prodAns').hidden=false;
+  $('#prodAns').innerHTML='<div class="small muted">เฉลย</div><div class="zh">'+esc(it.base.hanzi)+'</div>'+
+    '<div class="py">'+pyHTML(it.base.pinyin)+'</div><div class="th">'+esc(it.base.meaning||'')+'</div>';
+  $('#heard').innerHTML='<div class="small muted">นึกความหมายออกไหม</div><div class="rate3">'+
+    '<button class="btn ghost" data-r="1">❌ ไม่รู้</button><button class="btn ghost" data-r="2">🤏 เกือบ</button><button class="btn" data-r="3">✅ รู้</button></div>';
+  $$('#heard .rate3 .btn').forEach(b=>b.onclick=()=>lcardRate(it, +b.dataset.r));
+}
+function lcardRate(it, st){
+  const r=srsUpdate(it.hanzi, st, false, S.srx); r.src='ฟัง'; r.base=it.base.hanzi;
+  sessStars+=st; S.stats.stars+=st;
+  bestPer[qi]=Math.max(bestPer[qi]||0, st>=3?100:st>=2?75:40);
+  const e={h:it.hanzi, st:st, lat:null, heard:'(ให้คะแนนตัวเอง)'};
+  if(COACH.active) coachLog(e); else S.log.push(Object.assign({t:'lcard', ts:Date.now()}, e));
+  save();
+  dlog('recall','👂 การ์ดฟัง '+it.base.hanzi+' -> '+['','ไม่รู้','เกือบ','รู้'][st]+' · box '+r.box);
+  micState(st>=3?'ok':''); vib(st>=3?[30,40,30]:40);
+  setTimeout(()=>{ if(playing) next(); }, 500);
+}
+
+/* ---------- R5 ➕ การ์ดของฉัน ---------- */
+function renderMyList(){
+  const mine=Object.keys(S.srx).filter(k=>S.srx[k] && S.srx[k].src==='my');
+  $('#myList').innerHTML = mine.length
+    ? '<div class="small" style="font-weight:600">การ์ดของฉัน ('+mine.length+')</div>'+mine.map(k=>{
+        const m=S.srx[k].my||{};
+        return '<div class="myrow"><span class="grow"><b class="zh">'+esc(k)+'</b><br><span class="small muted">'+esc(m.meaning||'')+' · กล่อง '+(S.srx[k].box||0)+'</span></span>'+
+          '<button class="iconbtn" data-say="'+esc(k)+'">🔊</button><button class="iconbtn" data-del="'+esc(k)+'">🗑</button></div>';
+      }).join('')
+    : '<div class="small muted">ยังไม่มีการ์ดของฉัน</div>';
+}
+$('#btnMyCards').onclick=()=>{ $('#myMsg').textContent=''; renderMyList(); openM('mMy'); };
+$('#myList').addEventListener('click', e=>{
+  const s1=e.target.closest('[data-say]'); if(s1){ speak(s1.dataset.say); return; }
+  const d=e.target.closest('[data-del]'); if(!d) return;
+  const k=d.dataset.del;
+  if(!confirm('ลบการ์ด "'+k+'" ?')) return;
+  delete S.srx[k]; delete S.srx['ฟัง:'+k]; save(true); renderMyList(); renderHome();
+});
+$('#mySave').onclick=()=>{
+  const zh=($('#myZh').value||'').trim(), th=($('#myTh').value||'').trim();
+  let py=($('#myPy').value||'').trim();
+  const msg=t=>{ $('#myMsg').innerHTML=t; };
+  if(!/[\u4e00-\u9fff]/.test(zh)){ msg('<span style="color:var(--bad)">ใส่ตัวจีนก่อน</span>'); return; }
+  if(!th){ msg('<span style="color:var(--bad)">ใส่ความหมายไทยด้วย</span>'); return; }
+  if(S.srx[zh] && S.srx[zh].src!=='my'){ msg('<span style="color:var(--warn)">ประโยคนี้อยู่ในรอบทบทวนอยู่แล้ว</span>'); return; }
+  if(!py){
+    py=toPinyin(zh);
+    if(/[\u4e00-\u9fff]/.test(py)){ $('#myPy').value=py; msg('<span style="color:var(--warn)">บางตัวระบบเติมพินอินให้ไม่ได้ — ช่วยพิมพ์พินอินให้ครบก่อน</span>'); $('#myPy').focus(); return; }
+  }
+  S.srx[zh]={box:0, next:Date.now(), last:0, tries:0, ok:0, firstDay:today(), src:'my', my:{hanzi:zh, pinyin:py, meaning:th, thaiRead:''}};
+  save(true);
+  dlog('recall','➕ การ์ดของฉัน: '+zh+' = '+th);
+  $('#myZh').value=''; $('#myTh').value=''; $('#myPy').value='';
+  msg('<span style="color:var(--ok)">บันทึกแล้ว — อยู่ในปุ่ม 🔁 ทบทวนวันนี้</span>');
+  renderMyList(); renderHome();
+};
+
+/* ---------- R5 📝 ภาพจำของฉัน — โชว์หลังตอบเท่านั้น (ถ้าโชว์ก่อนจะกลายเป็นคำใบ้) ---------- */
+function noteHTML(it){
+  if(!it || !it.hanzi || MODE==='pretest' || MODE==='exam') return '';
+  const r=(it.store==='srx'?S.srx:S.core)[it.hanzi];
+  const note=(S.notes||{})[it.hanzi];
+  if(!note && !(r && (r.miss||0)>3)) return '';
+  return '<div class="mynote"><div class="small" style="font-weight:600">📝 ภาพจำของฉัน'+(note?'':' — พลาดข้อนี้บ่อย ลองผูกเป็นภาพ/เสียงไทยที่จำง่าย')+'</div>'+
+    (note?'<div class="show">'+esc(note)+'</div>':'')+
+    '<div class="row"><input id="noteIn" placeholder="เช่น 贵 กุ้ย → กุ้ยแพง" value="'+esc(note||'').replace(/"/g,'&quot;')+'"><button class="btn sm" id="noteSave" data-h="'+esc(it.hanzi)+'">บันทึก</button></div></div>';
+}
+document.addEventListener('click', e=>{
+  const b=e.target.closest('#noteSave'); if(!b) return;
+  const h=b.dataset.h, v=($('#noteIn').value||'').trim();
+  S.notes=S.notes||{};
+  if(v) S.notes[h]=v; else delete S.notes[h];
+  save(); toast('บันทึกภาพจำแล้ว','จะโชว์หลังตอบข้อนี้ครั้งหน้า',1400);
+  dlog('recall','📝 ภาพจำ '+h+': '+v);
+});
+
+/* ============================================================
    11. ปุ่ม / เหตุการณ์
    ============================================================ */
 $('#btnPlay').onclick=()=>{
@@ -6464,6 +7380,7 @@ $('#btnQuit').onclick=()=>{
   screenStack=['scr-home']; renderHome(); show('scr-home',false);
 };
 $('#btnHear').onclick=()=>{
+  { const c=cur(); if(c && c.kind==='lcard'){ speak(sayText(c.base)); return; } }
   if(MODE==='prod'||MODE==='pattern'){        // ยังไม่ได้พูด = ยังไม่เฉลย กดฟังได้ต่อเมื่อเฉลยแล้ว
     const it=cur();
     if(it && !$('#prodAns').hidden){ abortRec(); speak(sayText(it)); }
@@ -6472,6 +7389,20 @@ $('#btnHear').onclick=()=>{
   }
   if(MODE==='talk'){ const t=talkTurn(); if(t){ abortRec(); speak(t.ask, armMic); } return; }
   if(MODE==='shadow'){ const it=cur(); if(it){ abortRec(); speak(it.hanzi, armMic, SH_PLAN.rates[shStage]); } return; }
+  if(MODE==='exam'){
+    const it=cur(); if(!it) return;
+    if(it.exType==='listen'){ speak(it.hanzi); } else if(it.exType==='talk'){ abortRec(); speak(it.ask); }
+    else toast('ระหว่างสอบไม่มีเฉลย','เฉลยทั้งหมดอยู่ท้ายชุด',1500);
+    return;
+  }
+  if(MODE==='pretest'){ const it=cur(); if(it && !$('#prodAns').hidden){ abortRec(); speak(sayText(it)); } else toast('ลองเดาก่อน','ผิดก็ไม่เป็นไร',1300); return; }
+  if(MODE==='retell'){
+    const it=cur(); if(!it) return;
+    if(!it.mine){ abortRec(); retellReplay(); }
+    else if(!$('#prodAns').hidden){ abortRec(); speak(sayText(it)); }
+    else toast('ลองนึกเองก่อน','กดใบ้ได้หลัง 5 วินาที',1600);
+    return;
+  }
   const it=cur(); if(it){ abortRec(); speak(sayText(it), armMic); }
 };
 $('#reviewBar').addEventListener('click', e=>{
@@ -6480,9 +7411,14 @@ $('#reviewBar').addEventListener('click', e=>{
   abortRec(); speak(k);
   toast(k, (w.th||'')+' — '+shortMean(w.mean), 1600);
 });
-$('#btnSkip').onclick=()=>{ abortRec(); if(MODE==='talk') nextTurn(); else next(); };
+$('#btnSkip').onclick=()=>{
+  abortRec();
+  if(MODE==='exam'){ examRecord(cur(), false, '(ข้าม)', 0); }
+  if(MODE==='talk') nextTurn(); else next();
+};
 $('#btnSelfPass') && null;
 $('#btnSelfPass').onclick=()=>{                 // ระบบฟังไม่ออกเอง ไม่ควรทำให้ผู้ใช้ติดอยู่กับที่
+  if(MODE==='pretest'){ abortRec(); finishPretest(); return; }       // ลองก่อนเรียน: ข้ามไปเรียนเลย
   const it=cur(); if(!it||!playing) return;
   abortRec();
   if(MODE==='prod'||MODE==='pattern'){          // โหมดนึกเอง: ไปข้อต่อไปโดยไม่โกงยอดคำ
@@ -6627,6 +7563,8 @@ function renderSettings(){
   $('#swAuto').textContent=S.settings.autoListen?'เปิด':'ปิด'; $('#swAuto').classList.toggle('on',S.settings.autoListen);
   $('#swVib').textContent =S.settings.vibrate?'เปิด':'ปิด';  $('#swVib').classList.toggle('on',S.settings.vibrate);
   $('#swStrict').textContent=S.settings.coachStrict?'เปิด':'ปิด'; $('#swStrict').classList.toggle('on',!!S.settings.coachStrict);
+  $('#swRecall').textContent=S.settings.recallStrict?'เปิด':'ปิด'; $('#swRecall').classList.toggle('on',!!S.settings.recallStrict);
+  $('#swPretest').textContent=S.settings.pretest?'เปิด':'ปิด'; $('#swPretest').classList.toggle('on',!!S.settings.pretest);
   $$('#goalChips .chip').forEach(c=>c.classList.toggle('on', +c.dataset.g===(S.settings.coachGoal||2)));
 }
 $$('#rateChips .chip').forEach(c=>c.onclick=()=>{ S.settings.rate=+c.dataset.rate; save(); renderSettings(); speak('你好'); });
@@ -6634,12 +7572,16 @@ $('#swThai').onclick=()=>{ S.settings.showThai=!S.settings.showThai; save(); doc
 $('#swAuto').onclick=()=>{ S.settings.autoListen=!S.settings.autoListen; save(); renderSettings(); if(playing) renderMode(); };
 $('#swVib').onclick =()=>{ S.settings.vibrate=!S.settings.vibrate; save(); renderSettings(); vib(30); };
 $('#swStrict').onclick=()=>{ S.settings.coachStrict=!S.settings.coachStrict; save(); renderSettings(); };
+$('#swRecall').onclick=()=>{ S.settings.recallStrict=!S.settings.recallStrict; save(); renderSettings(); };
+$('#swPretest').onclick=()=>{ S.settings.pretest=!S.settings.pretest; save(); renderSettings(); };
 $$('#goalChips .chip').forEach(c=>c.onclick=()=>{ S.settings.coachGoal=+c.dataset.g; save(); renderSettings(); renderHome(); });
 
 document.addEventListener('keydown',e=>{
+  if(/INPUT|TEXTAREA|SELECT/.test((e.target&&e.target.tagName)||'')) return;   // กำลังพิมพ์ ไม่ใช่สั่งไมค์
   if(e.code==='Space' && playing && !e.repeat){ e.preventDefault(); if(HAS_SR && !recActive) startRec(); }
 });
 document.addEventListener('keyup',e=>{
+  if(/INPUT|TEXTAREA|SELECT/.test((e.target&&e.target.tagName)||'')) return;
   if(e.code==='Space' && playing){ e.preventDefault(); if(HAS_SR && recActive) stopRec(); }
 });
 
