@@ -3236,7 +3236,7 @@ const MILESTONES = [
 /* ============================================================
    2.5 บันทึกปัญหา (diagnostics) — ไว้ส่งให้ผู้พัฒนาดูเวลาไมค์มีปัญหา
    ============================================================ */
-const BUILD='2026-09-28a';                     // เปลี่ยนทุกครั้งที่แก้ไฟล์ จะได้รู้ว่า log มาจากรุ่นไหน
+const BUILD='2026-09-28b';                     // เปลี่ยนทุกครั้งที่แก้ไฟล์ จะได้รู้ว่า log มาจากรุ่นไหน
 const DIAG=[], STUCK={}, T0=Date.now();
 function dlog(tag, msg, extra){
   const line={t:Date.now()-T0, tag:tag, msg:msg===undefined?'':String(msg), extra:extra};
@@ -5100,7 +5100,7 @@ function detectPitch(buf, sr){
   const sr2=sr/2;
   let rms=0; for(let i=0;i<N;i++) rms+=x[i]*x[i];
   rms=Math.sqrt(rms/N);
-  if(rms<0.012) return -1;                              // เงียบเกินไป
+  if(rms<0.008) return -1;                              // เงียบเกินไป
   const lagMin=Math.floor(sr2/450), lagMax=Math.floor(sr2/70);
   let best=-1, bestVal=0, c0=0;
   for(let i=0;i<N;i++) c0+=x[i]*x[i];
@@ -5116,16 +5116,31 @@ function detectPitch(buf, sr){
 }
 /* ---- ตัดช่วงที่มีเสียงต่อเนื่องยาวที่สุด แล้วแปลงเป็นครึ่งเสียงเทียบค่ากลางของตัวเอง ---- */
 function contourOf(raw){
+  // เติมรูสั้นๆ (≤150ms) ด้วยเส้นตรง: ช่วงต่ำของเสียง 3 มักแหบจนจับ pitch ไม่ได้ชั่วครู่ ถ้าไม่เติม เส้นจะขาดครึ่ง
+  const f=raw.slice(), GAP=5;
+  let last=-1;
+  for(let i=0;i<f.length;i++){
+    if(!(f[i]>0)) continue;
+    if(last>=0 && i-last>1 && i-last-1<=GAP){
+      const a=Math.log2(f[last]), b=Math.log2(f[i]);
+      for(let k=last+1;k<i;k++) f[k]=Math.pow(2, a+(b-a)*(k-last)/(i-last));
+    }
+    last=i;
+  }
   let bs=-1,bl=0,cs=-1,cl=0;
-  for(let i=0;i<raw.length;i++){
-    if(raw[i]>0){ if(cs<0){cs=i;cl=0;} cl++; if(cl>bl){bl=cl;bs=cs;} }
+  for(let i=0;i<f.length;i++){
+    if(f[i]>0){ if(cs<0){cs=i;cl=0;} cl++; if(cl>bl){bl=cl;bs=cs;} }
     else { cs=-1; cl=0; }
   }
-  if(bs<0 || bl<6) return null;
-  const seg=raw.slice(bs,bs+bl);
-  const sorted=seg.slice().sort((a,b)=>a-b);
-  const med=sorted[Math.floor(sorted.length/2)];
-  return seg.map(f=>12*Math.log2(f/med));               // หน่วยครึ่งเสียง จุดกลาง = 0
+  if(bs<0 || bl<5) return null;
+  const med=a=>{ const s=a.slice().sort((x,y)=>x-y); return s[Math.floor(s.length/2)]; };
+  const m0=med(f.slice(bs,bs+bl));
+  // แก้ pitch กระโดดคู่แปด (ตัวจับเสียงหลงไปเจอฮาร์มอนิก): ห่างค่ากลางเกิน 7.5 ครึ่งเสียง = ผิดมา 12
+  let st=f.slice(bs,bs+bl).map(v=>{ let s=12*Math.log2(v/m0); while(s>7.5) s-=12; while(s<-7.5) s+=12; return s; });
+  const m1=med(st);
+  st=st.map(s=>s-m1);
+  // กรองจุดกระตุกทีละจุดด้วยมัธยฐาน 3 ค่า
+  return st.map((s,i,a)=>(i===0||i===a.length-1)?s:med([a[i-1],s,a[i+1]]));
 }
 function analyseTone(raw){
   const st=contourOf(raw);
@@ -5183,6 +5198,7 @@ function drawTone(userSt, expected, detected){
 }
 
 let toneSet=null, tIdx=0, toneStream=null, toneCtx=null, toneAn=null, toneTimer=null, toneBufArr=null, toneRaw=[], toneRec=false;
+let toneWant=false, toneOpening=false, toneEarly=false, toneTailT=null, toneIdleT=null, toneTries=0;
 function renderToneList(){
   const box=$('#toneList'); box.innerHTML='';
   TONE_SETS.forEach(s0=>{
@@ -5214,13 +5230,16 @@ function renderToneItem(){
   $('#toneBar').style.width=(tIdx/toneSet.items.length*100)+'%';
   $('#toneCount').textContent=(tIdx+1)+'/'+toneSet.items.length;
   drawTone(null, it.tone, 0);
+  toneTries=0; toneClose();
   speak(it.zh);
 }
-async function toneStart(){
-  if(toneRec) return;
+/* ไมค์ของหน้าวรรณยุกต์: เปิดตอนแตะครั้งแรก แล้วถือไว้ระหว่างลองซ้ำข้อเดิม (iPhone เปิดไมค์ใหม่ทุกครั้งกินเวลาเกือบวินาที
+   เสียงสั้นอย่าง má หายไปทั้งพยางค์) · ปิดเมื่อเปลี่ยนข้อ ก่อนเล่นเสียงต้นแบบ หรือไม่ได้ใช้ 8 วินาที */
+async function toneOpen(){
+  if(toneStream && toneCtx && toneAn) return true;
   try{
     toneStream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}});
-  }catch(e){ micPerm='denied'; openM('mMic'); dlog('เสียง','ขอไมค์ไม่ได้: '+(e&&e.name)); return; }
+  }catch(e){ micPerm='denied'; openM('mMic'); dlog('เสียง','ขอไมค์ไม่ได้: '+(e&&e.name)); return false; }
   micPerm='granted';
   const AC=window.AudioContext||window.webkitAudioContext;
   toneCtx=new AC();
@@ -5228,33 +5247,76 @@ async function toneStart(){
   const src=toneCtx.createMediaStreamSource(toneStream);
   toneAn=toneCtx.createAnalyser(); toneAn.fftSize=2048; src.connect(toneAn);
   toneBufArr=new Float32Array(toneAn.fftSize);
+  return true;
+}
+function toneClose(){
+  clearTimeout(toneIdleT); toneIdleT=null;
+  if(toneRec) toneAbort();
+  try{ toneStream && toneStream.getTracks().forEach(t=>t.stop()); }catch(e){}
+  try{ toneCtx && toneCtx.close(); }catch(e){}
+  toneStream=null; toneCtx=null; toneAn=null;
+}
+function toneMicIdle(){
+  $('#toneMic').className='mic';
+  $('#toneMic').innerHTML='แตะค้างแล้วออกเสียง<small>ลากเสียงยาวประมาณ 1 วินาที</small>';
+}
+async function toneStart(){
+  if(toneRec || toneOpening) return;
+  toneWant=true; toneEarly=false;
+  clearTimeout(toneIdleT); toneIdleT=null;
+  if(!toneStream){
+    toneOpening=true;
+    $('#toneMic').innerHTML='กำลังเปิดไมค์…<small>รอจุดแดงแล้วค่อยออกเสียง</small>';
+    const ok=await toneOpen();
+    toneOpening=false;
+    if(!ok){ toneMicIdle(); return; }
+    if(!$('#scr-tone').classList.contains('on')){ toneClose(); return; }
+  }
   toneRaw=[]; toneRec=true;
   $('#toneMic').className='mic rec';
   $('#toneMic').innerHTML='● ออกเสียงเลย<small>ลากยาวๆ แล้วปล่อยนิ้ว</small>';
   vib(20);
   toneTimer=setInterval(()=>{
+    if(!toneAn) return;
     toneAn.getFloatTimeDomainData(toneBufArr);
     toneRaw.push(detectPitch(toneBufArr, toneCtx.sampleRate));
     const c=contourOf(toneRaw);
     if(c) drawTone(c, toneItem()?toneItem().tone:1, 0);
-    if(toneRaw.length>170) toneStop();      // กันอัดยาวเกิน ~5 วินาที
+    if(toneRaw.length>170) toneStop(true);      // กันอัดยาวเกิน ~5 วินาที
   }, 30);
+  // ปล่อยนิ้วไปแล้วระหว่างรอไมค์: อัดต่ออีก 1.5 วิ ให้ยังพูดทัน
+  if(!toneWant){ toneEarly=true; toneTailT=setTimeout(()=>toneStop(true), 1500); }
 }
-function toneStop(){
+function toneAbort(){
+  clearTimeout(toneTailT); toneTailT=null;
+  toneWant=false;
   if(!toneRec) return;
+  toneRec=false; clearInterval(toneTimer); toneTimer=null;
+  toneMicIdle();
+}
+function toneStop(now){
+  toneWant=false;
+  if(!toneRec) return;                               // ยังเปิดไมค์ไม่เสร็จ: toneStart จะจัดการเอง
+  if(!now){                                          // คนมักปล่อยนิ้วตอนท้ายเสียงยังไม่จบ อัดเผื่ออีกนิด
+    if(!toneTailT) toneTailT=setTimeout(()=>toneStop(true), 220);
+    return;
+  }
+  clearTimeout(toneTailT); toneTailT=null;
   toneRec=false;
   clearInterval(toneTimer); toneTimer=null;
-  try{ toneStream.getTracks().forEach(t=>t.stop()); }catch(e){}
-  try{ toneCtx.close(); }catch(e){}
-  toneStream=null; toneCtx=null;
-  $('#toneMic').className='mic';
-  $('#toneMic').innerHTML='แตะค้างแล้วออกเสียง<small>ลากเสียงยาวประมาณ 1 วินาที</small>';
+  clearTimeout(toneIdleT); toneIdleT=setTimeout(toneClose, 8000);
+  toneMicIdle();
   const it=toneItem(); if(!it) return;
   const r=analyseTone(toneRaw);
-  dlog('เสียง', it.py+' -> '+(r.ok?('ตรวจได้เสียง '+r.tone+' (ช่วง '+r.range.toFixed(1)+' ครึ่งเสียง)'):'จับเสียงไม่ได้'));
+  toneTries++;
+  dlog('เสียง', it.py+' -> '+(r.ok?('ตรวจได้เสียง '+r.tone+' (ช่วง '+r.range.toFixed(1)+' ครึ่งเสียง)'):'จับเสียงไม่ได้')+(toneEarly?' [ปล่อยนิ้วก่อนไมค์พร้อม]':'')+' · ครั้งที่ '+toneTries);
+  const giveUp = toneTries>=3 && !(r.ok && r.tone===it.tone);
+  const skipNote = giveUp ? '<div class="small muted" style="margin-top:4px">ลองครบ 3 ครั้งแล้ว ข้ามไปข้อต่อไปก่อน</div>' : '';
+  if(giveUp) setTimeout(()=>{ if($('#scr-tone').classList.contains('on') && toneItem()===it) toneNext(); }, 2200);
   if(!r.ok){
     if(COACH.active) coachLog({h:it.zh, st:0, lat:null, heard:'(จับเสียงไม่ได้)', tone:it.tone, got:0});
-    $('#toneVerdict').innerHTML='<b style="color:var(--bad)">ยังจับเสียงไม่ได้</b><div class="small muted">ออกเสียงให้ดังและยาวขึ้น ประมาณ 1 วินาที ในที่เงียบๆ</div>';
+    $('#toneVerdict').innerHTML='<b style="color:var(--bad)">ยังจับเสียงไม่ได้</b><div class="small muted">'+
+      (toneEarly ? 'กดค้างไว้จนปุ่มขึ้น ● แล้วค่อยออกเสียง' : 'ออกเสียงให้ดังและยาวขึ้น ประมาณ 1 วินาที ในที่เงียบๆ')+'</div>'+skipNote;
     drawTone(null, it.tone, 0);
     return;
   }
@@ -5270,11 +5332,12 @@ function toneStop(){
     vib(140);
     const heard=r.tone?TONE_NAME[r.tone]:'ไม่ชัดพอจะบอกได้';
     $('#toneVerdict').innerHTML='<b style="color:var(--bad)">✗ เสียงคุณออกมาเป็น '+heard+'</b>'+
-      '<div class="small muted">ต้องการ '+TONE_NAME[it.tone]+' — '+TONE_TIP[it.tone]+'</div>';
+      '<div class="small muted">ต้องการ '+TONE_NAME[it.tone]+' — '+TONE_TIP[it.tone]+'</div>'+skipNote;
   }
 }
 function toneNext(){ tIdx++; if(!toneSet||tIdx>=toneSet.items.length||coachTimeUp()) finishTone(); else renderToneItem(); }
 function finishTone(){
+  toneClose();
   if(COACH.active) return coachNextBlock();
   releaseWake();
   const hit=toneSet._hit||0, n=toneSet.items.length;
@@ -7365,14 +7428,14 @@ $('#btnProd').onclick=startProdNew;
 $('#btnPattern').onclick=()=>{ renderPatList(); show('scr-patpick'); };
 $('#btnTalk').onclick=()=>{ renderTalkList(); show('scr-talkpick'); };
 $('#btnTone').onclick=()=>{ renderToneList(); show('scr-tonepick'); };
-$('#toneHear').onclick=()=>{ const it=toneItem(); if(it) speak(it.zh); };
-$('#toneNext').onclick=()=>{ if(toneRec) toneStop(); toneNext(); };
-$('#btnToneQuit').onclick=()=>{ if(COACH.active){ coachAskQuit(); return; } if(toneRec) toneStop(); releaseWake(); screenStack=['scr-home']; renderHome(); show('scr-home',false); };
+$('#toneHear').onclick=()=>{ const it=toneItem(); if(!it) return; toneClose(); speak(it.zh); };
+$('#toneNext').onclick=()=>{ toneAbort(); toneNext(); };
+$('#btnToneQuit').onclick=()=>{ if(COACH.active){ coachAskQuit(); return; } toneClose(); releaseWake(); screenStack=['scr-home']; renderHome(); show('scr-home',false); };
 (function(){
   const tm=$('#toneMic');
   tm.addEventListener('contextmenu', e=>e.preventDefault());
   tm.addEventListener('pointerdown', e=>{ e.preventDefault(); toneStart(); });
-  ['pointerup','pointercancel','pointerleave'].forEach(ev=>tm.addEventListener(ev, e=>{ e.preventDefault(); if(toneRec) toneStop(); }));
+  ['pointerup','pointercancel','pointerleave'].forEach(ev=>tm.addEventListener(ev, e=>{ e.preventDefault(); if(toneWant) toneStop(); }));
 })();
 $('#tReveal').onclick=()=>{ $('#talkbox').classList.toggle('veil'); };
 $('#btnLevels').onclick=()=>{ renderLevels(); show('scr-levels'); };
