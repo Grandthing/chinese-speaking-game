@@ -255,6 +255,25 @@ td.r,th.r{text-align:right}
 .cbarlab{display:flex;gap:.25rem;font-size:.62rem;color:var(--muted);margin-top:.2rem}
 .cbarlab span{flex:1;text-align:center}
 
+/* ---------- เส้นทางคำศัพท์ ---------- */
+.lvline{display:flex;align-items:center;gap:.5rem;width:100%;margin-top:.6rem;border:1px solid var(--rule);background:#fff;border-radius:.6rem;padding:.5rem .7rem;font:inherit;font-size:.9rem;cursor:pointer;text-align:left;color:var(--ink)}
+.lvline .lvbar{flex:1;min-width:2.5rem;height:.35rem;background:var(--rule);border-radius:1rem;overflow:hidden}
+.lvline .lvbar i{display:block;height:100%;background:var(--t1)}
+.lvcard.now{border:2px solid var(--t1)}
+.lvcard.lock{opacity:.6}
+.lvno{font-size:1.3rem}
+.lvsec{font-size:.75rem;color:var(--muted);margin:.55rem 0 .2rem;font-weight:600}
+.lvwrap{display:flex;flex-wrap:wrap;gap:.3rem}
+.lvi{display:flex;flex-direction:column;align-items:center;border:1px solid var(--rule);background:var(--card);border-radius:.5rem;padding:.2rem .5rem;font:inherit;cursor:pointer;line-height:1.25;max-width:100%}
+.lvi b{font-size:1.05rem;font-weight:600}
+.lvi i{font-style:normal;font-size:.68rem;color:var(--muted)}
+.lvi.b1{border-color:var(--t3);background:#FBF4E4}
+.lvi.b2,.lvi.b3{border-color:var(--t2);background:#EAF1E6}
+.lvsteps{display:flex;gap:.25rem;margin-top:.6rem}
+.lvsteps span{flex:1;font-size:.62rem;text-align:center;padding:.25rem .1rem;border-radius:.3rem;background:var(--rule);color:var(--muted);line-height:1.2}
+.lvsteps span.done{background:#EAF1E6;color:var(--t2)}
+.lvsteps span.now{background:var(--t1);color:#fff;font-weight:700}
+
 /* ---------- ฟังออกไหม ---------- */
 .lisbox{background:var(--card);border-radius:.9rem;padding:1.1rem;box-shadow:var(--shadow);text-align:center}
 .lisbox .plab{font-size:.8rem;color:var(--muted);letter-spacing:.02em}
@@ -294,6 +313,7 @@ td.r,th.r{text-align:right}
     <div class="card coachcard" id="coachCard">
       <div class="row"><b class="grow">🎯 โค้ชวันนี้</b><span class="small" id="ccStreak"></span></div>
       <div class="ccline" id="ccLine"></div>
+      <button class="lvline" id="ccLevel"></button>
       <div class="row" style="margin-top:.65rem">
         <button class="btn" id="btnCoach25" style="flex:2">▶ เริ่ม 25 นาที</button>
         <button class="btn ghost" id="btnCoach10" style="flex:1">10 นาที</button>
@@ -462,6 +482,17 @@ td.r,th.r{text-align:right}
         <button class="btn ghost" id="btnSkip">ข้าม ›</button>
       </div>
     </div>
+  </section>
+
+  <!-- ==================== เส้นทางคำศัพท์ ==================== -->
+  <section id="scr-lvmap" class="screen">
+    <div class="topbar"><button class="iconbtn" data-back>←</button><b class="grow">🪜 เส้นทางคำศัพท์</b><span class="small muted" id="lvmapN"></span></div>
+    <div class="card small" style="line-height:1.6">
+      ทุกเลเวล: <b>เรียนคำใหม่ → นึกคำ → ต่อก้อนคำ → ประกอบประโยค → ด่านทดสอบ</b><br>
+      ผ่านด่าน = ตอบถูกทุกข้อ และอย่างน้อย 80% ต้องพูดออกมาได้ใน 3 วินาที · ไม่ผ่านจะเจาะเฉพาะข้อที่อ่อนแล้วสอบใหม่<br>
+      <span class="muted">เล่นผ่าน 🎯 โค้ช · วันละไม่เกิน 2 เลเวล ให้สมองได้นอนเก็บ · แตะคำเพื่อฟังเสียง</span>
+    </div>
+    <div id="lvList"></div>
   </section>
 
   <!-- ==================== LISTEN (โค้ช B3) ==================== -->
@@ -2556,6 +2587,36 @@ const LISTEN = [
 ];
 
 /* ============================================================
+   1.76 เส้นทางคำศัพท์ 20 เลเวล (โหมดโค้ช บล็อก 🪜)
+   ต่อก้อนจากล่างขึ้นบน: คำ -> ก้อนคำ -> ประโยค · ก้อนคำ/ประโยคทุกอันใช้แค่คำของเลเวลนี้และก่อนหน้า
+   (ตรวจอัตโนมัติก่อนใส่: CORE100 ครบ 100 คำ ไม่ซ้ำ · ทุกตัวอักษรเรียนมาแล้ว · พินอิน/คำอ่านไทยนับพยางค์ตรง)
+   words: hanzi ใน CORE100 หรือคำเสริมที่มีข้อมูลครบ
+   ============================================================ */
+const LV_WL='了的吧呢个块';
+const LEVELS = [
+  {"n":1,"icon":"🛒","title":"เอา / ไม่เอา","words":["我","要","这个","不要","谢谢"],"chunks":[{"hanzi":"我要这个","pinyin":"wǒ yào zhè ge","thaiRead":"หว่อ เย่า เจ้อ เกอะ","meaning":"ฉันเอาอันนี้"},{"hanzi":"我不要这个","pinyin":"wǒ bú yào zhè ge","thaiRead":"หว่อ ปู๋ เย่า เจ้อ เกอะ","meaning":"ฉันไม่เอาอันนี้"},{"hanzi":"不要，谢谢","pinyin":"bú yào, xiè xie","thaiRead":"ปู๋ เย่า, เซี่ย เสียะ","meaning":"ไม่เอา ขอบคุณ"}],"sents":[{"hanzi":"我要这个，谢谢。","pinyin":"wǒ yào zhè ge, xiè xie","thaiRead":"หว่อ เย่า เจ้อ เกอะ, เซี่ย เสียะ","meaning":"ฉันเอาอันนี้ ขอบคุณ"}]},
+  {"n":2,"icon":"💰","title":"ถามราคา ต่อราคา","words":["多少钱","太","贵","便宜","一点"],"chunks":[{"hanzi":"这个多少钱","pinyin":"zhè ge duō shao qián","thaiRead":"เจ้อ เกอะ ตัว เสา เฉียน","meaning":"อันนี้เท่าไหร่"},{"hanzi":"太贵了","pinyin":"tài guì le","thaiRead":"ไท่ กุ้ย เลอะ","meaning":"แพงเกินไป"},{"hanzi":"便宜一点","pinyin":"pián yi yì diǎn","thaiRead":"เผียน อี๋ อี้ เตี่ยน","meaning":"ถูกลงหน่อย"}],"sents":[{"hanzi":"太贵了，便宜一点吧。","pinyin":"tài guì le, pián yi yì diǎn ba","thaiRead":"ไท่ กุ้ย เลอะ, เผียน อี๋ อี้ เตี่ยน ปะ","meaning":"แพงไป ลดหน่อยสิ"}]},
+  {"n":3,"icon":"🙏","title":"ขอ…ได้ไหม","words":["你好","你","请","给","那个","可以吗"],"chunks":[{"hanzi":"请给我那个","pinyin":"qǐng gěi wǒ nà ge","thaiRead":"ฉิ่ง เก่ย หว่อ น่า เกอะ","meaning":"ขออันนั้นให้ฉันหน่อย"},{"hanzi":"给我这个","pinyin":"gěi wǒ zhè ge","thaiRead":"เก่ย หว่อ เจ้อ เกอะ","meaning":"เอาอันนี้ให้ฉัน"},{"hanzi":"便宜一点可以吗","pinyin":"pián yi yì diǎn kě yǐ ma","thaiRead":"เผียน อี๋ อี้ เตี่ยน เข๋อ อี่ มะ","meaning":"ลดหน่อยได้ไหม"}],"sents":[{"hanzi":"你好，请给我那个，谢谢。","pinyin":"nǐ hǎo, qǐng gěi wǒ nà ge, xiè xie","thaiRead":"หนี ห่าว, ฉิ่ง เก่ย หว่อ น่า เกอะ, เซี่ย เสียะ","meaning":"สวัสดี ขออันนั้นหน่อย ขอบคุณ"}]},
+  {"n":4,"icon":"🍜","title":"มี…ไหม","words":["有","没有","吗","水","菜单"],"chunks":[{"hanzi":"有水吗","pinyin":"yǒu shuǐ ma","thaiRead":"โหย่ว สุ่ย มะ","meaning":"มีน้ำไหม"},{"hanzi":"有菜单吗","pinyin":"yǒu cài dān ma","thaiRead":"โหย่ว ไช่ ตาน มะ","meaning":"มีเมนูไหม"},{"hanzi":"没有水","pinyin":"méi yǒu shuǐ","thaiRead":"เหมย โหย่ว สุ่ย","meaning":"ไม่มีน้ำ"}],"sents":[{"hanzi":"你好，有菜单吗？","pinyin":"nǐ hǎo, yǒu cài dān ma","thaiRead":"หนี ห่าว, โหย่ว ไช่ ตาน มะ","meaning":"สวัสดี มีเมนูไหม"}]},
+  {"n":5,"icon":"☕","title":"กิน ดื่ม อยาก","words":["吃","喝","想","米饭","咖啡"],"chunks":[{"hanzi":"我想喝咖啡","pinyin":"wǒ xiǎng hē kā fēi","thaiRead":"หว่อ เสี่ยง เฮอ คา เฟย","meaning":"ฉันอยากดื่มกาแฟ"},{"hanzi":"我想吃这个","pinyin":"wǒ xiǎng chī zhè ge","thaiRead":"หว่อ เสี่ยง ชือ เจ้อ เกอะ","meaning":"ฉันอยากกินอันนี้"},{"hanzi":"我要米饭","pinyin":"wǒ yào mǐ fàn","thaiRead":"หว่อ เย่า หมี่ ฟ่าน","meaning":"ฉันเอาข้าวสวย"}],"sents":[{"hanzi":"我想吃米饭，不要咖啡。","pinyin":"wǒ xiǎng chī mǐ fàn, bú yào kā fēi","thaiRead":"หว่อ เสี่ยง ชือ หมี่ ฟ่าน, ปู๋ เย่า คา เฟย","meaning":"ฉันอยากกินข้าว ไม่เอากาแฟ"}]},
+  {"n":6,"icon":"🌶️","title":"เผ็ด ร้อน หนาว","words":["辣","热","冷","很","好"],"chunks":[{"hanzi":"不要辣","pinyin":"bú yào là","thaiRead":"ปู๋ เย่า ล่า","meaning":"ไม่เอาเผ็ด"},{"hanzi":"太辣了","pinyin":"tài là le","thaiRead":"ไท่ ล่า เลอะ","meaning":"เผ็ดเกินไป"},{"hanzi":"我要热的","pinyin":"wǒ yào rè de","thaiRead":"หว่อ เย่า เร่อ เตอะ","meaning":"ฉันเอาแบบร้อน"},{"hanzi":"很好","pinyin":"hěn hǎo","thaiRead":"เหิ่น ห่าว","meaning":"ดีมาก"}],"sents":[{"hanzi":"不要辣，我要热的咖啡。","pinyin":"bú yào là, wǒ yào rè de kā fēi","thaiRead":"ปู๋ เย่า ล่า, หว่อ เย่า เร่อ เตอะ คา เฟย","meaning":"ไม่เอาเผ็ด ขอกาแฟร้อน"},{"hanzi":"太冷了，我要热的水。","pinyin":"tài lěng le, wǒ yào rè de shuǐ","thaiRead":"ไท่ เหลิ่ง เลอะ, หว่อ เย่า เร่อ เตอะ สุ่ย","meaning":"หนาวเกินไป ขอน้ำร้อน"}]},
+  {"n":7,"icon":"💳","title":"เช็คบิล จ่ายเงิน","words":["买单","现金","信用卡","还是","可以"],"chunks":[{"hanzi":"你好，买单","pinyin":"nǐ hǎo, mǎi dān","thaiRead":"หนี ห่าว, หม่าย ตาน","meaning":"สวัสดี เช็คบิลด้วย"},{"hanzi":"信用卡可以吗","pinyin":"xìn yòng kǎ kě yǐ ma","thaiRead":"ซิ่น ย่ง ข่า เข๋อ อี่ มะ","meaning":"บัตรเครดิตได้ไหม"},{"hanzi":"现金还是信用卡","pinyin":"xiàn jīn hái shì xìn yòng kǎ","thaiRead":"เซี่ยน จิน ไห ซื่อ ซิ่น ย่ง ข่า","meaning":"เงินสดหรือบัตรเครดิต"},{"hanzi":"现金可以","pinyin":"xiàn jīn kě yǐ","thaiRead":"เซี่ยน จิน เข๋อ อี่","meaning":"เงินสดได้"}],"sents":[{"hanzi":"你好，买单。信用卡可以吗？","pinyin":"nǐ hǎo, mǎi dān. xìn yòng kǎ kě yǐ ma","thaiRead":"หนี ห่าว, หม่าย ตาน. ซิ่น ย่ง ข่า เข๋อ อี่ มะ","meaning":"สวัสดี เช็คบิลด้วย จ่ายบัตรได้ไหม"}]},
+  {"n":8,"icon":"🏨","title":"ไปไหน อยู่ไหน","words":["去","哪里","酒店","机场",{"hanzi":"在","pinyin":"zài","thaiRead":"จ้าย","meaning":"อยู่ที่"}],"chunks":[{"hanzi":"我要去机场","pinyin":"wǒ yào qù jī chǎng","thaiRead":"หว่อ เย่า ชวี่ จี ฉ่าง","meaning":"ฉันจะไปสนามบิน"},{"hanzi":"酒店在哪里","pinyin":"jiǔ diàn zài nǎ lǐ","thaiRead":"จิ่ว เตี้ยน จ้าย หน่า หลี่","meaning":"โรงแรมอยู่ที่ไหน"},{"hanzi":"你去哪里","pinyin":"nǐ qù nǎ lǐ","thaiRead":"หนี่ ชวี่ หน่า หลี่","meaning":"คุณไปไหน"}],"sents":[{"hanzi":"你好，我要去酒店。","pinyin":"nǐ hǎo, wǒ yào qù jiǔ diàn","thaiRead":"หนี ห่าว, หว่อ เย่า ชวี่ จิ่ว เตี้ยน","meaning":"สวัสดี ฉันจะไปโรงแรม"}]},
+  {"n":9,"icon":"🧭","title":"ถามทาง","words":["怎么走","地铁","直走","左","右"],"chunks":[{"hanzi":"地铁怎么走","pinyin":"dì tiě zěn me zǒu","thaiRead":"ตี้ เถี่ย เจิ่น เมอะ โจ่ว","meaning":"ไปรถไฟใต้ดินยังไง"},{"hanzi":"地铁在哪里","pinyin":"dì tiě zài nǎ lǐ","thaiRead":"ตี้ เถี่ย จ้าย หน่า หลี่","meaning":"รถไฟใต้ดินอยู่ที่ไหน"},{"hanzi":"左还是右","pinyin":"zuǒ hái shì yòu","thaiRead":"จั่ว ไห ซื่อ โย่ว","meaning":"ซ้ายหรือขวา"}],"sents":[{"hanzi":"你好，酒店怎么走？","pinyin":"nǐ hǎo, jiǔ diàn zěn me zǒu","thaiRead":"หนี ห่าว, จิ่ว เตี้ยน เจิ่น เมอะ โจ่ว","meaning":"สวัสดี ไปโรงแรมยังไง"}]},
+  {"n":10,"icon":"🚕","title":"นั่งรถ ลงรถ","words":["打的","坐","下车","等","这里"],"chunks":[{"hanzi":"打的去机场","pinyin":"dǎ dī qù jī chǎng","thaiRead":"ต่า ตี ชวี่ จี ฉ่าง","meaning":"นั่งแท็กซี่ไปสนามบิน"},{"hanzi":"坐地铁去酒店","pinyin":"zuò dì tiě qù jiǔ diàn","thaiRead":"จั้ว ตี้ เถี่ย ชวี่ จิ่ว เตี้ยน","meaning":"นั่งรถไฟใต้ดินไปโรงแรม"},{"hanzi":"我在这里下车","pinyin":"wǒ zài zhè lǐ xià chē","thaiRead":"หว่อ จ้าย เจ้อ หลี่ เซี่ย เชอ","meaning":"ฉันลงตรงนี้"},{"hanzi":"请等我","pinyin":"qǐng děng wǒ","thaiRead":"ฉิ่ง เติ่ง หว่อ","meaning":"กรุณารอฉันด้วย"}],"sents":[{"hanzi":"我要打的去机场。","pinyin":"wǒ yào dǎ dī qù jī chǎng","thaiRead":"หว่อ เย่า ต่า ตี ชวี่ จี ฉ่าง","meaning":"ฉันจะนั่งแท็กซี่ไปสนามบิน"},{"hanzi":"你好，我在这里下车。","pinyin":"nǐ hǎo, wǒ zài zhè lǐ xià chē","thaiRead":"หนี ห่าว, หว่อ จ้าย เจ้อ หลี่ เซี่ย เชอ","meaning":"สวัสดี ฉันลงตรงนี้"}]},
+  {"n":11,"icon":"🔢","title":"ตัวเลข 1–5","words":["一","二","三","四","五",{"hanzi":"两","pinyin":"liǎng","thaiRead":"เหลี่ยง","meaning":"สอง (ใช้นับของ)"}],"chunks":[{"hanzi":"我要两个","pinyin":"wǒ yào liǎng ge","thaiRead":"หว่อ เย่า เหลี่ยง เกอะ","meaning":"ฉันเอาสองอัน"},{"hanzi":"给我三个","pinyin":"gěi wǒ sān ge","thaiRead":"เก่ย หว่อ ซาน เกอะ","meaning":"ขอสามอัน"},{"hanzi":"五个多少钱","pinyin":"wǔ ge duō shao qián","thaiRead":"อู่ เกอะ ตัว เสา เฉียน","meaning":"ห้าอันเท่าไหร่"}],"sents":[{"hanzi":"我要两个，不要三个。","pinyin":"wǒ yào liǎng ge, bú yào sān ge","thaiRead":"หว่อ เย่า เหลี่ยง เกอะ, ปู๋ เย่า ซาน เกอะ","meaning":"ฉันเอาสองอัน ไม่เอาสามอัน"}]},
+  {"n":12,"icon":"🔢","title":"ตัวเลข 6–10 และเงิน","words":["六","七","八","九","十"],"chunks":[{"hanzi":"十块","pinyin":"shí kuài","thaiRead":"สือ ไคว่","meaning":"สิบหยวน"},{"hanzi":"八十块","pinyin":"bā shí kuài","thaiRead":"ปา สือ ไคว่","meaning":"แปดสิบหยวน"},{"hanzi":"九十九块","pinyin":"jiǔ shí jiǔ kuài","thaiRead":"จิ่ว สือ จิ่ว ไคว่","meaning":"เก้าสิบเก้าหยวน"},{"hanzi":"七个","pinyin":"qī ge","thaiRead":"ชี เกอะ","meaning":"เจ็ดอัน"}],"sents":[{"hanzi":"这个六十块，太贵了。","pinyin":"zhè ge liù shí kuài, tài guì le","thaiRead":"เจ้อ เกอะ ลิ่ว สือ ไคว่, ไท่ กุ้ย เลอะ","meaning":"อันนี้หกสิบหยวน แพงไป"}]},
+  {"n":13,"icon":"💴","title":"ร้อย พัน ซื้อ","words":["百","千","买","一个","多"],"chunks":[{"hanzi":"一百块","pinyin":"yì bǎi kuài","thaiRead":"อี้ ป่าย ไคว่","meaning":"หนึ่งร้อยหยวน"},{"hanzi":"两千块","pinyin":"liǎng qiān kuài","thaiRead":"เหลี่ยง เชียน ไคว่","meaning":"สองพันหยวน"},{"hanzi":"我想买一个","pinyin":"wǒ xiǎng mǎi yí gè","thaiRead":"หว่อ เสี่ยง หม่าย อี๋ เกอะ","meaning":"ฉันอยากซื้อหนึ่งอัน"},{"hanzi":"太多了","pinyin":"tài duō le","thaiRead":"ไท่ ตัว เลอะ","meaning":"เยอะเกินไป"}],"sents":[{"hanzi":"我想买一个，一百块可以吗？","pinyin":"wǒ xiǎng mǎi yí gè, yì bǎi kuài kě yǐ ma","thaiRead":"หว่อ เสี่ยง หม่าย อี๋ เกอะ, อี้ ป่าย ไคว่ เข๋อ อี่ มะ","meaning":"ฉันอยากซื้อหนึ่งอัน ร้อยหยวนได้ไหม"}]},
+  {"n":14,"icon":"👕","title":"ขนาด สี ขอลอง","words":["大","小","颜色","号码","试试"],"chunks":[{"hanzi":"大一点","pinyin":"dà yì diǎn","thaiRead":"ต้า อี้ เตี่ยน","meaning":"ใหญ่ขึ้นหน่อย"},{"hanzi":"小一点","pinyin":"xiǎo yì diǎn","thaiRead":"เสี่ยว อี้ เตี่ยน","meaning":"เล็กลงหน่อย"},{"hanzi":"可以试试吗","pinyin":"kě yǐ shì shi ma","thaiRead":"เข๋อ อี่ ซื่อ ซือ มะ","meaning":"ขอลองได้ไหม"},{"hanzi":"有这个颜色吗","pinyin":"yǒu zhè ge yán sè ma","thaiRead":"โหย่ว เจ้อ เกอะ เหยียน เซ่อ มะ","meaning":"มีสีนี้ไหม"}],"sents":[{"hanzi":"太小了，有大一点的吗？","pinyin":"tài xiǎo le, yǒu dà yì diǎn de ma","thaiRead":"ไท่ เสี่ยว เลอะ, โหย่ว ต้า อี้ เตี่ยน เตอะ มะ","meaning":"เล็กไป มีใหญ่กว่านี้ไหม"}]},
+  {"n":15,"icon":"🙋","title":"ฉันเป็นใคร","words":["是","不是","他","我们","谁",{"hanzi":"泰国人","pinyin":"tài guó rén","thaiRead":"ไท่ กว๋อ เหริน","meaning":"คนไทย"}],"chunks":[{"hanzi":"他是谁","pinyin":"tā shì shéi","thaiRead":"ทา ซื่อ เสย","meaning":"เขาคือใคร"},{"hanzi":"我们是泰国人","pinyin":"wǒ men shì tài guó rén","thaiRead":"หว่อ เมิน ซื่อ ไท่ กว๋อ เหริน","meaning":"พวกเราเป็นคนไทย"},{"hanzi":"这个不是我的","pinyin":"zhè ge bú shì wǒ de","thaiRead":"เจ้อ เกอะ ปู๋ ซื่อ หว่อ เตอะ","meaning":"อันนี้ไม่ใช่ของฉัน"}],"sents":[{"hanzi":"你好，我是泰国人。","pinyin":"nǐ hǎo, wǒ shì tài guó rén","thaiRead":"หนี ห่าว, หว่อ ซื่อ ไท่ กว๋อ เหริน","meaning":"สวัสดี ฉันเป็นคนไทย"}]},
+  {"n":16,"icon":"❓","title":"อะไร อันไหน เมื่อไหร่","words":["什么","哪个","几点","什么时候","多久"],"chunks":[{"hanzi":"这个是什么","pinyin":"zhè ge shì shén me","thaiRead":"เจ้อ เกอะ ซื่อ เสิน เมอะ","meaning":"อันนี้คืออะไร"},{"hanzi":"你要哪个","pinyin":"nǐ yào nǎ ge","thaiRead":"หนี่ เย่า หน่า เกอะ","meaning":"คุณเอาอันไหน"},{"hanzi":"什么时候去","pinyin":"shén me shí hòu qù","thaiRead":"เสิน เมอะ สือ โฮ่ว ชวี่","meaning":"ไปเมื่อไหร่"},{"hanzi":"要多久","pinyin":"yào duō jiǔ","thaiRead":"เย่า ตัว จิ่ว","meaning":"ใช้เวลานานแค่ไหน"}],"sents":[{"hanzi":"去机场要多久？","pinyin":"qù jī chǎng yào duō jiǔ","thaiRead":"ชวี่ จี ฉ่าง เย่า ตัว จิ่ว","meaning":"ไปสนามบินใช้เวลานานแค่ไหน"},{"hanzi":"我们几点去？","pinyin":"wǒ men jǐ diǎn qù","thaiRead":"หว่อ เมิน จี่ เตี่ยน ชวี่","meaning":"พวกเราไปกี่โมง"}]},
+  {"n":17,"icon":"🙇","title":"ขอโทษ รบกวน ลาก่อน","words":["对不起","没关系","不客气","再见","麻烦你"],"chunks":[{"hanzi":"麻烦你，给我水","pinyin":"má fán nǐ, gěi wǒ shuǐ","thaiRead":"หมา ฝาน หนี่, เก่ย หว่อ สุ่ย","meaning":"รบกวนขอน้ำหน่อย"},{"hanzi":"对不起，我不要","pinyin":"duì bu qǐ, wǒ bú yào","thaiRead":"ตุ้ย ปุ ฉี่, หว่อ ปู๋ เย่า","meaning":"ขอโทษ ฉันไม่เอา"},{"hanzi":"谢谢，再见","pinyin":"xiè xie, zài jiàn","thaiRead":"เซี่ย เสียะ, จ้าย เจี้ยน","meaning":"ขอบคุณ ลาก่อน"}],"sents":[{"hanzi":"麻烦你，酒店怎么走？","pinyin":"má fán nǐ, jiǔ diàn zěn me zǒu","thaiRead":"หมา ฝาน หนี่, จิ่ว เตี้ยน เจิ่น เมอะ โจ่ว","meaning":"รบกวนหน่อย ไปโรงแรมยังไง"}]},
+  {"n":18,"icon":"🗣️","title":"พูด ดู รู้ หา","words":["说","看","知道","来","找",{"hanzi":"不","pinyin":"bù","thaiRead":"ปู้","meaning":"ไม่"}],"chunks":[{"hanzi":"我不知道","pinyin":"wǒ bù zhī dào","thaiRead":"หว่อ ปู้ จือ เต้า","meaning":"ฉันไม่รู้"},{"hanzi":"我看看","pinyin":"wǒ kàn kan","thaiRead":"หว่อ คั่น คั่น","meaning":"ขอดูหน่อย"},{"hanzi":"我找酒店","pinyin":"wǒ zhǎo jiǔ diàn","thaiRead":"หว่อ เจ่า จิ่ว เตี้ยน","meaning":"ฉันหาโรงแรม"},{"hanzi":"你说什么","pinyin":"nǐ shuō shén me","thaiRead":"หนี่ ซัว เสิน เมอะ","meaning":"คุณพูดว่าอะไร"}],"sents":[{"hanzi":"对不起，我不知道。","pinyin":"duì bu qǐ, wǒ bù zhī dào","thaiRead":"ตุ้ย ปุ ฉี่, หว่อ ปู้ จือ เต้า","meaning":"ขอโทษ ฉันไม่รู้"},{"hanzi":"他来了，我们去吧。","pinyin":"tā lái le, wǒ men qù ba","thaiRead":"ทา ไหล เลอะ, หว่อ เมิน ชวี่ ปะ","meaning":"เขามาแล้ว ไปกันเถอะ"}]},
+  {"n":19,"icon":"🚆","title":"ตั๋วรถไฟ เป็นยังไง","words":["火车","票","怎么样","为什么","少"],"chunks":[{"hanzi":"买火车票","pinyin":"mǎi huǒ chē piào","thaiRead":"หม่าย หั่ว เชอ เพี่ยว","meaning":"ซื้อตั๋วรถไฟ"},{"hanzi":"火车票多少钱","pinyin":"huǒ chē piào duō shao qián","thaiRead":"หั่ว เชอ เพี่ยว ตัว เสา เฉียน","meaning":"ตั๋วรถไฟเท่าไหร่"},{"hanzi":"这个怎么样","pinyin":"zhè ge zěn me yàng","thaiRead":"เจ้อ เกอะ เจิ่น เมอะ ย่าง","meaning":"อันนี้เป็นยังไง"},{"hanzi":"你为什么不去","pinyin":"nǐ wèi shén me bú qù","thaiRead":"หนี่ เว่ย เสิน เมอะ ปู๋ ชวี่","meaning":"ทำไมคุณไม่ไป"},{"hanzi":"太少了","pinyin":"tài shǎo le","thaiRead":"ไท่ เส่า เลอะ","meaning":"น้อยเกินไป"}],"sents":[{"hanzi":"我想买火车票，多少钱？","pinyin":"wǒ xiǎng mǎi huǒ chē piào, duō shao qián","thaiRead":"หว่อ เสี่ยง หม่าย หั่ว เชอ เพี่ยว, ตัว เสา เฉียน","meaning":"ฉันอยากซื้อตั๋วรถไฟ เท่าไหร่"}]},
+  {"n":20,"icon":"🔗","title":"เชื่อมประโยค","words":["和","也","但是","因为","就"],"chunks":[{"hanzi":"咖啡和水","pinyin":"kā fēi hé shuǐ","thaiRead":"คา เฟย เหอ สุ่ย","meaning":"กาแฟกับน้ำ"},{"hanzi":"我也要","pinyin":"wǒ yě yào","thaiRead":"หว่อ เย่ เย่า","meaning":"ฉันก็เอาด้วย"},{"hanzi":"但是太贵了","pinyin":"dàn shì tài guì le","thaiRead":"ต้าน ซื่อ ไท่ กุ้ย เลอะ","meaning":"แต่แพงเกินไป"},{"hanzi":"就这个","pinyin":"jiù zhè ge","thaiRead":"จิ้ว เจ้อ เกอะ","meaning":"เอาอันนี้แหละ"}],"sents":[{"hanzi":"我很想买，但是太贵了。","pinyin":"wǒ hěn xiǎng mǎi, dàn shì tài guì le","thaiRead":"หว่อ เหิ่น เสี่ยง หม่าย, ต้าน ซื่อ ไท่ กุ้ย เลอะ","meaning":"อยากซื้อมาก แต่แพงเกินไป"},{"hanzi":"我不要，因为太辣了。","pinyin":"wǒ bú yào, yīn wèi tài là le","thaiRead":"หว่อ ปู๋ เย่า, อิน เว่ย ไท่ ล่า เลอะ","meaning":"ฉันไม่เอา เพราะเผ็ดเกินไป"}]}
+];
+
+/* ============================================================
    1.8 การ์ดโครงสร้างประโยค — ความรู้สั้นๆ ต่อบท (ไม่ใช่หน้าไวยากรณ์ยาว)
    ============================================================ */
 const NOTES = {
@@ -3071,7 +3132,7 @@ const MILESTONES = [
 /* ============================================================
    2.5 บันทึกปัญหา (diagnostics) — ไว้ส่งให้ผู้พัฒนาดูเวลาไมค์มีปัญหา
    ============================================================ */
-const BUILD='2026-09-25g';                     // เปลี่ยนทุกครั้งที่แก้ไฟล์ จะได้รู้ว่า log มาจากรุ่นไหน
+const BUILD='2026-09-26b';                     // เปลี่ยนทุกครั้งที่แก้ไฟล์ จะได้รู้ว่า log มาจากรุ่นไหน
 const DIAG=[], STUCK={}, T0=Date.now();
 function dlog(tag, msg, extra){
   const line={t:Date.now()-T0, tag:tag, msg:msg===undefined?'':String(msg), extra:extra};
@@ -3129,6 +3190,7 @@ function blank(){return{
   coach:{days:{}, sleep:{d:'', items:[], used:''}, sessions:0},  // days: 'YYYY-MM-DD' -> {rounds, partial, min, lat:[], lis:[ok,total]}
   srx:{},        // ตารางทบทวนรวม สำหรับทุกอย่างที่ไม่ใช่ CORE100: hanzi -> {box,next,last,tries,ok,src,slot,lat:[]}
   listen:{rate:0.9, streak:0, hist:[], typeMode:false},
+  lv:{cur:1, st:{}, seen:{}, ups:[]},   // เส้นทางคำศัพท์: cur = เลเวลปัจจุบัน · st[n] = {stage, weak, best, tries, pass}
   log:[]
 };}
 let S = load();
@@ -3149,7 +3211,12 @@ function load(){
         sleep:Object.assign(b.coach.sleep, oc.sleep||{})
       }),
       srx:(o.srx && typeof o.srx==='object') ? o.srx : {},
-      listen:Object.assign(b.listen, o.listen||{})
+      listen:Object.assign(b.listen, o.listen||{}),
+      lv:Object.assign(b.lv, o.lv||{}, {
+        st:Object.assign({}, (o.lv||{}).st||{}),
+        seen:Object.assign({}, (o.lv||{}).seen||{}),
+        ups:((o.lv||{}).ups||[]).slice()
+      })
     });
   }catch(e){ return blank(); }
 }
@@ -4506,7 +4573,7 @@ function judge(alts){
   // ---- โหมดโค้ช: เวลาตอบของความพยายามครั้งแรก (ครั้งต่อไปเห็นเฉลยแล้ว ไม่ใช่การนึกเอง) ----
   let lat=null, slow='';
   if(COACH.active && prod && latFirst){ lat=coachLatency(); latFirst=false; if(lat!==null) coachRingStop(lat); }
-  if(lat!==null && !hintUsed && rawSt>=3 && coachBlockIs('B2') && S.settings.coachStrict){
+  if(lat!==null && !hintUsed && rawSt>=3 && (coachBlockIs('B2') || (LV.active && LV.stage===4)) && S.settings.coachStrict){
     if(lat>6000) slow='vslow'; else if(lat>3000) slow='slow';
     if(slow){ st=2; score=Math.min(score, 80); }        // ถูกแต่ช้า = 2 ดาว
   }
@@ -4536,6 +4603,7 @@ function judge(alts){
       r.lat=(r.lat||[]).concat(lat).slice(-10);
       const day=coachDay(); day.lat.push(lat); if(day.lat.length>400) day.lat=day.lat.slice(-400);
     }
+    if(LV.active && it.lv){ S.lv.seen=S.lv.seen||{}; if(!S.lv.seen[it.hanzi]) S.lv.seen[it.hanzi]=Date.now(); }
     dlog('ทบทวน', it.hanzi+' -> box '+r.box+' ('+SRS_LABEL[r.box-1]+')'+(store===S.srx?' [รวม '+(it.src||'')+']':'')+
       (hintedButRight?'  [ใช้ตัวช่วย — คงระดับเดิม]':'')+(slow?'  [ถูกแต่ช้า — คงระดับเดิม]':''));
   }
@@ -4556,6 +4624,17 @@ function judge(alts){
     (slow==='slow' ? '<div class="nearTip">ถูก แต่ยังช้า ⏱ '+(lat/1000).toFixed(1)+' วิ — ลองให้คำออกมาภายใน 3 วิ รอบทบทวนจะยังไม่เลื่อน</div>' : '')+
     (slow==='vslow' ? '<div class="nearTip">ถูก แต่ช้ามาก ⏱ '+(lat/1000).toFixed(1)+' วิ — อีก 10 นาทีจะกลับมาถามใหม่</div>' : '');
 
+  if(LV.active && MODE==='prod' && !hintedButRight){
+    // 🪜 Deliberate practice: ไม่ถามซ้ำทันทีหลังเห็นเฉลย (นั่นคือการลอก ไม่ใช่การนึก)
+    // ข้อที่พลาดจะวนกลับมาถามอีกครั้งตอนท้ายขั้น · ด่านทดสอบตอบได้ครั้งเดียว
+    if(rawSt<2 && LV.stage!==4 && !it._rq){
+      Q.push(Object.assign({}, it, {_rq:true}));
+      $('#heard').insertAdjacentHTML('beforeend','<div class="nearTip">จำเฉลยไว้ — ข้อนี้จะวนกลับมาถามอีกครั้งตอนท้าย</div>');
+    }
+    vib(st>=3?[30,40,30]:st>=2?30:140); micState(st>=2?'ok':'');
+    setTimeout(()=>{ if(playing) next(); }, st>=3 && !slow ? AUTO_NEXT_MS : 2400);
+    return;
+  }
   if(slow){                                   // ถูกแล้ว แค่ช้า — ไปข้อต่อไป ไม่ต้องพูดซ้ำ
     vib([30,40,30]); micState('ok');
     setTimeout(()=>{ if(playing) next(); }, 2200);
@@ -5155,9 +5234,18 @@ function renderProd(it){
   const r=(it.store==='srx'?S.srx:S.core)[it.hanzi];
   $('#prodLab').textContent += r ? ('  ·  ทบทวนรอบที่ '+((r.tries||0)+1)) : '  ·  คำใหม่';
   micState('');
+  if(LV.active){                               // 🪜 เลเวล
+    $('#prodLab').textContent='🪜 เลเวล '+LV.n+' · '+LV_STAGES[LV.stage]+(it._rq?' · รอบแก้ตัว':'');
+    $('#btnHint').hidden = LV.stage===4;         // ด่านทดสอบ: ไม่มีตัวช่วย
+    // Chunking: ครั้งแรกที่เจอก้อนคำ บอกว่าต่อจากคำไหน (เป็นความหมายไทย ไม่เฉลยตัวจีน) แล้วค่อยถอดโครงออก
+    if(it.parts && it.parts.length>1 && LV.stage!==4 && !it._rq && !(S.lv.seen||{})[it.hanzi]){
+      $('#prodTip').hidden=false;
+      $('#prodTip').innerHTML='🧩 ต่อจากคำที่เรียนแล้ว: <b>'+it.parts.map(esc).join(' + ')+'</b>';
+    }
+  }
   if(COACH.active){                            // โค้ช: เริ่มจับเวลาตอบตอนโจทย์ขึ้นจอ
     latT0=Date.now(); latT1=0; latPress=0; latFirst=true;
-    if(coachBlockIs('B2') && S.settings.coachStrict) coachRingStart(); else coachRingHide();
+    if((coachBlockIs('B2') || LV.active) && S.settings.coachStrict) coachRingStart(); else coachRingHide();
   }else{ latT0=0; latFirst=false; coachRingHide(); }
   if(S.settings.autoListen) armMic();        // ห้ามเล่นเสียงต้นแบบก่อน ไม่งั้นเฉลยตั้งแต่ยังไม่พูด
 }
@@ -5208,6 +5296,7 @@ function startProdNew(){
   startProd(q,'นึกเอง');
 }
 function finishProd(){
+  if(COACH.active && LV.active) return lvStageDone();   // ขั้นของเลเวลจบ -> ตัดสินว่าไปขั้นถัดไปไหม
   if(COACH.active) return coachNextBlock();     // อยู่ในโหมดโค้ช: ไม่เปิดหน้าสรุปของโหมดนี้
   const ms=Date.now()-t0; S.stats.ms+=ms;
   const scores=Q.map((_,i)=>bestPer[i]||0);
@@ -5379,15 +5468,16 @@ function manual(st){
 const COACH_BLOCKS={
   B0:{icon:'🌙', name:'ทวนข้อที่พลาดเมื่อวาน', sr:true},
   B1:{icon:'🎧', name:'วอร์มอัพ พูดตามให้ทัน', sr:true},
-  B2:{icon:'🧠', name:'นึกเองแบบสลับ', sr:true},
+  BL:{icon:'🪜', name:'เลเวลคำศัพท์', sr:true},
+  B2:{icon:'🧠', name:'ทบทวนสลับ', sr:true},
   B3:{icon:'👂', name:'ฟังออกไหม', sr:false},
   B4:{icon:'🎵', name:'เจาะวรรณยุกต์', sr:false},
   B5:{icon:'🗣️', name:'ภารกิจสั้น', sr:true}
 };
 // [บล็อก, นาที] — รวมกันได้ 25 / 10 พอดี
 const COACH_PLAN={
-  25:[['B0',2],['B1',3],['B2',9],['B3',5],['B4',3],['B5',3]],
-  10:[['B0',1],['B1',1.5],['B2',4],['B3',2],['B4',1],['B5',0.5]]
+  25:[['B0',2],['B1',2],['BL',6],['B3',4],['B2',5],['B4',3],['B5',3]],
+  10:[['B0',0.5],['B1',1],['BL',3],['B3',1.5],['B2',2],['B4',1],['B5',1]]
 };
 const COACH_RUN={};            // บล็อกไหนมีตัวรันแล้วค่อยเล่นได้ ที่ยังไม่มีจะถูกข้าม
 const COACH={active:false, plan:[], bi:-1, sessT0:0, blockT0:0, blockEnd:0, minutes:25, items:[], tick:null, queueB2:[]};
@@ -5426,13 +5516,12 @@ async function coachStart(minutes){
   COACH.active=true; COACH.minutes=minutes; COACH.sessT0=Date.now(); COACH.bi=-1; COACH.items=[];
   COACH.plan=COACH_PLAN[minutes].map(x=>({b:x[0], ms:Math.round(x[1]*60000), used:0, skipped:false}));
   COACH.queueB0=buildSleepQueue();
-  const b0=new Set(COACH.queueB0.map(x=>norm(x.hanzi,false)));
-  COACH.queueB2=buildCoachQueue(minutes===10?14:30).filter(x=>!b0.has(norm(x.hanzi,false)));
+  COACH.queueB2=[]; COACH.lvUps=[]; COACH.lvFail=0; COACH.lvStart=(S.lv&&S.lv.cur)||1;
   const d=today(); if(!S.stats.days.includes(d)) S.stats.days.push(d);
   requestWake();
   $('#coachBar').hidden=false;
   clearInterval(COACH.tick); COACH.tick=setInterval(coachHud,1000);
-  dlog('coach','เริ่ม '+minutes+' นาที · แผน '+COACH.plan.map(p=>p.b).join(' ')+' · คิว B2 '+COACH.queueB2.length+' ข้อ');
+  dlog('coach','เริ่ม '+minutes+' นาที · แผน '+COACH.plan.map(p=>p.b).join(' ')+' · เลเวล '+COACH.lvStart+' ขั้น '+LV_STAGES[lvState(COACH.lvStart).stage||0]);
   save();
   coachNextBlock();
 }
@@ -5454,6 +5543,7 @@ function coachHaltTone(){
 function coachCleanupMode(){
   playing=false; abortRec(); try{ speechSynthesis.cancel(); }catch(e){}
   latT0=0; latFirst=false; coachRingHide();
+  LV.active=false; SH_PLAN=SH_B1;
   coachHaltTone();
   if(typeof lisCleanup==='function') lisCleanup();
   hideAllBoxes(); $('#talkbox').hidden=true; $('#prompt').hidden=false;
@@ -5527,6 +5617,12 @@ function renderCoachCard(){
   $('#btnCoach25').textContent = resting ? '☕ พักอยู่ อีก '+mmss(S.coach.breakUntil-Date.now()) : '▶ เริ่ม 25 นาที';
   $('#btnCoach25').disabled=!!resting; $('#btnCoach10').disabled=!!resting;
   if(resting && !breakT) breakT=setInterval(breakTick,1000);
+  const L=lvCur();
+  if(L){
+    const st=lvState(L.n), step=st.stage===5?4:Math.min(4,st.stage||0);
+    $('#ccLevel').innerHTML='🪜 <b>เลเวล '+L.n+'/'+LEVELS.length+'</b>&nbsp;'+esc(L.title)+
+      '<span class="lvbar"><i style="width:'+(step/5*100)+'%"></i></span>›';
+  }else $('#ccLevel').innerHTML='🪜 <b>ครบ '+LEVELS.length+' เลเวลแล้ว</b><span class="lvbar"><i style="width:100%"></i></span>›';
   const bed=bedtimeReady();
   $('#btnSleep').hidden=!bed;
   if(bed) $('#btnSleep').textContent='🌙 ทวนก่อนนอน ('+S.coach.sleep.items.length+' ข้อ · 2 นาที)';
@@ -5551,7 +5647,7 @@ function coachWeakToday(n){
   const t0=new Date(); t0.setHours(0,0,0,0);
   const by={};
   S.log.forEach(x=>{
-    if(x.t!=='coach' || x.ts<t0.getTime() || (x.b!=='B0' && x.b!=='B2') || !x.h) return;
+    if(x.t!=='coach' || x.ts<t0.getTime() || (x.b!=='B0' && x.b!=='B2' && x.b!=='BL') || !x.h) return;
     const r=by[x.h]||(by[x.h]={h:x.h, st:3, lat:0, n:0});
     r.st=Math.min(r.st, x.st||0); if(x.lat) r.lat=Math.max(r.lat, x.lat); r.n++;
   });
@@ -5595,7 +5691,12 @@ function renderCoachDone(ms){
     '<div class="cdrow"><span>⏱ เวลาตอบเฉลี่ยวันนี้</span><b>'+latHtml+'</b></div>'+
     '<div class="cdrow"><span>⚡ ตอบได้ใน 3 วินาที</span><b>'+(fast===null?'—':fast+'%')+'</b></div>'+
     '<div class="cdrow"><span>👂 ฟังถูก (รอบนี้)</span><b>'+(lis.length?lisOk+'/'+lis.length:'—')+' · '+S.listen.rate.toFixed(1)+'×</b></div>'+
-    '<div class="cdrow"><span>🎵 วรรณยุกต์ที่ต้องเจาะ</span><b>'+esc(toneTxt)+'</b></div>';
+    '<div class="cdrow"><span>🎵 วรรณยุกต์ที่ต้องเจาะ</span><b>'+esc(toneTxt)+'</b></div>'+
+    '<div class="cdrow"><span>🪜 เลเวลคำศัพท์</span><b>'+lvSummary()+'</b></div>';
+  if((COACH.lvUps||[]).length){
+    $('#cdIcon').textContent='🎉';
+    $('#cdTitle').textContent='เลเวลอัพ! → เลเวล '+((S.lv&&S.lv.cur)||1);
+  }
   // 5 ข้อที่อ่อนที่สุด -> ตั้งเป็นทวนก่อนนอน
   const weak=coachWeakToday(5);
   $('#cdWeakCard').hidden=!weak.length;
@@ -5655,7 +5756,7 @@ function buildSleepQueue(){
   const y0=new Date(); y0.setHours(0,0,0,0); const t1=y0.getTime(), t0=t1-86400000;
   const by={};
   S.log.forEach(x=>{
-    if(x.t!=='coach' || x.ts<t0 || x.ts>=t1 || (x.b!=='B0'&&x.b!=='B2') || !x.h) return;
+    if(x.t!=='coach' || x.ts<t0 || x.ts>=t1 || (x.b!=='B0'&&x.b!=='B2'&&x.b!=='BL') || !x.h) return;
     const r=by[x.h]||(by[x.h]={h:x.h, st:3, lat:0}); r.st=Math.min(r.st,x.st||0); if(x.lat) r.lat=Math.max(r.lat,x.lat);
   });
   const weak=Object.values(by).filter(r=>r.st<3||r.lat>3000).sort((a,b)=>(a.st-b.st)||(b.lat-a.lat)).map(r=>r.h);
@@ -5760,6 +5861,7 @@ function srxItem(h, r){
     const v=(L.vocab||[]).concat(L.dialogue||[]).find(x=>x.hanzi===h);
     return v ? Object.assign({kind:'core'}, v, {src:src, store:'srx'}) : null;
   }
+  if(src.indexOf('lv:')===0){ const it=lvFind(h); return it ? Object.assign({}, it) : null; }
   if(src==='mist'){
     const w=S.words[h]; if(!w) return null;
     return {hanzi:h, pinyin:w.py, thaiRead:w.th, meaning:w.mean, kind:'core', src:'mist', store:'srx'};
@@ -5814,32 +5916,16 @@ function buildCoachQueue(nMax){
     const it=srxItem(h,{src:'mist'}); if(it) weak.push({it:it, k:3000+S.mistakes[h]*500});
   });
   weak.sort((a,b)=>b.k-a.k);
-  // 3) ของใหม่ — โควตา CORE100 ก่อน แทรกประโยคจากแพตเทิร์นที่ปลดล็อกแล้ว แล้วค่อยคำจากด่านทริปที่เคยเล่น
-  const coreNew=coreNewPool().slice(0, coreQuotaLeft()).map(coreItem);
-  const patNew=[];
-  PATTERNS.forEach((pt,i)=>{
-    if(!patReady(pt)) return;
-    const slots=(pt.slots&&pt.slots.length)? pt.slots.slice() : [''];
-    slots.sort(()=>Math.random()-0.5);
-    for(const sl of slots){
-      const it=Object.assign({kind:'line', isPattern:true}, buildPattern(pt, sl), {src:'pat:'+i, store:'srx'});
-      if(!S.srx[it.hanzi]){ patNew.push(it); break; }
-    }
-  });
-  const tripNew=[];
-  TRIP.levels.forEach(L=>{
-    if(!S.progress[L.id]) return;                 // เฉพาะด่านที่เคยเล่นแล้ว
-    (L.vocab||[]).forEach(v=>{
-      if(CORE_BY_HANZI[v.hanzi] || S.srx[v.hanzi]) return;
-      tripNew.push(Object.assign({kind:'core'}, v, {src:'trip:'+L.id, store:'srx'}));
+  // 3) ฝึกสลับของเลเวลล่าสุดที่เคยฝึกแล้ว — ของใหม่จริงๆ มาจากบล็อก 🪜 เท่านั้น จะได้ต่อก้อนตามลำดับ
+  const freshK=[], curN=(S.lv&&S.lv.cur)||1;
+  LEVELS.filter(L=>L.n===curN || L.n===curN-1).forEach(L=>{
+    lvAllItems(L).forEach(it=>{
+      const r=(it.store==='srx'?S.srx:S.core)[it.hanzi];
+      if(r && r.next>now) freshK.push({it:it, k:r.box||0});
     });
   });
-  tripNew.sort(()=>Math.random()-0.5);
-  const fresh=[];
-  let pi=0;
-  coreNew.forEach((it,i)=>{ fresh.push(it); if(i%2===1 && pi<patNew.length) fresh.push(patNew[pi++]); });
-  while(pi<patNew.length) fresh.push(patNew[pi++]);
-  tripNew.forEach(it=>fresh.push(it));
+  freshK.sort((a,b)=>a.k-b.k);
+  const fresh=freshK.map(x=>x.it);
 
   const pick=[], seen=new Set();
   const add=(arr,k)=>{
@@ -5857,9 +5943,11 @@ function buildCoachQueue(nMax){
   return coachInterleave(pick);
 }
 COACH_RUN.B2=blk=>{
+  const b0=new Set((COACH.queueB0||[]).map(x=>norm(x.hanzi,false)));
+  COACH.queueB2=buildCoachQueue(COACH.minutes===10?10:24).filter(x=>!b0.has(norm(x.hanzi,false)));
   const q=COACH.queueB2.slice();
   if(!q.length) return false;
-  startProd(q, 'โค้ช · นึกเองแบบสลับ');
+  startProd(q, 'โค้ช · ทบทวนสลับ');
   return true;
 };
 
@@ -6031,30 +6119,229 @@ COACH_RUN.B3=blk=>{
   return true;
 };
 
+/* ---------- 🪜 เส้นทางคำศัพท์ — ตัวคุมเลเวล ----------
+   หลักจาก Learning How to Learn:
+   · Chunking      ต่อจากล่างขึ้นบน คำ → ก้อนคำ → ประโยค + ได้ยินภาพรวมก่อนในบล็อก 🎧 (top-down)
+   · Active recall เห็นแต่ความหมายไทย ต้องดึงคำจีนออกมาเอง ไม่ใช่อ่านซ้ำ
+   · Deliberate    พลาดแล้วไม่ถามซ้ำทันที วนกลับมาท้ายขั้น · สอบไม่ผ่าน = เจาะเฉพาะจุดอ่อนแล้วสอบใหม่
+   · Spacing       ของที่ผ่านแล้วเข้าตารางทบทวน · วันละไม่เกิน 2 เลเวล ให้สมองได้นอนเก็บ */
+const LV_STAGES=['เรียนคำใหม่','นึกคำ','ต่อก้อนคำ','ประกอบประโยค','ด่านทดสอบ','เจาะจุดอ่อน'];
+const LV_PER_DAY=2;
+const LV={active:false, n:0, stage:0};
+function lvWord(w){ return typeof w==='string' ? CORE_BY_HANZI[w] : w; }
+function lvCur(){ const n=(S.lv&&S.lv.cur)||1; return LEVELS.find(L=>L.n===n) || null; }
+function lvState(n){ S.lv.st=S.lv.st||{}; return S.lv.st[n]||(S.lv.st[n]={stage:0, weak:[], best:0, tries:0, pass:false}); }
+const LV_DICT={};
+LEVELS.forEach(L=>L.words.forEach(w=>{ const x=lvWord(w); if(x) LV_DICT[x.hanzi]={mean:x.meaning, n:L.n}; }));
+/* แยกก้อนคำกลับเป็นคำที่เรียนแล้ว -> ความหมายไทยของแต่ละคำ (ใช้เป็นโครงช่วยตอนเจอครั้งแรก) */
+function lvParts(h, n){
+  const s=[...String(h)].filter(c=>/[\u4e00-\u9fff]/.test(c)).join(''), out=[];
+  let i=0;
+  while(i<s.length){
+    let hit=null;
+    for(let k=Math.min(5,s.length-i);k>=1;k--){ const w=s.substr(i,k), d=LV_DICT[w]; if(d && d.n<=n){ hit=w; break; } }
+    if(hit){ out.push(String(LV_DICT[hit].mean).split(/[ (（\/]/)[0]); i+=hit.length; }
+    else i++;
+  }
+  return out;
+}
+function lvWordItem(L, w){
+  const x=lvWord(w); if(!x) return null;
+  if(CORE_BY_HANZI[x.hanzi]) return Object.assign(coreItem(CORE_BY_HANZI[x.hanzi]), {lv:L.n, lvKind:'word'});
+  return Object.assign({kind:'core'}, x, {src:'lv:'+L.n, store:'srx', lv:L.n, lvKind:'word'});
+}
+function lvPhraseItem(L, c, kind){
+  return Object.assign({kind:'line'}, c, {src:'lv:'+L.n, store:'srx', lv:L.n, lvKind:kind, parts:lvParts(c.hanzi, L.n)});
+}
+function lvAllItems(L){
+  return L.words.map(w=>lvWordItem(L,w)).filter(Boolean)
+    .concat(L.chunks.map(c=>lvPhraseItem(L,c,'chunk')), L.sents.map(c=>lvPhraseItem(L,c,'sent')));
+}
+function lvFind(h){
+  for(const L of LEVELS){ const it=lvAllItems(L).find(x=>x.hanzi===h); if(it) return it; }
+  return null;
+}
+function lvKnown(h){
+  const r=S.core[h]||S.srx[h];
+  return !!(((S.lv&&S.lv.seen)||{})[h] || (r && (r.box||0)>=1));
+}
+/* ขั้นเรียนคำใหม่: คำเดี่ยวให้พูดในวลี เพราะตัวถอดเสียงฟังคำเดี่ยวไม่ออก */
+function lvLearnItem(L, w){
+  const x=lvWord(w); if(!x) return null;
+  let say={hanzi:x.hanzi, pinyin:x.pinyin, thaiRead:x.thaiRead}, note='';
+  const nch=[...x.hanzi].filter(c=>/[\u4e00-\u9fff]/.test(c)).length;
+  if(nch===1 && canonNum(x.hanzi)===null){
+    const car=carrierOf({hanzi:x.hanzi});
+    const ph = car ? {hanzi:car.raw, pinyin:car.py, thaiRead:car.th, meaning:car.mean}
+                   : L.chunks.concat(L.sents).find(c=>c.hanzi.indexOf(x.hanzi)>=0);
+    if(ph){ say={hanzi:ph.hanzi, pinyin:ph.pinyin, thaiRead:ph.thaiRead}; note=' · พูดในวลี “'+ph.meaning+'”'; }
+  }
+  return {hanzi:say.hanzi, pinyin:say.pinyin, thaiRead:say.thaiRead, kind:'line', learnWord:x.hanzi,
+          meaning:'คำใหม่ '+x.hanzi+' = '+x.meaning+note};
+}
+function lvQueue(L, st){
+  const shuffle=a=>a.sort(()=>Math.random()-0.5);
+  switch(st.stage){
+    case 0: return L.words.filter(w=>{ const x=lvWord(w); return x && !lvKnown(x.hanzi); }).map(w=>lvLearnItem(L,w)).filter(Boolean);
+    case 1: return shuffle(L.words.map(w=>lvWordItem(L,w)).filter(Boolean));
+    case 2: return shuffle(L.chunks.map(c=>lvPhraseItem(L,c,'chunk')));
+    case 3: return L.sents.map(c=>lvPhraseItem(L,c,'sent'));
+    case 4: return shuffle(lvAllItems(L));
+    case 5: { const all=lvAllItems(L); return (st.weak||[]).map(h=>all.find(x=>x.hanzi===h)).filter(Boolean); }
+  }
+  return [];
+}
+function lvLevelsToday(){ const t=today(); return (S.lv.ups||[]).filter(u=>new Date(u.ts).toISOString().slice(0,10)===t).length; }
+function lvRunStage(){
+  const L=lvCur(); if(!L) return false;                       // จบครบทุกเลเวลแล้ว
+  const st=lvState(L.n);
+  let q=lvQueue(L, st), guard=0;
+  while(!q.length && guard++<6){                              // ขั้นที่ไม่มีข้อ (เช่นรู้คำหมดแล้ว) ข้ามไปขั้นถัดไป
+    if(st.stage<=3) st.stage++;
+    else if(st.stage===5){ st.stage=4; st.weak=[]; }
+    else break;
+    q=lvQueue(L, st);
+  }
+  if(!q.length) return false;
+  if(st.stage===0 && lvLevelsToday()>=LV_PER_DAY){             // วันนี้ขึ้นครบแล้ว ของใหม่ไว้พรุ่งนี้ (ให้สมองได้นอนเก็บ)
+    dlog('coach','🪜 วันนี้ขึ้นครบ '+LV_PER_DAY+' เลเวลแล้ว — คำใหม่ของเลเวล '+L.n+' ไว้พรุ่งนี้');
+    return false;
+  }
+  LV.active=true; LV.n=L.n; LV.stage=st.stage;
+  dlog('coach','🪜 เลเวล '+L.n+' · '+LV_STAGES[st.stage]+' ('+q.length+' ข้อ)');
+  if(st.stage===0){
+    SH_PLAN=SH_LEARN;
+    MODE='shadow'; levelId='coach:BL'; Q=q; qi=0; tries=0; sessUtter=0; sessStars=0; bestPer=[]; shIdx=-1;
+    playing=true; t0=Date.now();
+    show('scr-play'); renderMode();
+    document.body.classList.toggle('hidethai', !S.settings.showThai);
+    renderItem(true);
+  }else{
+    startProd(q, 'เลเวล '+L.n+' · '+LV_STAGES[st.stage]);
+  }
+  return true;
+}
+function lvLevelUp(L, pct){
+  const st=lvState(L.n); st.pass=true; st.stage=4; st.weak=[];
+  S.lv.ups=(S.lv.ups||[]).concat({n:L.n, ts:Date.now(), pct:pct});
+  const nx=LEVELS.find(x=>x.n===L.n+1);
+  S.lv.cur=L.n+1;
+  COACH.lvUps=(COACH.lvUps||[]).concat(L.n);
+  vib([40,60,40,60,80]);
+  toast('🎉 เลเวลอัพ!', nx ? ('ผ่านเลเวล '+L.n+' → เลเวล '+nx.n+' '+nx.title) : ('จบครบทั้ง '+LEVELS.length+' เลเวลแล้ว!'), 3000);
+  dlog('coach','🪜 เลเวลอัพ '+L.n+' → '+(L.n+1)+' ('+pct+'%)');
+}
+/* ขั้นหนึ่งจบ (ครบคิว หรือหมดเวลาบล็อก) -> ตัดสินแล้วทำขั้นถัดไปต่อถ้ายังมีเวลา */
+function lvStageDone(){
+  const L=LEVELS.find(x=>x.n===LV.n), st=lvState(LV.n);
+  const complete = qi>=Q.length;
+  const best={};
+  Q.forEach((it,i)=>{ if(i>=qi) return; const k=it.learnWord||it.hanzi; best[k]=Math.max(best[k]||0, bestPer[i]||0); });
+  const hs=Object.keys(best);
+  playing=false; abortRec(); latT0=0; latFirst=false; coachRingHide(); hideAllBoxes();
+  LV.active=false; MODE='lesson'; SH_PLAN=SH_B1;
+  if(complete && L){
+    if(st.stage===0){
+      hs.forEach(h=>{ S.lv.seen[h]=S.lv.seen[h]||Date.now(); });
+      st.stage=1;
+    }else if(st.stage>=1 && st.stage<=3){
+      st.weak=[...new Set((st.weak||[]).concat(hs.filter(h=>best[h]<70)))];
+      st.stage++;
+    }else if(st.stage===4){
+      st.tries=(st.tries||0)+1;
+      const ok=hs.filter(h=>best[h]>=70).length, fast=hs.filter(h=>best[h]>=90).length;
+      const pct=Math.round(hs.reduce((a,h)=>a+best[h],0)/Math.max(1,hs.length));
+      st.best=Math.max(st.best||0, pct);
+      const pass = hs.length>0 && ok===hs.length && fast>=Math.ceil(hs.length*0.8);
+      dlog('coach','🪜 ทดสอบเลเวล '+L.n+': ถูก '+ok+'/'+hs.length+' · ใน 3 วิ '+fast+' · '+pct+'% → '+(pass?'ผ่าน':'ยังไม่ผ่าน'));
+      if(pass) lvLevelUp(L, pct);
+      else{
+        st.weak=hs.filter(h=>best[h]<90); st.stage=5; COACH.lvFail=(COACH.lvFail||0)+1;
+        toast('ยังไม่ผ่านด่าน', 'ถูก '+ok+'/'+hs.length+' · ใน 3 วิ '+fast+' — เจาะ '+st.weak.length+' ข้อที่ยังอ่อน แล้วสอบใหม่', 2800);
+      }
+    }else if(st.stage===5){
+      st.weak=[]; st.stage=4;
+    }
+  }
+  save();
+  if(!COACH.active) return;
+  if(!coachTimeUp() && lvRunStage()) return;                 // ยังมีเวลา ทำขั้นถัดไปต่อในบล็อกเดียวกัน
+  coachNextBlock();
+}
+COACH_RUN.BL=blk=>lvRunStage();
+function lvSummary(){
+  const ups=COACH.lvUps||[];
+  if(ups.length) return '🎉 '+ups.map(n=>n+'→'+(n+1)).join(', ');
+  const L=lvCur(); if(!L) return 'ครบ '+LEVELS.length+' เลเวล';
+  return 'เลเวล '+L.n+' · '+LV_STAGES[lvState(L.n).stage||0];
+}
+
+/* ---------- หน้าเส้นทางคำศัพท์ (ภาพรวม = top-down chunking) ---------- */
+function renderLvMap(){
+  const cur=(S.lv&&S.lv.cur)||1;
+  $('#lvmapN').textContent = cur>LEVELS.length ? 'ครบ '+LEVELS.length+' เลเวล' : 'เลเวล '+cur+' / '+LEVELS.length;
+  const box=$('#lvList'); box.innerHTML='';
+  LEVELS.forEach(L=>{
+    const st=(S.lv.st||{})[L.n]||{}, done=L.n<cur, now=L.n===cur;
+    const div=document.createElement('div');
+    div.className='card lvcard'+(now?' now':'')+(!done&&!now?' lock':'');
+    const status = done ? '✅ '+(st.best?st.best+'%':'ผ่าน') : now ? '▶ '+LV_STAGES[st.stage||0] : '🔒';
+    let html='<div class="row"><span class="lvno">'+L.icon+'</span><b class="grow">เลเวล '+L.n+' · '+esc(L.title)+'</b><span class="small">'+status+'</span></div>';
+    if(done||now){
+      const items=lvAllItems(L);
+      const chip=it=>{
+        const r=(it.store==='srx'?S.srx:S.core)[it.hanzi], b=r?Math.min(3,r.box||0):0;
+        return '<button class="lvi b'+b+'" data-h="'+esc(it.hanzi)+'"><b class="zh">'+esc(it.hanzi)+'</b><i>'+esc(it.lvKind==='word'?shortMean(it.meaning):it.meaning)+'</i></button>';
+      };
+      [['คำ','word'],['ก้อนคำ','chunk'],['ประโยค','sent']].forEach(([t,k])=>{
+        html+='<div class="lvsec">'+t+'</div><div class="lvwrap">'+items.filter(x=>x.lvKind===k).map(chip).join('')+'</div>';
+      });
+      if(now){
+        const sg=st.stage===5?4:(st.stage||0);
+        html+='<div class="lvsteps">'+LV_STAGES.slice(0,5).map((n,i)=>'<span class="'+(i<sg?'done':i===sg?'now':'')+'">'+n+'</span>').join('')+'</div>';
+        if(st.stage===5) html+='<div class="small" style="margin-top:.35rem;color:var(--warn)">กำลังเจาะจุดอ่อน '+(st.weak||[]).length+' ข้อ ก่อนสอบใหม่</div>';
+      }
+    }else{
+      html+='<div class="small muted" style="margin-top:.3rem">'+L.words.map(w=>esc(lvWord(w).hanzi)).join(' · ')+'</div>';
+    }
+    div.innerHTML=html; box.appendChild(div);
+  });
+}
+$('#lvList').addEventListener('click', e=>{
+  const b=e.target.closest('.lvi'); if(!b) return;
+  const it=lvFind(b.dataset.h);
+  speak(it ? (it.lvKind==='word' ? sayText(it) : it.hanzi) : b.dataset.h);
+});
+$('#ccLevel').onclick=()=>{ renderLvMap(); show('scr-lvmap'); };
+
 /* ---------- B1 พูดตามไล่ความเร็ว (shadowing) — ประโยคเดียวกับที่จะนึกเองใน B2 = ได้ยินก่อน ---------- */
-const SH_RATES=[0.7, 1.0, 1.2];
+const SH_B1={rates:[0.7, 1.0, 1.2], max:3, label:'🎧 พูดตามให้ทัน'};
+const SH_LEARN={rates:[0.8], max:2, label:'🪜 เรียนคำใหม่ — ดู ฟัง แล้วพูดตาม'};
+let SH_PLAN=SH_B1;
 let shStage=0, shRounds=0, shIdx=-1;
+/* B1 = ภาพรวมก่อน (top-down chunking): ได้ยินก้อนคำ/ประโยคของเลเวลที่กำลังเรียน ก่อนลงมือต่อก้อนเองในบล็อก 🪜 */
 function shadowItems(){
   const want = COACH.minutes===10 ? 4 : 6, out=[], seen=new Set();
-  for(const it of COACH.queueB2){
-    if(out.length>=want) break;
-    const nch=[...String(it.hanzi)].filter(c=>/[一-鿿]/.test(c)).length;
-    let t=it;
-    if(nch===1){                              // คำเดี่ยวฟังไม่ออก ใช้วลีที่มีคำนั้นแทน
-      const car=carrierOf(it); if(!car) continue;
-      t={hanzi:car.raw, pinyin:car.py, thaiRead:car.th, meaning:car.mean};
-    }
-    const k=norm(t.hanzi,false); if(!k || seen.has(k)) continue; seen.add(k);
+  const push=t=>{
+    if(out.length>=want) return;
+    const k=norm(t.hanzi,false); if(!k || seen.has(k)) return; seen.add(k);
     out.push({hanzi:t.hanzi, pinyin:t.pinyin, thaiRead:t.thaiRead, meaning:t.meaning, kind:'line', shadow:true});
-  }
+  };
+  const L=lvCur();
+  if(L){ L.sents.forEach(push); L.chunks.forEach(push); }
+  const P=L ? LEVELS.find(x=>x.n===L.n-1) : null;
+  if(P){ P.sents.forEach(push); P.chunks.forEach(push); }
+  // เติมจากเลเวลที่ผ่านมาแล้วเท่านั้น (ไม่ดึงของเลเวลที่ยังไม่ถึงมาปน) · ครบทุกเลเวลแล้วสุ่มจากทั้งหมด
+  const curN=(S.lv&&S.lv.cur)||1;
+  if(out.length<want) LEVELS.filter(x=>x.n<curN).sort(()=>Math.random()-0.5).forEach(x=>{ x.sents.forEach(push); x.chunks.forEach(push); });
   return out;
 }
 function renderShadow(it){
   if(shIdx!==qi){ shIdx=qi; shStage=0; shRounds=0; }
   tries=0;
   hideAllBoxes();
-  const rt=SH_RATES[shStage];
-  $('#pKind').textContent='🎧 พูดตามให้ทัน · ความเร็ว '+rt.toFixed(1)+'× · รอบ '+(shRounds+1)+'/3';
+  const rt=SH_PLAN.rates[shStage];
+  $('#pKind').textContent=(LV.active?'เลเวล '+LV.n+' · ':'')+SH_PLAN.label+' · '+rt.toFixed(1)+'× · รอบ '+(shRounds+1)+'/'+SH_PLAN.max;
   const nch=[...String(it.hanzi)].filter(c=>/[一-鿿]/.test(c)).length;
   $('#pHan').className='han zh'+(nch>14?' xlong':nch>9?' long':'');
   $('#pHan').innerHTML='<span class="zh">'+esc(it.hanzi)+'</span>';
@@ -6071,26 +6358,29 @@ function renderShadow(it){
 }
 function judgeShadow(alts){
   const it=cur(); if(!it) return;
-  const r=scoreAll(it.hanzi, alts), st=starsOf(r.score), rt=SH_RATES[shStage];
+  const r=scoreAll(it.hanzi, alts), st=starsOf(r.score), rt=SH_PLAN.rates[shStage];
   shRounds++; sessUtter++; sessStars+=st; S.stats.utter++; S.stats.stars+=st;
-  coachLog({h:it.hanzi, st:st, lat:null, heard:r.heard, score:r.score, rate:rt});
+  bestPer[qi]=Math.max(bestPer[qi]||0, r.score);
+  coachLog({h:it.learnWord||it.hanzi, st:st, lat:null, heard:r.heard, score:r.score, rate:rt});
   save();
   dlog('coach','B1 '+it.hanzi+' @'+rt+' -> '+r.score+'% (ได้ยิน: '+(r.heard||'—')+')');
   $('#pHan').innerHTML='<span class="zh">'+markedHTML(it.hanzi, norm(r.heard,false))+'</span>';
   $('#heard').innerHTML='<div class="lab">ได้ยินว่า</div><div class="small muted zh">'+esc(r.heard||'—')+'</div>'+
     '<div class="stars" style="color:var(--'+(st>=3?'ok':st>=2?'warn':'bad')+')">'+starStr(st)+' <span class="small">'+r.score+'% @ '+rt.toFixed(1)+'×</span></div>'+
     (r.hints&&r.hints.length ? '<div class="nearTip">ใกล้แล้ว — '+r.hints.map(esc).join('<br>')+'</div>' : '');
-  const done = shRounds>=3 || (st>=2 && shStage>=SH_RATES.length-1);
+  const done = shRounds>=SH_PLAN.max || (st>=2 && shStage>=SH_PLAN.rates.length-1);
   if(done){ vib(st>=2?[30,40,30]:140); micState(st>=2?'ok':''); setTimeout(()=>{ if(playing && MODE==='shadow') next(); }, 1300); return; }
   if(st>=2){ shStage++; vib([30,40,30]); micState('ok'); }
   else { vib(140); micState(''); }
   setTimeout(()=>{ if(playing && MODE==='shadow') renderShadow(it); }, 1000);   // พูดซ้ำที่ความเร็วถัดไป (หรือเดิมถ้ายังไม่ผ่าน)
 }
 function finishShadow(){
+  if(COACH.active && LV.active) return lvStageDone();
   if(COACH.active) return coachNextBlock();
   endPlay(); MODE='lesson'; screenStack=['scr-home']; renderHome(); show('scr-home',false);
 }
 COACH_RUN.B1=blk=>{
+  SH_PLAN=SH_B1;
   const q=shadowItems(); if(!q.length) return false;
   MODE='shadow'; levelId='coach:B1'; Q=q; qi=0; tries=0; sessUtter=0; sessStars=0; bestPer=[]; shIdx=-1;
   playing=true; t0=Date.now();
@@ -6181,7 +6471,7 @@ $('#btnHear').onclick=()=>{
     return;
   }
   if(MODE==='talk'){ const t=talkTurn(); if(t){ abortRec(); speak(t.ask, armMic); } return; }
-  if(MODE==='shadow'){ const it=cur(); if(it){ abortRec(); speak(it.hanzi, armMic, SH_RATES[shStage]); } return; }
+  if(MODE==='shadow'){ const it=cur(); if(it){ abortRec(); speak(it.hanzi, armMic, SH_PLAN.rates[shStage]); } return; }
   const it=cur(); if(it){ abortRec(); speak(sayText(it), armMic); }
 };
 $('#reviewBar').addEventListener('click', e=>{
