@@ -735,6 +735,8 @@ td.r,th.r{text-align:right}
       <button class="btn ghost" id="btnForceUpdate">♻️ บังคับโหลดรุ่นล่าสุด</button>
     </div>
 
+    <button class="btn" id="btnShareLogs">📤 แชร์ log ทั้งหมด ไปแอปอื่น</button>
+    <p class="small muted" style="margin:.3rem 0 .6rem">ส่งทั้งบันทึกปัญหา (.txt) และ log การฝึก (.json) พร้อมกัน ผ่าน LINE, Mail, Drive, AirDrop ฯลฯ · บันทึกปัญหาเก็บไว้ในเครื่องแล้ว ปิดแอปไปก่อนก็ยังส่งย้อนหลังได้</p>
     <button class="btn ghost" id="btnDiag">🐞 บันทึกปัญหา (log) — ส่งให้ผู้พัฒนาดู</button>
     <button class="btn ghost" id="btnExport" style="margin-top:.5rem">⬇ ดาวน์โหลด log การฝึก (JSON)</button>
     <div class="card" style="margin-top:.75rem">
@@ -822,12 +824,13 @@ td.r,th.r{text-align:right}
   <p class="small muted" style="margin:.2rem 0 .6rem">ก็อปข้อความทั้งหมดนี้ส่งกลับมาในแชทได้เลย จะเห็นว่าไมค์สะดุดตรงจังหวะไหน</p>
   <pre id="diagBox" style="background:#fff;border:1px solid var(--rule);border-radius:.5rem;padding:.6rem;font-size:.72rem;line-height:1.45;max-height:45vh;overflow:auto;white-space:pre-wrap;word-break:break-word;margin:0"></pre>
   <div class="row" style="margin-top:.75rem">
-    <button class="btn ghost" id="diagSend">📤 ส่งให้ผู้พัฒนา</button>
+    <button class="btn ghost" id="diagSend">📤 แชร์ไปแอปอื่น</button>
     <button class="btn ghost" id="diagCopy">📋 คัดลอก</button>
     <button class="btn" data-close>ปิด</button>
   </div>
   <div class="row" style="margin-top:.5rem">
-    <button class="btn ghost sm" id="diagSave" style="width:100%">⬇ บันทึกเป็นไฟล์ .txt</button>
+    <button class="btn ghost sm" id="diagSave" style="flex:1">⬇ บันทึกเป็นไฟล์ .txt</button>
+    <button class="btn ghost sm" id="diagClear" style="flex:none">🗑 ล้าง log</button>
   </div>
 </div></div>
 
@@ -3236,12 +3239,27 @@ const MILESTONES = [
 /* ============================================================
    2.5 บันทึกปัญหา (diagnostics) — ไว้ส่งให้ผู้พัฒนาดูเวลาไมค์มีปัญหา
    ============================================================ */
-const BUILD='2026-09-28b';                     // เปลี่ยนทุกครั้งที่แก้ไฟล์ จะได้รู้ว่า log มาจากรุ่นไหน
+const BUILD='2026-09-28c';                     // เปลี่ยนทุกครั้งที่แก้ไฟล์ จะได้รู้ว่า log มาจากรุ่นไหน
 const DIAG=[], STUCK={}, T0=Date.now();
+/* log ปัญหาเก็บลงเครื่องด้วย: iPhone ปิดแอปหรือรีเฟรชแล้ว log เก่ายังอยู่ ส่งย้อนหลังได้ */
+const DKEY='zhgame-diag', DIAG_MAX=2500;
+let diagSaveT=null;
+try{
+  const old=JSON.parse(localStorage.getItem(DKEY)||'[]');
+  if(Array.isArray(old) && old.length){ old.forEach(l=>DIAG.push(l)); }
+}catch(e){}
+DIAG.push({ts:T0, sep:true, tag:'────', msg:'เปิดแอป '+new Date(T0).toLocaleString('th-TH')+' · รุ่น '+BUILD});
+function diagSave(){
+  clearTimeout(diagSaveT); diagSaveT=null;
+  try{ localStorage.setItem(DKEY, JSON.stringify(DIAG)); }
+  catch(e){ DIAG.splice(0, Math.floor(DIAG.length/2)); try{ localStorage.setItem(DKEY, JSON.stringify(DIAG)); }catch(e2){} }
+}
 function dlog(tag, msg, extra){
-  const line={t:Date.now()-T0, tag:tag, msg:msg===undefined?'':String(msg), extra:extra};
+  const now=Date.now();
+  const line={t:now-T0, ts:now, tag:tag, msg:msg===undefined?'':String(msg), extra:extra};
   DIAG.push(line);
-  if(DIAG.length>400) DIAG.shift();
+  if(DIAG.length>DIAG_MAX) DIAG.splice(0, DIAG.length-DIAG_MAX);
+  if(!diagSaveT) diagSaveT=setTimeout(diagSave, 2000);
   try{ console.log('%c['+tag+']','color:#1B6F8A', line.t+'ms', msg===undefined?'':msg, extra||''); }catch(e){}
   const box=document.getElementById('diagBox');
   if(box && document.getElementById('mDiag').classList.contains('on')) renderDiag();
@@ -3265,7 +3283,10 @@ function diagText(){
       ? 'คำที่ยังไม่ผ่าน (ระบบได้ยินเป็น):\n'+Object.keys(STUCK).map(k=>'   '+k+'  ->  '+STUCK[k].join(' / ')).join('\n')+'\n─────────────────────────────────────────'
       : 'ยังไม่มีคำที่ติด\n─────────────────────────────────────────')
   ].join('\n');
-  const body=DIAG.map(l=>String(l.t).padStart(7)+'ms  '+(l.tag+'        ').slice(0,9)+' '+l.msg+(l.extra!==undefined?'  '+JSON.stringify(l.extra):'')).join('\n');
+  const clock=ts=>{ const d=new Date(ts), p=n=>String(n).padStart(2,'0'); return p(d.getHours())+':'+p(d.getMinutes())+':'+p(d.getSeconds()); };
+  const body=DIAG.map(l=>l.sep
+    ? '\n──── '+l.msg+' ────'
+    : (l.ts?clock(l.ts):String(l.t)+'ms')+'  '+(l.tag+'        ').slice(0,9)+' '+l.msg+(l.extra!==undefined?'  '+JSON.stringify(l.extra):'')).join('\n');
   return head+'\n'+body;
 }
 function renderDiag(){
@@ -7549,16 +7570,56 @@ function fallbackCopy(txt,done){
   try{ document.execCommand('copy'); done(); }catch(e){ alert('ก็อปไม่สำเร็จ ให้ลากเลือกข้อความในกล่องแล้วก็อปเองครับ'); }
   ta.remove();
 }
+/* แชร์ log ทั้งสองไฟล์ไปแอปอื่น (Web Share) · เครื่องที่แชร์ไฟล์ไม่ได้ → แชร์ข้อความ → ดาวน์โหลดไฟล์ */
+function exportJSONText(){
+  return JSON.stringify({exportedAt:new Date().toISOString(), build:BUILD, stats:S.stats, words:S.words, mistakes:S.mistakes, progress:S.progress, log:S.log},null,2);
+}
+function downloadText(name, text, type){
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([text],{type:type}));
+  a.download=name;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(a.href),3000);
+}
+function shareLogs(){
+  diagSave();
+  const d=today(), txt=diagText(), js=exportJSONText();
+  const nTxt='chinese-game-diag-'+d+'.txt', nJs='chinese-speaking-log-'+d+'.json';
+  const title='ฝึกพูดจีน log '+d+' · '+BUILD;
+  let files=null;
+  try{ files=[new File([txt], nTxt, {type:'text/plain'}), new File([js], nJs, {type:'application/json'})]; }catch(e){}
+  const fail=e=>{
+    if(e && e.name==='AbortError') return;     // ผู้ใช้กดยกเลิกเอง
+    dlog('แชร์','แชร์ไม่สำเร็จ: '+(e&&e.name));
+    downloadText(nTxt, txt, 'text/plain'); setTimeout(()=>downloadText(nJs, js, 'application/json'), 600);
+    toast('บันทึกเป็นไฟล์แทน','แชร์ไม่ได้ เลยเซฟ 2 ไฟล์ไว้ใน Downloads',3000);
+  };
+  try{
+    if(files && navigator.canShare && navigator.canShare({files:files})){
+      navigator.share({files:files, title:title}).then(()=>dlog('แชร์','แชร์ไฟล์ log แล้ว'), fail);
+      return;
+    }
+    if(navigator.share){                       // แชร์ไฟล์ไม่ได้ แต่แชร์ข้อความได้: ส่งบันทึกปัญหาเป็นข้อความ แล้วเซฟ JSON ไว้
+      navigator.share({title:title, text:txt}).then(()=>{ downloadText(nJs, js, 'application/json'); }, fail);
+      return;
+    }
+  }catch(e){ fail(e); return; }
+  fail({name:'NoShare'});
+}
+$('#btnShareLogs').onclick=shareLogs;
+$('#diagClear').onclick=()=>{
+  if(!confirm('ล้างบันทึกปัญหาเก่าทั้งหมด? (log การฝึกไม่หาย)')) return;
+  DIAG.length=0; DIAG.push({ts:Date.now(), sep:true, tag:'────', msg:'ล้าง log '+new Date().toLocaleString('th-TH')});
+  diagSave(); renderDiag();
+};
+window.addEventListener('pagehide', diagSave);
+document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='hidden') diagSave(); });
 $('#diagSend').onclick=async ()=>{
-  const btn=$('#diagSend'); btn.disabled=true; btn.textContent='กำลังส่ง…';
-  const body=diagText();
+  const btn=$('#diagSend');
   const onWeb = location.protocol==='https:' && !/^(localhost|127\.)/.test(location.hostname||'');
-  if(onWeb){                                   // เว็บจริงไม่มีเซิร์ฟเวอร์รับ log และยิง http จากหน้า https ก็โดนบล็อกอยู่ดี
-    btn.disabled=false; btn.textContent='📤 ส่งให้ผู้พัฒนา';
-    $('#diagSave').click();
-    toast('บันทึกเป็นไฟล์แล้ว','เอาไฟล์ในโฟลเดอร์ Downloads แนบมาในแชทได้เลย',3000);
-    return;
-  }
+  if(onWeb || navigator.share){ shareLogs(); return; }   // เว็บจริงไม่มีเซิร์ฟเวอร์รับ log
+  btn.disabled=true; btn.textContent='กำลังส่ง…';
+  const body=diagText();
   // เปิดจาก file:// ก็ยังส่งได้ ถ้าเซิร์ฟเวอร์ในเครื่องรันอยู่
   const targets=['/__log'];
   for(let port=8000; port<=8005; port++){        // เผื่อเซิร์ฟเวอร์ไปอยู่พอร์ตอื่นเพราะ 8000 ไม่ว่าง
@@ -7571,7 +7632,7 @@ $('#diagSend').onclick=async ()=>{
       if(r.ok){ btn.textContent='✅ ส่งแล้ว'; toast('ส่ง log แล้ว','อยู่ในไฟล์ diag-log.txt ข้างๆ ไฟล์เกม',2200); return; }
     }catch(e){}
   }
-  btn.disabled=false; btn.textContent='📤 ส่งให้ผู้พัฒนา';
+  btn.disabled=false; btn.textContent='📤 แชร์ไปแอปอื่น';
   $('#diagSave').click();     // ส่งไม่ได้ก็โหลดเป็นไฟล์ให้เลย จะได้แนบในแชทได้
   toast('ส่งตรงไม่ได้ — บันทึกเป็นไฟล์ให้แล้ว','เอาไฟล์ในโฟลเดอร์ Downloads แนบมาในแชทได้เลย',3000);
 };
@@ -7619,14 +7680,7 @@ $('#fileRestore').onchange=e=>{
   fr.readAsText(f);
   e.target.value='';
 };
-$('#btnExport').onclick=()=>{
-  const blob=new Blob([JSON.stringify({exportedAt:new Date().toISOString(), stats:S.stats, words:S.words, mistakes:S.mistakes, progress:S.progress, log:S.log},null,2)],{type:'application/json'});
-  const a=document.createElement('a');
-  a.href=URL.createObjectURL(blob);
-  a.download='chinese-speaking-log-'+today()+'.json';
-  document.body.appendChild(a); a.click(); a.remove();
-  setTimeout(()=>URL.revokeObjectURL(a.href),3000);
-};
+$('#btnExport').onclick=()=>downloadText('chinese-speaking-log-'+today()+'.json', exportJSONText(), 'application/json');
 function renderSettings(){
   $$('#rateChips .chip').forEach(c=>c.classList.toggle('on', +c.dataset.rate===S.settings.rate));
   $('#swThai').textContent=S.settings.showThai?'เปิด':'ปิด'; $('#swThai').classList.toggle('on',S.settings.showThai);
