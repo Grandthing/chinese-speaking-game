@@ -182,6 +182,9 @@ h2{font-size:1.15rem;margin:1.5rem 0 .5rem}
 .sw.ok .st{color:var(--ok)} .sw.mid .st{color:var(--warn)} .sw.low .st{color:var(--bad)}
 .sw.low .zh{color:var(--bad)}
 .swhead{font-size:.78rem;color:var(--muted);margin:.6rem 0 .1rem;font-weight:600}
+.pairVs{margin-top:.35rem;font-size:.9rem;color:var(--t3)}
+.pairVs .zh{font-weight:700;color:var(--ink);text-decoration:line-through;text-decoration-color:var(--bad)}
+.pairTip{margin-top:.5rem;font-size:.85rem;color:var(--t3);text-align:left;line-height:1.5}
 .nearTip{margin-top:.5rem;font-size:.9rem;color:var(--t3);background:#FBF1DC;border-radius:.5rem;padding:.45rem .65rem;text-align:left;line-height:1.5}
 .tip3{margin-top:.5rem;font-size:.85rem;color:var(--t3);background:#FBF1DC;border-radius:.5rem;padding:.4rem .6rem;display:inline-block}
 .tip3 b{font-size:1.15rem;letter-spacing:.1em}
@@ -393,6 +396,7 @@ td.r,th.r{text-align:right}
       <button class="btn ghost" id="btnTalk">🗣️ ซ้อมตอบโต้</button>
       <button class="btn ghost" id="btnTone">🎵 ฝึกวรรณยุกต์</button>
     </div>
+    <button class="btn ghost" id="btnPair" style="margin-top:.5rem">👅 ห้องซ้อมพยัญชนะ <span class="small muted">sh·zh·q·r ที่คนไทยพลาด</span></button>
     <div class="row" style="margin-top:.5rem">
       <button class="btn ghost" id="btnLevels">📚 เลือกด่าน</button>
       <button class="btn ghost" id="btnStats">📊 สถิติ</button>
@@ -3239,7 +3243,7 @@ const MILESTONES = [
 /* ============================================================
    2.5 บันทึกปัญหา (diagnostics) — ไว้ส่งให้ผู้พัฒนาดูเวลาไมค์มีปัญหา
    ============================================================ */
-const BUILD='2026-09-28c';                     // เปลี่ยนทุกครั้งที่แก้ไฟล์ จะได้รู้ว่า log มาจากรุ่นไหน
+const BUILD='2026-09-29a';                     // เปลี่ยนทุกครั้งที่แก้ไฟล์ จะได้รู้ว่า log มาจากรุ่นไหน
 const DIAG=[], STUCK={}, T0=Date.now();
 /* log ปัญหาเก็บลงเครื่องด้วย: iPhone ปิดแอปหรือรีเฟรชแล้ว log เก่ายังอยู่ ส่งย้อนหลังได้ */
 const DKEY='zhgame-diag', DIAG_MAX=2500;
@@ -3320,6 +3324,7 @@ function blank(){return{
   exams:[],      // สอบประจำสัปดาห์: [{d, n, score, guess}]
   lastExam:'',
   notes:{},      // ภาพจำของผู้ใช้: hanzi -> ข้อความ
+  pair:{},       // ห้องซ้อมพยัญชนะ: ตระกูลเสียง -> {n, ok, hist:[1/0 ล่าสุด 20 ครั้ง]}
   log:[]
 };}
 let S = load();
@@ -4510,7 +4515,7 @@ function instantJudge(extra){
   emptyStreak=0;
   judgeFn()(all);
 }
-function judgeFn(){ return MODE==='talk' ? judgeTalk : MODE==='shadow' ? judgeShadow : MODE==='retell' ? judgeRetell
+function judgeFn(){ return MODE==='talk' ? judgeTalk : MODE==='shadow' ? judgeShadow : MODE==='pair' ? judgePair : MODE==='retell' ? judgeRetell
   : MODE==='pretest' ? judgePretest : MODE==='exam' ? judgeExam : judge; }
 let lastStopAt=0;
 function scheduleStop(){
@@ -4625,6 +4630,7 @@ function renderItem(autoPlay){
   if(!it){ finishRun(); return; }
   if(MODE==='prod' || MODE==='pattern'){ renderProd(it); return; }
   if(MODE==='shadow'){ renderShadow(it); return; }
+  if(MODE==='pair'){ renderPair(it); return; }
   if(MODE==='retell'){ renderRetell(it); return; }
   if(MODE==='pretest'){ renderPretest(it); return; }
   if(MODE==='exam'){ renderExam(it); return; }
@@ -4850,6 +4856,7 @@ function checkMilestone(){
 function next(){ qi++; if(qi>=Q.length || coachTimeUp()) finishRun(); else renderItem(true); }
 function finishRun(){
   if(MODE==='shadow') return finishShadow();
+  if(MODE==='pair') return finishPair();
   if(MODE==='retell') return retellRoleDone();
   if(MODE==='pretest') return finishPretest();
   if(MODE==='exam') return finishExam();
@@ -5714,6 +5721,7 @@ function manual(st){
 const COACH_BLOCKS={
   B0:{icon:'🌙', name:'ทวนข้อที่พลาดเมื่อวาน', sr:true},
   B1:{icon:'🎧', name:'วอร์มอัพ พูดตามให้ทัน', sr:true},
+  BP:{icon:'👅', name:'ซ้อมพยัญชนะ', sr:true},
   BL:{icon:'🪜', name:'เลเวลคำศัพท์', sr:true},
   B2:{icon:'🧠', name:'ทบทวนสลับ', sr:true},
   BR:{icon:'📕', name:'เล่าบทซ้ำ', sr:true},
@@ -5723,8 +5731,8 @@ const COACH_BLOCKS={
 };
 // [บล็อก, นาที] — รวมกันได้ 25 / 10 พอดี
 const COACH_PLAN={
-  25:[['B0',2],['B1',2],['BL',6],['B3',3],['B2',4],['BR',2],['B4',3],['B5',3]],
-  10:[['B0',0.5],['B1',1],['BL',3],['B3',1.5],['B2',2],['B4',1],['B5',1]]
+  25:[['B0',2],['B1',1],['BP',2],['BL',6],['B3',3],['B2',4],['BR',2],['B4',2],['B5',3]],
+  10:[['B0',0.5],['B1',0.5],['BP',1],['BL',3],['B3',1.5],['B2',1.5],['B4',1],['B5',1]]
 };
 const COACH_RUN={};            // บล็อกไหนมีตัวรันแล้วค่อยเล่นได้ ที่ยังไม่มีจะถูกข้าม
 const COACH={active:false, plan:[], bi:-1, sessT0:0, blockT0:0, blockEnd:0, minutes:25, items:[], tick:null, queueB2:[]};
@@ -5941,6 +5949,7 @@ function renderCoachDone(ms){
     '<div class="cdrow"><span>⚡ ตอบได้ใน 3 วินาที</span><b>'+(fast===null?'—':fast+'%')+'</b></div>'+
     '<div class="cdrow"><span>👂 ฟังถูก (รอบนี้)</span><b>'+(lis.length?lisOk+'/'+lis.length:'—')+' · '+S.listen.rate.toFixed(1)+'×</b></div>'+
     '<div class="cdrow"><span>🎵 วรรณยุกต์ที่ต้องเจาะ</span><b>'+esc(toneTxt)+'</b></div>'+
+    pairDoneRow()+
     '<div class="cdrow"><span>🪜 เลเวลคำศัพท์</span><b>'+lvSummary()+'</b></div>';
   if((COACH.lvUps||[]).length){
     $('#cdIcon').textContent='🎉';
@@ -6658,6 +6667,164 @@ COACH_RUN.B1=blk=>{
   renderItem(true);
   return true;
 };
+
+/* ============================================================
+   ห้องซ้อมพยัญชนะ — คู่คำที่ต่างกันแค่เสียงเดียว (Deliberate Practice)
+   log จริง: คำที่พลาดบ่อย 10 ใน 12 อันดับติดเสียง sh/s · zh/j · q/x · r/l · กลืน 人 ท้ายคำ
+   พูดคำเป้าหมาย → ต้องได้ยินเป็นคำนั้น และต้องไม่ใกล้คู่หลอกมากกว่า · พลาด = ฟังเทียบ A-B-A แล้วลองใหม่ (สูงสุด 3 ครั้ง)
+   ============================================================ */
+const PAIR_FAM={
+  'sh-s':{label:'sh ≠ s', tip:'sh = ม้วนปลายลิ้นขึ้นไปใกล้เพดานแข็ง ปากห่อนิดๆ · s = ปลายลิ้นแตะหลังฟันล่าง ยิ้มแบน เหมือน ซ ไทย'},
+  'zh-j':{label:'zh ≠ j', tip:'zh = ม้วนลิ้นขึ้นแล้วพ่น "จ" ออกจากกลางปาก · j = ลิ้นแบนแตะฟันล่าง ยิ้มแล้วพูด "จี" ไม่ม้วน'},
+  'q-x': {label:'q ≠ x', tip:'q = "ชี" มีลมพ่นแรง เอามือรองหน้าปากต้องรู้สึกลม · x = "ซี" ลมไหลเบาๆ ไม่มีจังหวะระเบิด'},
+  'r-l': {label:'r ≠ l', tip:'r = ม้วนลิ้นขึ้นแต่ไม่แตะเพดาน เสียงครางต่อเนื่อง (ไม่ใช่ ร กลิ้ง ไม่ใช่ ล) · l = ปลายลิ้นแตะเหงือกบน เหมือน ล ไทย'},
+  'ren': {label:'…人 ต้องไม่หาย', tip:'ท้ายคำต้องมี 人 "เหริน" ชัดๆ ม้วนลิ้นแบบ r แล้วลากเสียงขึ้น อย่ากลืนหาย'}
+};
+const PAIRS=[
+  {f:'sh-s', a:['十块','shí kuài','สือ ไคว่','10 หยวน'],        b:['四块','sì kuài','ซื่อ ไคว่','4 หยวน']},
+  {f:'sh-s', a:['十四','shí sì','สือ ซื่อ','14'],                b:['四十','sì shí','ซื่อ สือ','40']},
+  {f:'sh-s', a:['十号','shí hào','สือ ฮ่าว','วันที่ 10 · เบอร์ 10'], b:['四号','sì hào','ซื่อ ฮ่าว','วันที่ 4 · เบอร์ 4']},
+  {f:'sh-s', a:['老师','lǎo shī','หล่าว ซือ','ครู'],             b:['老四','lǎo sì','หล่าว ซื่อ','ลูกคนที่สี่']},
+  {f:'zh-j', a:['找你','zhǎo nǐ','จ่าว หนี่','หาคุณ'],           b:['叫你','jiào nǐ','เจี้ยว หนี่','เรียกคุณ']},
+  {f:'zh-j', a:['猪肉','zhū ròu','จู โร่ว','เนื้อหมู'],          b:['鸡肉','jī ròu','จี โร่ว','เนื้อไก่']},
+  {f:'zh-j', a:['知道','zhī dào','จือ ต้าว','รู้'],              b:['几道','jǐ dào','จี่ ต้าว','กี่จาน']},
+  {f:'q-x',  a:['茄子','qié zi','เฉีย จึ','มะเขือยาว'],          b:['鞋子','xié zi','เสีย จึ','รองเท้า']},
+  {f:'q-x',  a:['七点','qī diǎn','ชี เตี่ยน','7 โมง'],           b:['西点','xī diǎn','ซี เตี่ยน','ขนมอบฝรั่ง']},
+  {f:'q-x',  a:['前天','qián tiān','เฉียน เทียน','เมื่อวานซืน'],   b:['先天','xiān tiān','เซียน เทียน','แต่กำเนิด']},
+  {f:'r-l',  a:['热的','rè de','เร่อ เตอะ','อันที่ร้อน'],         b:['辣的','là de','ล่า เตอะ','อันที่เผ็ด']},
+  {f:'r-l',  a:['入口','rù kǒu','รู่ โข่ว','ทางเข้า'],           b:['路口','lù kǒu','ลู่ โข่ว','ทางแยก']},
+  {f:'r-l',  a:['日子','rì zi','รื่อ จึ','วันเวลา'],             b:['栗子','lì zi','ลี่ จึ','เกาลัด']},
+  {f:'ren',  a:['泰国人','tài guó rén','ไท่ กว๋อ เหริน','คนไทย'],  b:['泰国','tài guó','ไท่ กว๋อ','ประเทศไทย'], oneWay:true},
+  {f:'ren',  a:['中国人','zhōng guó rén','จง กว๋อ เหริน','คนจีน'], b:['中国','zhōng guó','จง กว๋อ','ประเทศจีน'], oneWay:true}
+];
+/* คำที่พลาดอยู่ในตระกูลเสียงไหน (ดูจากพินอินทีละพยางค์) */
+function pairFamsOf(py, h){
+  const out=new Set();
+  String(py||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').split(/[\s'·]+/).forEach(sy=>{
+    if(!sy) return;
+    if(/^sh/.test(sy) || /^s/.test(sy)) out.add('sh-s');
+    else if(/^zh/.test(sy) || /^j/.test(sy)) out.add('zh-j');
+    else if(/^[qx]/.test(sy)) out.add('q-x');
+    else if(/^r/.test(sy)) out.add('r-l');
+  });
+  if(/人$/.test(String(h||''))) out.add('ren');
+  return out;
+}
+function pairStat(f){ S.pair=S.pair||{}; return S.pair[f]||(S.pair[f]={n:0, ok:0, hist:[]}); }
+/* น้ำหนักความอ่อน: พลาดที่ไหนก็ได้ในแอป (คำศัพท์ + log 600 ข้อล่าสุด) + ความแม่นในห้องนี้ 20 ครั้งล่าสุด */
+function pairWeights(){
+  const w={}; Object.keys(PAIR_FAM).forEach(f=>w[f]=0);
+  const add=(h,py,k)=>pairFamsOf(py,h).forEach(f=>w[f]+=k);
+  Object.keys(S.words||{}).forEach(h=>{ const x=S.words[h]; if(x && x.fails) add(h, x.py, x.fails); });
+  (S.log||[]).slice(-600).forEach(e=>{
+    const h=e.hanzi||e.h; if(!h || typeof h!=='string') return;
+    const bad = e.stars!==undefined ? e.stars<2 : (e.st!==undefined ? e.st<2 : false);
+    if(!bad || e.t==='pair' || e.b==='BP') return;
+    const py=(S.words[h]&&S.words[h].py) || (CORE_BY_HANZI[h]&&CORE_BY_HANZI[h].pinyin) || '';
+    add(h, py, 0.5);
+  });
+  Object.keys(w).forEach(f=>{
+    const hs=pairStat(f).hist, acc=hs.length ? hs.reduce((a,b)=>a+b,0)/hs.length : 0.5;
+    w[f]=w[f]*(1.2-acc) + 6*(1-acc);
+  });
+  return w;
+}
+function pairQueue(n, nFam){
+  const w=pairWeights();
+  const fams=Object.keys(w).sort(()=>Math.random()-0.5).sort((a,b)=>w[b]-w[a]).slice(0, nFam||2);
+  const mk=(p,x,y)=>({kind:'pair', fam:p.f, hanzi:x[0], pinyin:x[1], thaiRead:x[2], meaning:x[3],
+    partner:{hanzi:y[0], pinyin:y[1], thaiRead:y[2], meaning:y[3]}});
+  const by=fams.map(f=>{
+    const q=[];
+    PAIRS.filter(p=>p.f===f).sort(()=>Math.random()-0.5).forEach(p=>{
+      const two=[mk(p,p.a,p.b)]; if(!p.oneWay) two.push(mk(p,p.b,p.a));
+      two.sort(()=>Math.random()-0.5).forEach(x=>q.push(x));
+    });
+    return q;
+  });
+  const out=[];                                   // สลับตระกูลทีละข้อ (interleave)
+  for(let i=0; out.length<n && by.some(q=>q.length); i++){ const q=by[i%by.length]; if(q.length) out.push(q.shift()); }
+  dlog('คู่เสียง','เลือกตระกูล '+fams.map(f=>f+'('+w[f].toFixed(1)+')').join(' ')+' · '+out.length+' ข้อ');
+  return out;
+}
+let pIdx=-1, pTries=0;
+function startPair(q, label){
+  if(!q.length){ toast('ยังไม่มีข้อ','',1200); return false; }
+  MODE='pair'; levelId='pair'; Q=q; qi=0; tries=0; sessUtter=0; sessStars=0; bestPer=[]; pIdx=-1;
+  playing=true; t0=Date.now();
+  dlog('เกม','เริ่มห้องซ้อมพยัญชนะ ('+label+') '+q.length+' ข้อ');
+  show('scr-play'); renderMode(); requestWake();
+  document.body.classList.toggle('hidethai', !S.settings.showThai);
+  renderItem(true);
+  return true;
+}
+function pairContrast(it){                        // ฟังเทียบ เป้า–หลอก–เป้า แล้วเปิดไมค์
+  speak(it.hanzi, ()=>setTimeout(()=>speak(it.partner.hanzi, ()=>setTimeout(()=>speak(it.hanzi, armMic), 250)), 250));
+}
+function renderPair(it, quiet){
+  if(pIdx!==qi){ pIdx=qi; pTries=0; }
+  tries=0;
+  hideAllBoxes();
+  const F=PAIR_FAM[it.fam]||{label:'',tip:''};
+  $('#pKind').textContent='👅 ซ้อมพยัญชนะ · '+F.label+(pTries?' · ครั้งที่ '+(pTries+1)+'/3':'');
+  $('#pHan').className='han zh';
+  $('#pHan').innerHTML='<span class="zh">'+esc(it.hanzi)+'</span>';
+  $('#pPy').innerHTML=pyHTML(it.pinyin);
+  $('#pThai').textContent=it.thaiRead||'';
+  $('#pMean').innerHTML=esc(it.meaning||'')+
+    '<div class="pairVs">ไม่ใช่ <span class="zh">'+esc(it.partner.hanzi)+'</span> '+esc(it.partner.pinyin)+' · '+esc(it.partner.meaning)+'</div>';
+  $('#heard').innerHTML='<div class="pairTip">👅 '+esc(F.tip)+'</div>';
+  $('#playBar').style.width=(qi/Q.length*100)+'%';
+  $('#playCount').textContent=(qi+1)+'/'+Q.length;
+  $('#btnSkip').style.visibility='visible';
+  $('#btnSelfPass').style.visibility='hidden';
+  micState('');
+  if(!quiet) speak(it.hanzi, armMic);
+}
+function judgePair(alts){
+  const it=cur(); if(!it) return;
+  const r=scoreAll(it.hanzi, alts), rp=scoreAll(it.partner.hanzi, alts);
+  const sup = norm(it.hanzi,false).indexOf(norm(it.partner.hanzi,false))>=0;   // 泰国人 ⊃ 泰国: เสมอกัน = ได้เป้า
+  const ok = r.score>=80 && (r.score>rp.score || (sup && r.score>=rp.score));
+  const mixed = !ok && rp.score>=80 && rp.score>=r.score;          // ออกมาเป็นคู่หลอกพอดี
+  const st = ok ? (pTries===0?3:2) : mixed ? 0 : 1;
+  sessUtter++; sessStars+=st; S.stats.utter++; S.stats.stars+=st;
+  bestPer[qi]=Math.max(bestPer[qi]||0, ok?r.score:0);
+  const ps=pairStat(it.fam); ps.n++; if(ok) ps.ok++; ps.hist=(ps.hist||[]).concat(ok?1:0).slice(-20);
+  const row={h:it.hanzi, st:st, lat:null, heard:r.heard, score:r.score, fam:it.fam, vs:it.partner.hanzi, vsScore:rp.score};
+  if(COACH.active) coachLog(row);
+  else { S.log.push(Object.assign({t:'pair', ts:Date.now()}, row)); if(S.log.length>2000) S.log=S.log.slice(-1500); }
+  save();
+  dlog('คู่เสียง', it.hanzi+' vs '+it.partner.hanzi+' -> '+r.score+'/'+rp.score+' '+(ok?'ชัด':mixed?'ปนเป็นคู่หลอก':'ไม่ชัด')+' (ได้ยิน: '+(r.heard||'—')+') ครั้งที่ '+(pTries+1));
+  const F=PAIR_FAM[it.fam]||{tip:''};
+  $('#pHan').innerHTML='<span class="zh">'+markedHTML(it.hanzi, norm(r.heard,false))+'</span>';
+  $('#heard').innerHTML='<div class="lab">ได้ยินว่า</div><div class="small muted zh">'+esc(r.heard||'—')+'</div>'+
+    (ok ? '<div class="stars" style="color:var(--ok)">'+starStr(st)+' <span class="small">ชัด ไม่ปนกับ '+esc(it.partner.hanzi)+'</span></div>'
+        : '<div class="stars" style="color:var(--bad)">'+starStr(st)+' <span class="small">'+(mixed?'ออกมาเป็น '+esc(it.partner.hanzi)+' ('+esc(it.partner.meaning)+')':'ยังไม่ชัด')+'</span></div>'+
+          '<div class="nearTip">👅 '+esc(F.tip)+'</div>');
+  if(ok){ vib([30,40,30]); micState('ok'); setTimeout(()=>{ if(playing && MODE==='pair' && cur()===it) next(); }, 700); return; }
+  vib(140); micState('');
+  pTries++;
+  if(pTries>=3){ setTimeout(()=>{ if(playing && MODE==='pair' && cur()===it) next(); }, 1800); return; }
+  // ฟังเทียบ เป้า–หลอก–เป้า แล้วลองใหม่ (ไม่อ่านคำเป้าซ้ำอีกรอบ)
+  setTimeout(()=>{ if(playing && MODE==='pair' && cur()===it){ renderPair(it, true);
+    $('#heard').innerHTML='<div class="nearTip">🔊 ฟังเทียบ '+esc(it.hanzi)+' – '+esc(it.partner.hanzi)+' – '+esc(it.hanzi)+'<br>👅 '+esc(F.tip)+'</div>';
+    pairContrast(it); } }, 1400);
+}
+function finishPair(){
+  if(COACH.active) return coachNextBlock();
+  const ms=Date.now()-t0; S.stats.ms+=ms;
+  const n=Q.length, okN=bestPer.filter(x=>x>0).length;
+  save(true);
+  endPlay(); MODE='lesson'; screenStack=['scr-home']; renderHome(); show('scr-home',false);
+  toast('👅 ชัด '+okN+'/'+n, okN>=n*0.8?'แยกเสียงได้แล้ว ลองชุดอื่นต่อ':'เจาะซ้ำอีกรอบจะชัดขึ้น', 2400);
+}
+function pairDoneRow(){
+  const xs=COACH.items.filter(x=>x.b==='BP'); if(!xs.length) return '';
+  const fams=[...new Set(xs.map(x=>x.fam))].map(f=>(PAIR_FAM[f]||{}).label||f).join(', ');
+  return '<div class="cdrow"><span>👅 พยัญชนะ ('+esc(fams)+')</span><b>ชัด '+xs.filter(x=>x.st>=2).length+'/'+xs.length+' ครั้ง</b></div>';
+}
+COACH_RUN.BP=blk=>startPair(pairQueue(COACH.minutes===10?6:10, 2), 'โค้ช');
 
 /* ---------- B4 เจาะวรรณยุกต์: ชุดที่ทำได้แย่สุด (ยังไม่เคยเล่นเลย = เจาะคู่ 2 กับ 3) ---------- */
 COACH_RUN.B4=blk=>{
@@ -7449,6 +7616,7 @@ $('#btnProd').onclick=startProdNew;
 $('#btnPattern').onclick=()=>{ renderPatList(); show('scr-patpick'); };
 $('#btnTalk').onclick=()=>{ renderTalkList(); show('scr-talkpick'); };
 $('#btnTone').onclick=()=>{ renderToneList(); show('scr-tonepick'); };
+$('#btnPair').onclick=()=>startPair(pairQueue(16, 3), 'อิสระ');
 $('#toneHear').onclick=()=>{ const it=toneItem(); if(!it) return; toneClose(); speak(it.zh); };
 $('#toneNext').onclick=()=>{ toneAbort(); toneNext(); };
 $('#btnToneQuit').onclick=()=>{ if(COACH.active){ coachAskQuit(); return; } toneClose(); releaseWake(); screenStack=['scr-home']; renderHome(); show('scr-home',false); };
@@ -7480,6 +7648,7 @@ $('#btnHear').onclick=()=>{
   }
   if(MODE==='talk'){ const t=talkTurn(); if(t){ abortRec(); speak(t.ask, armMic); } return; }
   if(MODE==='shadow'){ const it=cur(); if(it){ abortRec(); speak(it.hanzi, armMic, SH_PLAN.rates[shStage]); } return; }
+  if(MODE==='pair'){ const it=cur(); if(it){ abortRec(); pairContrast(it); } return; }
   if(MODE==='exam'){
     const it=cur(); if(!it) return;
     if(it.exType==='listen'){ speak(it.hanzi); } else if(it.exType==='talk'){ abortRec(); speak(it.ask); }
