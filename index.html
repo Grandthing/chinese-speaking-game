@@ -3287,7 +3287,7 @@ const MILESTONES = [
 /* ============================================================
    2.5 บันทึกปัญหา (diagnostics) — ไว้ส่งให้ผู้พัฒนาดูเวลาไมค์มีปัญหา
    ============================================================ */
-const BUILD='2026-09-30c';                     // เปลี่ยนทุกครั้งที่แก้ไฟล์ จะได้รู้ว่า log มาจากรุ่นไหน
+const BUILD='2026-09-30d';                     // เปลี่ยนทุกครั้งที่แก้ไฟล์ จะได้รู้ว่า log มาจากรุ่นไหน
 const DIAG=[], STUCK={}, T0=Date.now();
 /* log ปัญหาเก็บลงเครื่องด้วย: iPhone ปิดแอปหรือรีเฟรชแล้ว log เก่ายังอยู่ ส่งย้อนหลังได้ */
 const DKEY='zhgame-diag', DIAG_MAX=2500;
@@ -6027,7 +6027,7 @@ function renderCoachDone(ms){
     }
   }
   // ฟัง: ความแม่นรอบนี้ + ความเร็วปัจจุบัน
-  const lis=COACH.items.filter(x=>x.b==='B3'), lisOk=lis.filter(x=>x.st>=2).length;
+  const lis=COACH.items.filter(x=>x.b==='B3'||x.b==='FL'), lisOk=lis.filter(x=>x.st>=2).length;
   // วรรณยุกต์ที่พลาดบ่อยสุด (รอบนี้ ถ้าไม่มีดูจากชุดที่ทำได้แย่สุด)
   const miss={}; COACH.items.filter(x=>x.b==='B4' && x.st<3 && x.tone).forEach(x=>{ miss[x.tone]=(miss[x.tone]||0)+1; });
   const worstTone=Object.keys(miss).sort((a,b)=>miss[b]-miss[a])[0];
@@ -6043,9 +6043,9 @@ function renderCoachDone(ms){
     '<div class="cdrow"><span>⏱ เวลาตอบเฉลี่ยวันนี้</span><b>'+latHtml+'</b></div>'+
     '<div class="cdrow"><span>⚡ ตอบได้ใน 3 วินาที</span><b>'+(fast===null?'—':fast+'%')+'</b></div>'+
     '<div class="cdrow"><span>👂 ฟังถูก (รอบนี้)</span><b>'+(lis.length?lisOk+'/'+lis.length:'—')+' · '+S.listen.rate.toFixed(1)+'×</b></div>'+
-    '<div class="cdrow"><span>🎵 วรรณยุกต์ที่ต้องเจาะ</span><b>'+esc(toneTxt)+'</b></div>'+
+    (COACH.minutes===15 ? '' : '<div class="cdrow"><span>🎵 วรรณยุกต์ที่ต้องเจาะ</span><b>'+esc(toneTxt)+'</b></div>')+
     pairDoneRow()+treeDoneRow()+
-    '<div class="cdrow"><span>🪜 เลเวลคำศัพท์</span><b>'+lvSummary()+'</b></div>';
+    (COACH.minutes===15 ? '' : '<div class="cdrow"><span>🪜 เลเวลคำศัพท์</span><b>'+lvSummary()+'</b></div>');
   if((COACH.lvUps||[]).length){
     $('#cdIcon').textContent='🎉';
     $('#cdTitle').textContent='เลเวลอัพ! → เลเวล '+((S.lv&&S.lv.cur)||1);
@@ -6920,6 +6920,22 @@ function finishPair(){
   endPlay(); MODE='lesson'; screenStack=['scr-home']; renderHome(); show('scr-home',false);
   toast('👅 ชัด '+okN+'/'+n, okN>=n*0.8?'แยกเสียงได้แล้ว ลองชุดอื่นต่อ':'เจาะซ้ำอีกรอบจะชัดขึ้น', 2400);
 }
+/* ขั้นถัดไปของต้นไม้ (แทน "เลเวล"): หมวดที่จะเปิดเมื่อโครงเป็น 🟢 + ความคืบหน้าขั้น 2 */
+function treeNextHint(){
+  const out=[];
+  const s1=treeStage1(), need=Math.ceil(s1.length*0.7), g1=s1.filter(it=>treeGreen(it.key)).length;
+  const fr=new Set(), cats=[];
+  TREE_BRANCH_ORDER.forEach(c=>{
+    if(c==='special' || c==='any' || treeCatOpen(c)) return;
+    const fs=TREE_FRAMES.filter(F=>treeFrameOpen(F) && F.tags.indexOf(c)>=0 && treeLearned(F.id) && !treeGreen(F.id));
+    if(fs.length){ fs.forEach(F=>fr.add(TREE[F.id].hanzi)); cats.push(TREE_CAT[c].icon+' '+TREE_CAT[c].name); }
+  });
+  if(cats.length) out.push('ทวนผ่าน '+[...fr].join(' · ')+' → เปิดหมวด '+cats.join(' · '));
+  const due1=Object.keys(S.tree||{}).filter(k=>TREE[k] && treeLearned(k) && (S.tree[k].box||0)<2).length;
+  if(due1) out.unshift('พรุ่งนี้ทวน '+due1+' คำ — ผ่านแล้วเป็น 🟢');
+  if(!treeStage2Open()) out.push('ขั้น 2 (มี…ไหม · อยากไป… · …ได้ไหม · ขอ…หน่อย · ต่อราคา): 🟢 '+g1+'/'+need);
+  return out;
+}
 function treeDoneRow(){
   if(!COACH.plan.some(p=>p.b==='FT')) return '';
   const nNew=Object.keys(S.tree||{}).filter(k=>S.tree[k].firstDay===today() && (S.tree[k].stage||0)>=5).length;
@@ -6927,8 +6943,10 @@ function treeDoneRow(){
   const todayLog=S.log.filter(x=>x.ts>=t0.getTime());
   const sp=todayLog.filter(x=>x.t==='selfpass').length, all=todayLog.filter(x=>x.t==='coach'||x.t==='tree'||x.t==='recall').length;
   const warn = all>=10 && sp/all>0.4 ? '<div class="nearTip">⚠️ วันนี้ใช้ "ระบบฟังไม่ออก" '+Math.round(sp/all*100)+'% ของข้อ — ลองพูดช้าลง ชัดขึ้น และอยู่ในที่เงียบ</div>' : '';
+  const nx=treeNextHint();
   return '<div class="cdrow"><span>🌳 คำใหม่ผ่านครบ 5 ขั้นวันนี้</span><b>'+nNew+' คำ</b></div>'+
-    '<div class="cdrow"><span>🗣️ ประโยคที่พูดเองได้</span><b>'+treeSentenceCount()+'</b></div>'+warn;
+    '<div class="cdrow"><span>🗣️ ประโยคที่พูดเองได้</span><b>'+treeSentenceCount()+'</b></div>'+
+    (nx.length ? '<div class="nearTip">🌱 ต่อไป<br>'+nx.map(esc).join('<br>')+'</div>' : '')+warn;
 }
 function pairDoneRow(){
   const xs=COACH.items.filter(x=>x.b==='BP'); if(!xs.length) return '';
@@ -7604,7 +7622,9 @@ function renderTreeScreen(){
   $('#trCount').textContent=treeSentenceCount();
   $('#trSub').textContent='🟢 จำได้ '+g+' · 🟠 กำลังจำ '+o+' · ⚪ ยังไม่เรียน '+(all.length-g-o)+' · จาก '+all.length+' คำ';
   const gate=treeGate(), left=treeNewLeft();
-  $('#trToday').textContent = gate ? '⛔ '+gate : 'คำใหม่วันนี้เหลือ '+left+'/'+(S.settings.newPerDay||8)+' · ถึงกำหนดทวน '+(treeDueList().length+coreDue().length)+' ข้อ';
+  const nx=treeNextHint();
+  $('#trToday').innerHTML = esc(gate ? '⛔ '+gate : 'คำใหม่วันนี้เหลือ '+left+'/'+(S.settings.newPerDay||8)+' · ถึงกำหนดทวน '+treeDueList().length+' ข้อ')+
+    (nx.length ? '<div class="nearTip" style="text-align:left">🌱 ต่อไป<br>'+nx.map(esc).join('<br>')+'</div>' : '');
   // ลำต้น
   const s1=TREE_FRAMES.filter(F=>F.st===1).map(F=>TREE[F.id]);
   const s2=TREE_FRAMES.filter(F=>F.st===2).map(F=>TREE[F.id]);
