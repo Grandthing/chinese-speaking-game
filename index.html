@@ -3287,7 +3287,7 @@ const MILESTONES = [
 /* ============================================================
    2.5 บันทึกปัญหา (diagnostics) — ไว้ส่งให้ผู้พัฒนาดูเวลาไมค์มีปัญหา
    ============================================================ */
-const BUILD='2026-09-30b';                     // เปลี่ยนทุกครั้งที่แก้ไฟล์ จะได้รู้ว่า log มาจากรุ่นไหน
+const BUILD='2026-09-30c';                     // เปลี่ยนทุกครั้งที่แก้ไฟล์ จะได้รู้ว่า log มาจากรุ่นไหน
 const DIAG=[], STUCK={}, T0=Date.now();
 /* log ปัญหาเก็บลงเครื่องด้วย: iPhone ปิดแอปหรือรีเฟรชแล้ว log เก่ายังอยู่ ส่งย้อนหลังได้ */
 const DKEY='zhgame-diag', DIAG_MAX=2500;
@@ -7207,6 +7207,7 @@ function treeGate(){
   if(rt!==null && rt<0.6) return 'วันนี้ทบทวนก่อน ของเก่ายังไม่แน่น (ทวนผ่าน 3 วันล่าสุด '+Math.round(rt*100)+'%)';
   return '';
 }
+function treeFree(k){ const it=TREE[k]; return !!it && it.kind==='chunk' && !!it.fid && treeLearned(it.fid); }
 function treeNewLeft(){ return Math.max(0, (S.settings.newPerDay||8) - treeDayRec().n); }
 /* เลือกคำที่จะเรียนรอบนี้ (สูงสุด 4 = 1 ก้อน): คำที่ค้างเรียนไม่จบก่อน (ไม่กินโควตา) แล้วสลับ ลำต้น : กิ่ง = 1 : 1 */
 function treePickChunk(n){
@@ -7237,6 +7238,8 @@ function treePickChunk(n){
     }
     return null;
   };
+  s1.filter(treeFree).forEach(k=>{ if(out.length<n && out.indexOf(k)<0) out.push(k); });   // ทวนแบบแยกชิ้น ไม่นับเป็นคำใหม่
+  for(let i=s1.length-1;i>=0;i--) if(treeFree(s1[i])) s1.splice(i,1);
   let turn=0;
   while(out.length<n && quota>0){
     let k=null;
@@ -7315,12 +7318,14 @@ async function startTreeLearn(label){
     const st=await ensureMic();
     if(st==='denied'){ openM('mMic'); return false; }
   }
+  return treeStartSync(label);
+}
+function treeStartSync(label){
   const keys=treePickChunk(4);
   if(!keys.length){
     const why=treeGate() || (treeNewLeft()<=0 ? 'ครบโควตาคำใหม่วันนี้แล้ว ('+(S.settings.newPerDay||8)+' คำ)' : 'ยังไม่มีคำให้เรียน');
-    dlog('tree','ไม่มีคำใหม่: '+why);
-    if(!COACH.active) toast('🌳 วันนี้ไม่มีคำใหม่', why, 2600);
-    return false;
+    dlog('tree','ไม่มีคำใหม่: '+why+' → ฝึกคำที่เรียนแล้วให้คล่อง');
+    return treeStartDrill(label, why);
   }
   TL={keys:keys, loops:{}, rc:{}, done:{}, fail:{}, quiz:false, label:label||'', chunks:1};
   const q=[]; keys.forEach(k=>{ q.push(treeStep('see',k)); q.push(treeStep('recall',k)); });
@@ -7328,6 +7333,32 @@ async function startTreeLearn(label){
   playing=true; t0=Date.now();
   const d=today(); if(!S.stats.days.includes(d)) S.stats.days.push(d);
   dlog('tree','เริ่มเรียนก้อนใหม่ ('+(label||'อิสระ')+'): '+keys.join(' · ')+' · โควตาเหลือ '+treeNewLeft());
+  requestWake(); show('scr-play'); renderMode();
+  document.body.classList.toggle('hidethai', !S.settings.showThai);
+  renderItem(true);
+  return true;
+}
+function treeStartDrill(label, why){
+  const learned=Object.keys(S.tree||{}).filter(k=>TREE[k] && treeLearned(k));
+  if(!learned.length){ if(!COACH.active) toast('🌳 วันนี้ไม่มีคำใหม่', why||'', 2600); return false; }
+  // คำที่ยังไม่แน่น (box < 2 / เรียนวันนี้) มาก่อน
+  learned.sort((a,b)=>((S.tree[a].box||0)-(S.tree[b].box||0)) || (Math.random()-0.5));
+  const q=[];
+  learned.slice(0,8).forEach(k=>{ const st=treeStep('quiz',k,{drill:true}); if(st) q.push(st); });
+  const sents=[];
+  learned.filter(k=>TREE[k].kind==='noun' || TREE[k].kind==='frame').sort(()=>Math.random()-0.5).forEach(k=>{
+    if(sents.length>=4) return;
+    const st=treeStep('quiz',k,{sent:true, drill:true}); if(st && !sents.some(x=>x.hanzi===st.hanzi) && !q.some(x=>x.hanzi===st.hanzi)) sents.push(st);
+  });
+  // สลับ คำ : ประโยค
+  const out=[]; let i=0, j=0;
+  while(i<q.length || j<sents.length){ if(i<q.length) out.push(q[i++]); if(i<q.length) out.push(q[i++]); if(j<sents.length) out.push(sents[j++]); }
+  if(!out.length) return false;
+  TL={keys:[], loops:{}, rc:{}, done:{}, fail:{}, quiz:true, drill:true, label:label||'', chunks:0};
+  MODE='tree'; levelId='tree'; Q=out; qi=0; tries=0; sessUtter=0; sessStars=0; bestPer=[];
+  playing=true; t0=Date.now();
+  dlog('tree','ฝึกให้คล่อง '+out.length+' ข้อ ('+(why||'')+')');
+  toast('🌳 ครบคำใหม่วันนี้แล้ว', 'ช่วงนี้ฝึกคำที่เรียนแล้วให้คล่อง', 2400);
   requestWake(); show('scr-play'); renderMode();
   document.body.classList.toggle('hidethai', !S.settings.showThai);
   renderItem(true);
@@ -7342,7 +7373,7 @@ function treeNextChunk(){                          // ในโค้ช: เว
   renderItem(true);                                 // qi ชี้ที่ข้อแรกของก้อนใหม่อยู่แล้ว (เลยท้ายคิวเดิมมา 1)
   return true;
 }
-const TSTEP_LABEL={see:'ดู ฟัง แล้วพูดตาม', recall:'นึกเอง', use:'ใช้ในประโยค', quiz:'ด่านรวม'};
+const TSTEP_LABEL={see:'ดู ฟัง แล้วพูดตาม', recall:'นึกเอง', use:'ใช้ในประโยค', quiz:'ด่านรวม', drill:'ฝึกให้คล่อง'};
 function renderTree(it){
   const w=TREE[it.k]; if(!w){ next(); return; }
   tries=0;
@@ -7350,11 +7381,12 @@ function renderTree(it){
   const rec=treeRec(it.k);
   if(it.t==='see' && !rec){                         // เริ่มเรียนคำนี้จริง: นับโควตา + ขึ้นสถานะ 🟠
     S.tree[it.k]={box:0, next:Date.now()+SRS_MS[0], stage:1, first:Date.now(), firstDay:today(), tries:0};
-    treeDayRec().n++; save();
+    if(!treeFree(it.k)) treeDayRec().n++;
+    save();
   }
   const cat=TREE_CAT[w.cat]||{icon:'',name:''};
   const nRc=(TL&&TL.rc[it.k])||0;
-  $('#pKind').textContent='🌳 '+cat.icon+' '+cat.name+' · '+TSTEP_LABEL[it.t]+
+  $('#pKind').textContent='🌳 '+cat.icon+' '+cat.name+' · '+TSTEP_LABEL[it.drill?'drill':it.t]+
     (it.t==='see'?' ('+Math.min(2,it.pass)+'/2)':'')+(it.t==='recall'?' ('+(nRc+1)+'/3)':'')+(it.again?' · ทวนอีกรอบ':'');
   $('#playBar').style.width=(qi/Q.length*100)+'%';
   $('#playCount').textContent=(qi+1)+'/'+Q.length;
@@ -7550,7 +7582,7 @@ function finishTree(){
       renderItem(true); return;
     }
   }
-  if(COACH.active && !coachTimeUp() && treeNextChunk()) return;
+  if(COACH.active && !coachTimeUp() && (treeNextChunk() || (!(TL&&TL.drill) && treeStartDrill('โค้ช','หมดคำใหม่ในรอบนี้')))) return;   // เวลาเหลือ: ก้อนถัดไป หรือฝึกให้คล่อง
   if(COACH.active) return coachNextBlock();
   const ms=Date.now()-t0; S.stats.ms+=ms; save(true);
   const nDone=TL?Object.keys(TL.done).length:0;
@@ -7647,7 +7679,7 @@ COACH_RUN.FR=blk=>{
   startProd(rev, 'โค้ช · ทบทวน');
   return true;
 };
-COACH_RUN.FT=blk=>{ const ok=startTreeLearn('โค้ช'); return ok; };
+COACH_RUN.FT=blk=>treeStartSync('โค้ช');          // sync: ห้ามคืน Promise (ตัวคุมโค้ชจะเข้าใจว่าเริ่มแล้ว)
 COACH_RUN.FL=blk=>{
   const q=treeListenQueue(14);
   if(!q.length) return false;
@@ -8769,7 +8801,7 @@ $('#swFocus').onclick=()=>{ S.settings.focusTravel=!S.settings.focusTravel; save
 $$('#newChips .chip').forEach(c=>c.onclick=()=>{ S.settings.newPerDay=+c.dataset.n; save(); renderSettings(); });
 $('#btnTreeOpen').onclick=()=>openTree();
 $('#btnTreeGo').onclick=()=>coachStart(15);
-$('#btnTreeOnly').onclick=()=>startTreeLearn('อิสระ');
+$('#btnTreeOnly').onclick=()=>startTreeLearn('อิสระ');   // นอกโค้ช: ขอไมค์ก่อนได้ (async)
 $('#btnCoach15').onclick=()=>coachStart(15);
 let homeMoreOpen=false;
 $('#btnMore').onclick=()=>{ homeMoreOpen=!homeMoreOpen; renderFocusHome(); if(homeMoreOpen) $('#homeMore').scrollIntoView({behavior:'smooth', block:'start'}); };
