@@ -1,8 +1,9 @@
 /* service worker — เปิดแอปได้ทันทีและใช้งานได้แม้เน็ตหลุด
-   หลักการ: ตัวหน้าเว็บเอา "ของใหม่ก่อนเสมอ" (ไม่งั้นแก้ไฟล์แล้วผู้ใช้ไม่ได้ของใหม่)
-            ถ้าเน็ตช้า/ไม่มีเน็ต ค่อยตกมาใช้ของที่แคชไว้
+   หลักการ: หน้าเว็บ (800KB) เปิดจากแคชทันที แล้วโหลดของใหม่เก็บไว้เบื้องหลัง → เปิดครั้งถัดไปได้รุ่นใหม่
+            (เดิมโหลดจากเน็ตก่อนทุกครั้ง เน็ตมือถือช้า = รอสูงสุด 4 วิ ทุกครั้งที่เปิด)
+            ยังไม่เคยแคช / มาจากปุ่ม "อัปเดตเดี๋ยวนี้" (?u=) = โหลดจากเน็ตก่อน · หน้าแอปเช็ก version.json แล้วขึ้นแถบให้อัปเดตเองอยู่แล้ว
    หมายเหตุ: ระบบตรวจเสียงของ Chrome ต้องต่อเน็ต ออฟไลน์จะเปิดดูได้แต่ตรวจเสียงไม่ได้ */
-const V = '2026-09-30d';
+const V = '2026-09-30e';
 const CACHE = 'zhgame-' + V;
 const ASSETS = ['./', './index.html', './manifest.webmanifest',
                 './icon-192.png', './icon-512.png', './apple-touch-icon.png'];
@@ -42,15 +43,17 @@ self.addEventListener('fetch', e => {
 
   const isDoc = req.mode === 'navigate' || url.pathname.endsWith('/') || url.pathname.endsWith('.html');
 
-  if (isDoc) {                                  // หน้าเว็บ: เอาของใหม่ก่อน
+  if (isDoc) {                                  // หน้าเว็บ: แคชก่อน (เร็ว) + อัปเดตเบื้องหลัง
     e.respondWith((async () => {
+      const c = await caches.open(CACHE);
+      const hit = (await c.match('./index.html')) || (await c.match('./'));
+      const net = fetch(req).then(r => { if (r && r.ok) c.put('./index.html', r.clone()); return r; }).catch(() => null);
+      if (hit && !/[?&]u=/.test(url.search)) { e.waitUntil(net); return hit; }
       try {
-        const r = await withTimeout(fetch(req), DOC_TIMEOUT);
-        if (r && r.ok) { const c = await caches.open(CACHE); c.put('./index.html', r.clone()); }
+        const r = await withTimeout(net.then(x => x || Promise.reject(new Error('net'))), DOC_TIMEOUT);
         return r;
       } catch (err) {
-        const c = await caches.open(CACHE);
-        return (await c.match('./index.html')) || (await c.match('./')) || Response.error();
+        return hit || Response.error();
       }
     })());
     return;

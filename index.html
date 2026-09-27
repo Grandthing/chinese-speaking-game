@@ -3269,7 +3269,7 @@ function buildPattern(pt, slot){
 const MAX_LEVEL = 52;            // ครบทุกบทของหนังสือแล้ว
 const PASS_AVG        = 80;      // เฉลี่ย % ที่ต้องได้เพื่อปลดล็อกด่านถัดไป
 const WATCHDOG_MS     = 6000;    // auto-stop กัน SpeechRecognition ค้าง
-const AUTO_NEXT_MS    = 1500;    // auto-advance เมื่อได้ 3 ดาว
+const AUTO_NEXT_MS    = 1000;    // auto-advance เมื่อได้ 3 ดาว
 const MAX_TRY         = 4;       // พยายามกี่ครั้งต่อข้อ ก่อนเดินหน้าต่อ (กันติดหล่ม)
 const MISTAKE_INJECT  = 2;       // แทรกคำที่เคยพลาดกี่ข้อต่อด่าน
 
@@ -3287,7 +3287,7 @@ const MILESTONES = [
 /* ============================================================
    2.5 บันทึกปัญหา (diagnostics) — ไว้ส่งให้ผู้พัฒนาดูเวลาไมค์มีปัญหา
    ============================================================ */
-const BUILD='2026-09-30d';                     // เปลี่ยนทุกครั้งที่แก้ไฟล์ จะได้รู้ว่า log มาจากรุ่นไหน
+const BUILD='2026-09-30e';                     // เปลี่ยนทุกครั้งที่แก้ไฟล์ จะได้รู้ว่า log มาจากรุ่นไหน
 const DIAG=[], STUCK={}, T0=Date.now();
 /* log ปัญหาเก็บลงเครื่องด้วย: iPhone ปิดแอปหรือรีเฟรชแล้ว log เก่ายังอยู่ ส่งย้อนหลังได้ */
 const DKEY='zhgame-diag', DIAG_MAX=2500;
@@ -4848,7 +4848,7 @@ function judge(alts){
 
   // แสดงผล + ไฮไลต์ตัวที่หาย/เพี้ยน
   const hn=norm(heard,false);
-  if(prod) revealProd(it, hn);                      // เฉลยหลังพูดทุกครั้ง
+  if(prod) revealProd(it, hn, st>=3 && !hintUsed && !slow);   // เฉลยหลังพูดทุกครั้ง · ถูกเองไม่ต้องฟังซ้ำ
   else $('#pHan').innerHTML='<span class="zh">'+markedHTML(it.hanzi, hn)+'</span>';
   const heardPy = heard ? toPinyin(heard) : '';
   $('#heard').innerHTML =
@@ -5569,7 +5569,7 @@ function renderProd(it){
   }
   if(S.settings.autoListen) armMic();        // ห้ามเล่นเสียงต้นแบบก่อน ไม่งั้นเฉลยตั้งแต่ยังไม่พูด
 }
-function revealProd(it, heardNorm){
+function revealProd(it, heardNorm, silent){
   $('#btnHint').hidden=true;
   clearTimeout(rcTimer); rcLocked=false; $('#btnGiveUp').hidden=true; $('#prodThink').hidden=true;
   $('#prodAns').hidden=false;
@@ -5578,7 +5578,7 @@ function revealProd(it, heardNorm){
     '<div class="zh">'+markedHTML(it.hanzi, heardNorm)+'</div>'+
     '<div class="py">'+pyHTML(it.pinyin)+'</div>'+
     '<div class="th">'+esc(it.thaiRead||'')+'</div>'+noteHTML(it);
-  speak(sayText(it));                         // เล่นเสียงต้นแบบตอนเฉลย
+  if(!silent) speak(sayText(it));             // เล่นเสียงต้นแบบตอนเฉลย (ตอบถูกเองแล้วไม่ต้อง)
 }
 async function startProd(queue, label){
   if(HAS_SR && !manualMode && micPerm!=='granted'){
@@ -6467,7 +6467,8 @@ function lisAnswer(choice){
     '<div class="zh">'+esc(it.zh)+'</div><div class="py">'+pyHTML(it.py)+'</div><div class="th">'+esc(it.th)+'</div>';
   $('#lisCount').textContent=lisOk+'/'+lisN;
   vib(ok?[30,40,30]:140);
-  speak(it.zh, ()=>{ lisTimer=setTimeout(lisNext, ok?900:1600); }, L.rate);
+  if(ok && !assisted) lisTimer=setTimeout(lisNext, 700);
+  else speak(it.zh, ()=>{ lisTimer=setTimeout(lisNext, ok?700:1400); }, L.rate);
 }
 function lisNext(){
   clearTimeout(lisTimer); lisTimer=null;
@@ -7424,7 +7425,7 @@ function renderTree(it){
       (w.kind==='chunk' ? '<div class="pairVs">🧩 ก้อนคำ — เดี๋ยวจะเอาไปต่อกับคำอื่นเป็นประโยค</div>' : '')+
       (w.car ? '<div class="pairVs">คำเดียวสั้นเกินให้ระบบฟัง — พูดเป็นวลี <b class="zh">'+esc(w.car.hanzi)+'</b></div>' : '')+noteHTML(Object.assign({}, it, {hanzi:w.key, store:'tree'}));
     if(it.pass===0 && !it.again){
-      speak(it.hanzi, ()=>setTimeout(()=>{ if(cur()===it) speak(it.hanzi, armMic, 1.0); }, 300), 0.8);
+      speak(it.hanzi, ()=>setTimeout(()=>{ if(cur()===it) speak(it.hanzi, armMic, 1.0); }, 150), 0.8);
     }else speak(it.hanzi, armMic, 1.0);
     return;
   }
@@ -7440,12 +7441,12 @@ function renderTree(it){
     '<div class="small muted" style="margin-top:.3rem">พูดเป็นภาษาจีน</div>';
   if(S.settings.autoListen) armMic();
 }
-function treeReveal(it, heardNorm){
+function treeReveal(it, heardNorm, silent){
   $('#pHan').className='han zh';
   $('#pHan').innerHTML='<span class="zh">'+markedHTML(it.hanzi, heardNorm||'')+'</span>';
   $('#pPy').innerHTML=pyHTML(it.pinyin);
   $('#pThai').textContent=it.thaiRead||'';
-  speak(it.hanzi);
+  if(!silent) speak(it.hanzi);                    // ตอบถูกแล้วไม่ต้องฟังซ้ำ (ประหยัด ~1 วิ/ข้อ)
 }
 function treeLog(it, st, r, extra){
   const row=Object.assign({h:it.k, step:it.t, st:st, lat:null, heard:r?r.heard:'', score:r?r.score:0}, extra||{});
@@ -7470,8 +7471,8 @@ function judgeTree(alts){
     if(st>=2){
       it.pass++; vib([30,40,30]); micState('ok');
       $('#pKind').textContent=$('#pKind').textContent.replace(/\(\d\/2\)/, '('+Math.min(2,it.pass)+'/2)');
-      if(it.pass>=2){ setTimeout(()=>{ if(playing && cur()===it) next(); }, 600); return; }
-      setTimeout(()=>{ if(playing && cur()===it) speak(it.hanzi, armMic, 1.0); }, 700);
+      if(it.pass>=2){ setTimeout(()=>{ if(playing && cur()===it) next(); }, 400); return; }
+      setTimeout(()=>{ if(playing && cur()===it) speak(it.hanzi, armMic, 1.0); }, 350);
       return;
     }
     it.tries++; vib(140); micState('');
@@ -7490,11 +7491,11 @@ function judgeTree(alts){
   }
   // recall / use / quiz — ต้องได้ 3 ดาว
   if(st>=3){
-    treeReveal(it, norm(r.heard,false));
+    treeReveal(it, norm(r.heard,false), true);
     $('#heard').innerHTML=heardHTML;
     vib([30,40,30]); micState('ok');
     treeSuccess(it);
-    setTimeout(()=>{ if(playing && cur()===it) next(); }, 900);
+    setTimeout(()=>{ if(playing && cur()===it) next(); }, 600);
     return;
   }
   it.tries++; vib(140); micState('');
