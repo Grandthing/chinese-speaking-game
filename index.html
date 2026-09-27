@@ -3287,7 +3287,7 @@ const MILESTONES = [
 /* ============================================================
    2.5 บันทึกปัญหา (diagnostics) — ไว้ส่งให้ผู้พัฒนาดูเวลาไมค์มีปัญหา
    ============================================================ */
-const BUILD='2026-09-30a';                     // เปลี่ยนทุกครั้งที่แก้ไฟล์ จะได้รู้ว่า log มาจากรุ่นไหน
+const BUILD='2026-09-30b';                     // เปลี่ยนทุกครั้งที่แก้ไฟล์ จะได้รู้ว่า log มาจากรุ่นไหน
 const DIAG=[], STUCK={}, T0=Date.now();
 /* log ปัญหาเก็บลงเครื่องด้วย: iPhone ปิดแอปหรือรีเฟรชแล้ว log เก่ายังอยู่ ส่งย้อนหลังได้ */
 const DKEY='zhgame-diag', DIAG_MAX=2500;
@@ -3860,6 +3860,10 @@ function scoreOne(target, heard){
 }
 /* เอาคะแนนสูงสุดจาก "ทุก alternative" และจากทั้งโหมดแปลงเลข/ตัดเลข */
 function scoreAll(targetRaw, alts){
+  // เสียง儿: ตัวถอดเสียงมักตัดทิ้ง (在哪儿 → 在哪) หรือพูดแบบ 在哪里 ก็ถูก — เติมทางเลือกที่แปลงเป็น 哪儿 ให้เทียบด้วย
+  if(/哪儿/.test(String(targetRaw)) && alts && alts.length){
+    alts=alts.concat(alts.map(a=>String(a).replace(/哪里/g,'哪儿').replace(/哪(?!儿)/g,'哪儿')));
+  }
   const t1=norm(targetRaw,false), t2=norm(targetRaw,true);
   // เป้าหมายที่มีตัวอักษรอังกฤษคั่น (เช่น 我叫Pangz) = ช่องให้เติมชื่อ ให้ตัดเป็นท่อนแล้วเทียบทีละท่อน
   const segs = /[A-Za-z]/.test(targetRaw)
@@ -7077,7 +7081,22 @@ const TREE_LISTEN=[
 ];
 TREE_LISTEN.forEach(x=>{ if(!LISTEN.some(y=>y.id===x.id)) LISTEN.push(Object.assign({tree:true}, x)); });
 
+// ก้อนคำของแต่ละโครง: เรียนเป็นคำก่อน แล้วค่อย + คำนามเป็นประโยค [hanzi, pinyin, ไทย, ความหมาย, โครง]
+const TREE_CHUNKS=[
+  ['我要','wǒ yào','หว่อ เย่า','ฉันเอา','F1'],
+  ['不要','bú yào','ปู๋ เย่า','ไม่เอา','F2'],
+  ['多少钱','duō shao qián','ตัว เส่า เฉียน','เท่าไหร่','F4'],
+  ['在哪儿','zài nǎr','จ้าย หน่าร์','อยู่ที่ไหน','F5'],
+  ['我想吃','wǒ xiǎng chī','หวอ เสี่ยง ชือ','อยากกิน','F9'],
+  ['我要喝','wǒ yào hē','หว่อ เย่า เฮอ','ขอดื่ม','F10'],
+  ['有','yǒu','โหย่ว','มี','F3'],
+  ['我想去','wǒ xiǎng qù','หวอ เสี่ยง ชวี่','อยากไป','F6'],
+  ['可以','kě yǐ','เขอ อี่','ได้ / ทำได้','F7'],
+  ['请给我','qǐng gěi wǒ','ฉิง เก๋ย หว่อ','ขอ…หน่อย','F8'],
+  ['可以吗','kě yǐ ma','เขอ อี่ มะ','ได้ไหม','F11']
+];
 const TREE_CAT={
+  chunk:{icon:'🧩', name:'ก้อนคำ'},
   survive:{icon:'🆘', name:'วลีเอาตัวรอด'},
   frame:{icon:'🌳', name:'โครงประโยค'},
   any:{icon:'👉', name:'ชี้ของ'},
@@ -7093,7 +7112,7 @@ const TREE_CAT={
   special:{icon:'⭐', name:'ประโยคพิเศษ'}
 };
 // ลำดับเรียนขั้น 1 (ลำต้น) — โครงก่อน สลับกับวลีเอาตัวรอด
-const TREE_STAGE1=['你好','谢谢','这个','F1','F2','F4','不好意思','F5','好的','F9','F10','太贵了','便宜一点','听不懂','请再说一遍','慢一点','我是泰国人','我不会说中文','对','不对'];
+const TREE_STAGE1=['你好','谢谢','这个','我要','不要','多少钱','不好意思','洗手间','在哪儿','好的','水','我要喝','我想吃','太贵了','便宜一点','听不懂','请再说一遍','慢一点','我是泰国人','我不会说中文','对','不对'];
 // ลำดับกิ่งที่เปิดให้เรียนก่อน (ของที่ใช้บ่อยที่สุดตอนเที่ยวมาก่อน)
 const TREE_BRANCH_ORDER=['food','drink','place','any','taste','num','spice','thing','money','action','special'];
 
@@ -7109,15 +7128,16 @@ const TREE={};                 // key -> รายการ
   TREE_SURVIVE.forEach(a=>{ const it=mk(a,'survive','phrase'); const o=a[4]||{}; if(o.tag) it.tag2=o.tag; TREE[a[0]]=it; });
   TREE_NOUNS.forEach(a=>{ TREE[a[0]]=mk(a,a[4],'noun'); });
   TREE_SPECIAL.forEach(a=>{ TREE[a[0]]=mk(a,'special','sent'); });
+  TREE_CHUNKS.forEach(a=>{ const it=mk(a,'chunk','chunk'); it.fid=a[4]; TREE[a[0]]=it; const F=TREE_FRAMES.find(x=>x.id===a[4]); if(F) F.ck=a[0]; });
   TREE_FRAMES.forEach(F=>{
     const n=TREE[F.ex]||{hanzi:F.ex, pinyin:'', thaiRead:'', meaning:F.ex};
     const c=treeCompose(F, n);
-    TREE[F.id]={key:F.id, frame:F, hanzi:c.hanzi, pinyin:c.pinyin, thaiRead:c.thaiRead, meaning:c.meaning, cat:'frame', kind:'frame', no:[]};
+    TREE[F.id]={key:F.id, frame:F, hanzi:c.hanzi, pinyin:c.pinyin, thaiRead:c.thaiRead, meaning:c.meaning, cat:'frame', kind:'frame', no:[], parts:[F.ck, F.ex].filter(Boolean)};
   });
   // คำพยางค์เดียวในต้นไม้: ใช้วลีพาเดียวกับทั้งแอป (มีอยู่แล้วใช้ของเดิม) ให้ตอนเรียนกับตอนทบทวนพูดเหมือนกัน
   Object.values(TREE).forEach(it=>{
     const c0=CARRIER[it.hanzi];
-    if(it.car && c0) it.car={hanzi:c0.raw, pinyin:c0.py, thaiRead:c0.th, meaning:c0.mean};
+    if(c0 && (it.car || [...it.hanzi].length===1)) it.car={hanzi:c0.raw, pinyin:c0.py, thaiRead:c0.th, meaning:c0.mean};
     if(it.car && !CARRIER[it.hanzi]) CARRIER[it.hanzi]={t:norm(it.car.hanzi,false), raw:it.car.hanzi, py:it.car.pinyin, th:it.car.thaiRead, mean:it.car.meaning, lv:0};
   });
 })();
@@ -7137,7 +7157,8 @@ function treeRec(k){ S.tree=S.tree||{}; return S.tree[k]||null; }
 function treeColor(k){ const r=treeRec(k); if(!r) return 'w'; return (r.box||0)>=2 ? 'g' : 'o'; }
 function treeLearned(k){ const r=treeRec(k); return !!r && (r.stage||0)>=5; }
 function treeGreen(k){ return treeColor(k)==='g'; }
-function treeStage1(){ return TREE_STAGE1.map(k=>TREE[k]).filter(Boolean); }
+function treeStage1(){ return TREE_STAGE1.concat(TREE_FRAMES.filter(F=>F.st===1).map(F=>F.id)).map(k=>TREE[k]).filter(Boolean); }
+function treePartsReady(F){ return (TREE[F.id].parts||[]).every(k=>treeLearned(k) || treeGreen(k)); }
 function treeStage2Open(){
   const s1=treeStage1(); return s1.filter(it=>treeGreen(it.key)).length >= Math.ceil(s1.length*0.7);
 }
@@ -7180,7 +7201,7 @@ function treeDueList(){
   return Object.keys(S.tree||{}).filter(k=>{ const r=S.tree[k]; return TREE[k] && r && (r.stage||0)>=5 && r.next<=now; });
 }
 function treeGate(){
-  const due=treeDueList().length + coreDue().length;
+  const due=treeDueList().length;
   if(due>30) return 'วันนี้ทบทวนก่อน ของเก่ายังไม่แน่น (ค้างทวน '+due+' ข้อ)';
   const rt=treeReviewRate3();
   if(rt!==null && rt<0.6) return 'วันนี้ทบทวนก่อน ของเก่ายังไม่แน่น (ทวนผ่าน 3 วันล่าสุด '+Math.round(rt*100)+'%)';
@@ -7192,12 +7213,20 @@ function treePickChunk(n){
   n=n||4;
   const out=[];
   const pending=Object.keys(S.tree||{}).filter(k=>TREE[k] && (S.tree[k].stage||0)<5).sort((a,b)=>(S.tree[a].first||0)-(S.tree[b].first||0));
-  pending.forEach(k=>{ if(out.length<n) out.push(k); });
+  pending.forEach(k=>{ const it=TREE[k]; if(it.kind==='frame' && !treePartsReady(it.frame)) return; if(out.length<n) out.push(k); });   // ประโยคที่ค้าง: รอให้คำประกอบผ่านก่อน
   let quota=treeNewLeft();
   if(treeGate()) quota=0;
   const s1=TREE_STAGE1.filter(k=>TREE[k] && !treeRec(k));
   const br=[];
-  TREE_FRAMES.forEach(F=>{ if(F.st===2 && treeFrameOpen(F) && !treeRec(F.id)) br.push(F.id); });
+  TREE_FRAMES.forEach(F=>{
+    if(F.st!==2 || !treeFrameOpen(F)) return;
+    if(F.ck && !treeRec(F.ck)) br.push(F.ck);                         // ก้อนคำของโครงขั้น 2
+    else if(F.ck && treeLearned(F.ck) && !treeRec(F.ex) && TREE[F.ex]) br.push(F.ex);   // คำตัวอย่างที่ต้องใช้ประกอบ
+  });
+  // ประโยค: โครงที่ก้อนคำ + คำตัวอย่างผ่านครบแล้ว (ค่อย + เป็นประโยค)
+  TREE_FRAMES.forEach(F=>{
+    if(out.length<n && quota>0 && treeFrameOpen(F) && !treeRec(F.id) && treePartsReady(F)){ out.push(F.id); quota--; }
+  });
   const byCat={}; TREE_BRANCH_ORDER.forEach(c=>byCat[c]=Object.values(TREE).filter(w=>w.cat===c && !treeRec(w.key) && TREE_STAGE1.indexOf(w.key)<0).map(w=>w.key));
   let ci=0;
   const nextBranch=()=>{
@@ -7250,7 +7279,7 @@ function treeItem(k, allowSent){
 }
 function buildTreeReview(nMax){
   const due=treeDueList().sort(()=>Math.random()-0.5).map(k=>treeItem(k,true)).filter(Boolean);
-  const core=coreDue().map(coreItem);
+  const core=coreDue().filter(w=>[...String(w.hanzi)].length>1).slice(0,4).map(coreItem);   // เริ่มใหม่: คำเก่าไม่ท่วมรอบ
   const out=[]; let a=0, b=0;
   while(out.length<(nMax||30) && (a<due.length || b<core.length)){   // สลับ ต้นไม้ 2 : CORE 1
     if(a<due.length) out.push(due[a++]);
@@ -7340,7 +7369,9 @@ function renderTree(it){
     $('#pPy').innerHTML=pyHTML(it.pinyin);
     $('#pThai').textContent=it.thaiRead||'';
     $('#pMean').innerHTML=esc(it.meaning||'')+
-      (w.kind==='frame' ? '<div class="pairVs">🌳 โครง <b class="zh">'+esc(w.frame.f)+'</b> = '+esc(w.frame.mean)+' · เติมคำได้หลายอย่าง</div>' : '')+
+      (w.kind==='frame' ? '<div class="pairVs">🧩 ต่อจากคำที่เรียนแล้ว: <b class="zh">'+(w.parts||[]).map(k=>esc(TREE[k]?TREE[k].hanzi:k)).join(' + ')+'</b></div>'+
+        '<div class="pairVs">🌳 โครง <b class="zh">'+esc(w.frame.f)+'</b> = '+esc(w.frame.mean)+' · เติมคำอื่นได้อีก</div>' : '')+
+      (w.kind==='chunk' ? '<div class="pairVs">🧩 ก้อนคำ — เดี๋ยวจะเอาไปต่อกับคำอื่นเป็นประโยค</div>' : '')+
       (w.car ? '<div class="pairVs">คำเดียวสั้นเกินให้ระบบฟัง — พูดเป็นวลี <b class="zh">'+esc(w.car.hanzi)+'</b></div>' : '')+noteHTML(Object.assign({}, it, {hanzi:w.key, store:'tree'}));
     if(it.pass===0 && !it.again){
       speak(it.hanzi, ()=>setTimeout(()=>{ if(cur()===it) speak(it.hanzi, armMic, 1.0); }, 300), 0.8);
@@ -7354,7 +7385,7 @@ function renderTree(it){
   $('#pThai').textContent='';
   $('#pMean').innerHTML=
     (it.t==='use' && it.u ? '<div class="pairVs">🌳 ใช้โครง <b class="zh">'+esc(it.u.frame.f)+'</b> + '+esc(String(it.u.noun.meaning).split(/[(（/]/)[0])+'</div>' : '')+
-    (it.t!=='use' && w.kind==='frame' ? '<div class="pairVs">🌳 โครง '+esc(w.frame.mean)+'</div>' : '')+
+    (it.t!=='use' && w.kind==='frame' ? '<div class="pairVs">🧩 '+(w.parts||[]).map(k=>esc(TREE[k]?String(TREE[k].meaning).split(/[(（/]/)[0].trim():k)).join(' + ')+'</div>' : '')+
     (it.t!=='use' && w.car ? '<div class="pairVs">พูดเป็นวลี (คำเดียวสั้นเกินให้ระบบฟัง)</div>' : '')+
     '<div class="small muted" style="margin-top:.3rem">พูดเป็นภาษาจีน</div>';
   if(S.settings.autoListen) armMic();
@@ -7397,6 +7428,14 @@ function judgeTree(alts){
     if(it.tries>=2) treeOfferSelf(it, 'see');
     if(it.tries>=4){ treePron(it.k); setTimeout(()=>{ if(playing && cur()===it) next(); }, 1600); return; }
     setTimeout(()=>{ if(playing && cur()===it) speak(it.hanzi, armMic, 0.8); }, 900);
+    return;
+  }
+  // เฉลยไปแล้ว (พลาด 2 ครั้ง): ครั้งนี้คือพูดตามเฉลย ไม่นับเป็นนึกได้ → วนกลับมาถามใหม่ทีหลัง แล้วไปข้อต่อไปเลย
+  if(it.tries>=2){
+    $('#heard').innerHTML=heardHTML+'<div class="nearTip">'+(st>=2?'พูดตามได้แล้ว 👍':'ไม่เป็นไร')+' — ข้อนี้จะวนกลับมาให้นึกใหม่อีกครั้ง</div>';
+    micState(st>=2?'ok':''); vib(st>=2?30:140);
+    treeFail(it); save();
+    setTimeout(()=>{ if(playing && cur()===it) next(); }, 1300);
     return;
   }
   // recall / use / quiz — ต้องได้ 3 ดาว
@@ -7538,8 +7577,12 @@ function renderTreeScreen(){
   const s1=TREE_FRAMES.filter(F=>F.st===1).map(F=>TREE[F.id]);
   const s2=TREE_FRAMES.filter(F=>F.st===2).map(F=>TREE[F.id]);
   const surv=Object.values(TREE).filter(x=>x.cat==='survive');
-  let h='<div class="tlayer"><div class="tlh">🌳 ลำต้น · โครงประโยค</div><div class="tchips">'+s1.map(treeChip).join('')+'</div>'+
-    '<div class="tlh2">'+(treeStage2Open()?'โครงขั้น 2':'🔒 โครงขั้น 2 — เปิดเมื่อลำต้นเขียว 70%')+'</div><div class="tchips'+(treeStage2Open()?'':' locked')+'">'+s2.map(treeChip).join('')+'</div>'+
+  const ck1=TREE_CHUNKS.filter(a=>{ const F=TREE_FRAMES.find(x=>x.id===a[4]); return F && F.st===1; }).map(a=>TREE[a[0]]);
+  const ck2=TREE_CHUNKS.filter(a=>{ const F=TREE_FRAMES.find(x=>x.id===a[4]); return F && F.st===2; }).map(a=>TREE[a[0]]);
+  let h='<div class="tlayer"><div class="tlh">🌳 ลำต้น · คำ → ก้อนคำ → ประโยค</div>'+
+    '<div class="tlh2">🧩 ก้อนคำ (เรียนก่อน)</div><div class="tchips">'+ck1.map(treeChip).join('')+'</div>'+
+    '<div class="tlh2">🌳 โครงประโยค (เปิดเมื่อก้อนคำ + คำที่ใช้ผ่านแล้ว)</div><div class="tchips">'+s1.map(treeChip).join('')+'</div>'+
+    '<div class="tlh2">'+(treeStage2Open()?'ขั้น 2':'🔒 ขั้น 2 — เปิดเมื่อลำต้นเขียว 70%')+'</div><div class="tchips'+(treeStage2Open()?'':' locked')+'">'+ck2.map(treeChip).join('')+s2.map(treeChip).join('')+'</div>'+
     '<div class="tlh2">🆘 วลีเอาตัวรอด</div><div class="tchips">'+surv.map(treeChip).join('')+'</div></div>';
   // กิ่ง
   h+='<div class="tlayer"><div class="tlh">🌿 กิ่ง · คำตามหมวด</div>';
@@ -7612,22 +7655,41 @@ COACH_RUN.FL=blk=>{
   return true;
 };
 function treeListenQueue(n){
-  const now=Date.now(), q=[], used=new Set();
-  Object.keys(S.srx).forEach(k=>{
-    const r=S.srx[k]; if(!r || String(r.src||'')!=='L:' || r.next>now) return;
-    const L=LISTEN.find(x=>'L:'+x.id===k); if(L && q.length<n){ q.push(lisSentItem(L)); used.add(L.id); }
+  const shortM=m=>String(m||'').split(/[(（/]/)[0].trim();
+  const learned=Object.keys(S.tree||{}).filter(k=>TREE[k] && (treeLearned(k)||treeGreen(k)));
+  let words=learned.filter(k=>['noun','phrase','chunk','sent'].indexOf(TREE[k].kind)>=0);
+  if(words.length<4) words=words.concat(TREE_STAGE1.filter(k=>TREE[k] && words.indexOf(k)<0).slice(0, 6-words.length));
+  const allM=[...new Set(Object.values(TREE).filter(x=>x.kind!=='frame').map(x=>shortM(x.meaning)))];
+  const pickChoices=(ans, pool)=>{
+    const d=pool.filter(m=>m && m!==ans).sort(()=>Math.random()-0.5).slice(0,3);
+    while(d.length<3){ const m=allM[Math.floor(Math.random()*allM.length)]; if(m!==ans && d.indexOf(m)<0) d.push(m); }
+    return [ans].concat(d);
+  };
+  const q=[];
+  // ขั้น 1: คำเดี่ยว (ได้ยินคำว่าอะไร)
+  const wm=words.map(k=>shortM(TREE[k].meaning));
+  words.sort(()=>Math.random()-0.5).slice(0, 8).forEach(k=>{
+    const it=TREE[k], m=shortM(it.meaning);
+    q.push({kind:'tword', id:'TW:'+k, scene:'คำ', zh:it.hanzi, py:it.pinyin, th:m, q:'ได้ยินคำว่าอะไร?', choices:pickChoices(m, wm), ans:m});
   });
-  const SC=['ร้านแนะนำ','อุทยาน','ห้องน้ำ','ร้านอาหาร','หม้อไฟ','ร้านเครื่องดื่ม','จ่ายเงิน','ซื้อของ','ต่อราคา','ถามทาง'];
-  const okIds=new Set((S.listen.hist||[]).slice(-80).filter(h=>h.ok && !h.as).map(h=>h.id));
-  const fresh=LISTEN.filter(L=>!used.has(L.id) && SC.indexOf(L.scene)>=0).sort(()=>Math.random()-0.5)
-    .sort((a,b)=>((okIds.has(a.id)?1:0)-(okIds.has(b.id)?1:0)) || ((b.tree?1:0)-(a.tree?1:0)));
-  let fi=0;
-  while(q.length<n){
-    if(q.length%4===3) q.push(lisNumItem());
-    else if(fi<fresh.length) q.push(lisSentItem(fresh[fi++]));
-    else q.push(lisNumItem());
+  // ขั้น 2: ประโยคที่ประกอบจากคำที่เรียนแล้ว
+  const sents=[];
+  TREE_FRAMES.forEach(F=>{ if(!(treeLearned(F.id)||treeGreen(F.id))) return;
+    Object.values(TREE).forEach(w=>{ if(treeFits(F,w) && (treeLearned(w.key)||treeGreen(w.key))) sents.push(treeCompose(F,w)); }); });
+  const sm=sents.map(x=>x.meaning);
+  sents.sort(()=>Math.random()-0.5).slice(0, 4).forEach(c=>{
+    q.push({kind:'tword', id:'TS:'+c.hanzi, scene:'ประโยคจากคำที่รู้', zh:c.hanzi, py:c.pinyin, th:c.meaning, q:'ได้ยินประโยคว่าอะไร?', choices:pickChoices(c.meaning, sm), ans:c.meaning});
+  });
+  // ขั้น 3: ของจริงในร้าน/อุทยาน — เปิดเมื่อจำได้ (🟢) อย่างน้อย 15 คำ
+  if(learned.filter(treeGreen).length>=15){
+    const SC=['ร้านแนะนำ','อุทยาน','ห้องน้ำ','ร้านอาหาร','จ่ายเงิน','ซื้อของ','ต่อราคา'];
+    const okIds=new Set((S.listen.hist||[]).slice(-80).filter(h=>h.ok && !h.as).map(h=>h.id));
+    LISTEN.filter(L=>SC.indexOf(L.scene)>=0).sort(()=>Math.random()-0.5)
+      .sort((a,b)=>((okIds.has(a.id)?1:0)-(okIds.has(b.id)?1:0)) || ((b.tree?1:0)-(a.tree?1:0)))
+      .slice(0,3).forEach(L=>q.push(lisSentItem(L)));
   }
-  return q;
+  dlog('tree','ฟัง: คำ '+Math.min(8,words.length)+' · ประโยคจากคำที่รู้ '+Math.min(4,sents.length)+' · ของจริง '+(q.length-Math.min(8,words.length)-Math.min(4,sents.length)));
+  return q.slice(0, n||14);
 }
 
 /* ---------- B4 เจาะวรรณยุกต์: ชุดที่ทำได้แย่สุด (ยังไม่เคยเล่นเลย = เจาะคู่ 2 กับ 3) ---------- */
