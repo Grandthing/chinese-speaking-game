@@ -198,6 +198,9 @@ h2{font-size:1.15rem;margin:1.5rem 0 .5rem}
 .tleaf{display:flex;flex-direction:column;border-left:3px solid #3F7D20;padding:.2rem .6rem;margin:.35rem 0}
 .tleaf span{font-size:.85rem;color:var(--muted)}
 .selfbox{margin-top:.6rem;display:flex;flex-wrap:wrap;gap:.4rem;justify-content:center;align-items:center}
+.pybig{font-size:2.1rem;font-weight:700;line-height:1.25;letter-spacing:.01em}
+.pybig.long{font-size:1.6rem}
+.zhsmall{font-size:1.05rem;opacity:.65}
 .pairVs{margin-top:.35rem;font-size:.9rem;color:var(--t3)}
 .pairVs .zh{font-weight:700;color:var(--ink)}
 .pairVs .zh.vs{text-decoration:line-through;text-decoration-color:var(--bad)}
@@ -761,6 +764,10 @@ td.r,th.r{text-align:right}
     <div class="card">
       <div class="row"><b class="grow">🧠 บังคับนึกก่อนดูใบ้</b><button class="chip" id="swRecall">เปิด</button></div>
       <p class="small muted" style="margin:.4rem 0 0">ปุ่มใบ้ล็อก 5 วินาทีแรก (หรือจนกว่าจะลองพูด) ใบ้ได้ 3 ขั้น: ตัวแรกของแต่ละพยางค์ → พินอินไม่มีวรรณยุกต์ → คำอ่านไทย · ปิด = แบบเดิม</p>
+    </div>
+    <div class="card">
+      <div class="row"><b class="grow">🔤 พินอินเป็นตัวหลัก</b><button class="chip" id="swPy">เปิด</button></div>
+      <p class="small muted" style="margin:.4rem 0 0">โชว์พินอินตัวใหญ่ ตัวจีนตัวเล็ก (ต้นไม้คำเที่ยว · เฉลย · ฟัง) — เหมาะกับคนที่ยังอ่านตัวจีนไม่ออก</p>
     </div>
     <div class="card">
       <div class="row"><b class="grow">✈️ โฟกัสเที่ยว</b><button class="chip" id="swFocus">เปิด</button></div>
@@ -3288,7 +3295,7 @@ const MILESTONES = [
 /* ============================================================
    2.5 บันทึกปัญหา (diagnostics) — ไว้ส่งให้ผู้พัฒนาดูเวลาไมค์มีปัญหา
    ============================================================ */
-const BUILD='2026-10-01a';                     // เปลี่ยนทุกครั้งที่แก้ไฟล์ จะได้รู้ว่า log มาจากรุ่นไหน
+const BUILD='2026-10-01b';                     // เปลี่ยนทุกครั้งที่แก้ไฟล์ จะได้รู้ว่า log มาจากรุ่นไหน
 const DIAG=[], STUCK={}, T0=Date.now();
 /* log ปัญหาเก็บลงเครื่องด้วย: iPhone ปิดแอปหรือรีเฟรชแล้ว log เก่ายังอยู่ ส่งย้อนหลังได้ */
 const DKEY='zhgame-diag', DIAG_MAX=2500;
@@ -3353,7 +3360,7 @@ function blank(){return{
   v:1,
   settings:{showThai:true, rate:0.8, autoListen:false, vibrate:true, sv:2,
              coachMin:25, coachStrict:true, coachGoal:2, recallStrict:true, pretest:true,
-             newPerDay:8, focusTravel:true},
+             newPerDay:8, focusTravel:true, pyFirst:true},
   progress:{},   // levelId -> {best, stars, plays, done}
   words:{},      // hanzi -> {py,th,mean,lv,att,fails,d2:[],d3:[]}
   mistakes:{},   // hanzi -> count
@@ -4833,7 +4840,8 @@ function judge(alts){
     if(store===S.tree){                           // 🌳 ผลทบทวนต้นไม้ → ประตูกั้นคำใหม่
       r.stage=Math.max(5, r.stage||0);
       S.treeStats=S.treeStats||{}; const td=S.treeStats[today()]||(S.treeStats[today()]={ok:0,n:0});
-      td.n++; if(rawSt>=3) td.ok++;
+      td.seen=td.seen||{};
+      if(!td.seen[skeyOf(it)]){ td.seen[skeyOf(it)]=1; td.n++; if(rawSt>=3 || r0.altHit) td.ok++; }   // ครั้งแรกของวันเท่านั้น
     }
     if(lat!==null){
       r.lat=(r.lat||[]).concat(lat).slice(-10);
@@ -5584,8 +5592,9 @@ function revealProd(it, heardNorm, silent){
   $('#prodAns').hidden=false;
   $('#prodAns').innerHTML=
     '<div class="small muted">เฉลย</div>'+
-    '<div class="zh">'+markedHTML(it.hanzi, heardNorm)+'</div>'+
-    '<div class="py">'+pyHTML(it.pinyin)+'</div>'+
+    (S.settings.pyFirst
+      ? '<div class="py" style="font-size:1.5rem;font-weight:700">'+pyHTML(it.pinyin)+'</div><div class="zh zhsmall">'+markedHTML(it.hanzi, heardNorm)+'</div>'
+      : '<div class="zh">'+markedHTML(it.hanzi, heardNorm)+'</div><div class="py">'+pyHTML(it.pinyin)+'</div>')+
     '<div class="th">'+esc(it.thaiRead||'')+'</div>'+noteHTML(it);
   if(!silent) speak(sayText(it));             // เล่นเสียงต้นแบบตอนเฉลย (ตอบถูกเองแล้วไม่ต้อง)
 }
@@ -6473,7 +6482,9 @@ function lisAnswer(choice){
   $('#lisAns').hidden=false;
   $('#lisAns').innerHTML=
     '<div class="stars" style="color:var(--'+(ok?'ok':'bad')+')">'+(ok?(assisted?'✓ ถูก (ฟังซ้ำ)':'✓ ถูก'):'✗ คำตอบคือ '+esc(it.ans))+'</div>'+
-    '<div class="zh">'+esc(it.zh)+'</div><div class="py">'+pyHTML(it.py)+'</div><div class="th">'+esc(it.th)+'</div>';
+    (S.settings.pyFirst
+      ? '<div class="py" style="font-size:1.4rem;font-weight:700">'+pyHTML(it.py)+'</div><div class="zh zhsmall">'+esc(it.zh)+'</div>'
+      : '<div class="zh">'+esc(it.zh)+'</div><div class="py">'+pyHTML(it.py)+'</div>')+'<div class="th">'+esc(it.th)+'</div>';
   $('#lisCount').textContent=lisOk+'/'+lisN;
   vib(ok?[30,40,30]:140);
   if(ok && !assisted) lisTimer=setTimeout(lisNext, 700);
@@ -6938,12 +6949,12 @@ function treeNextHint(){
   TREE_BRANCH_ORDER.forEach(c=>{
     if(c==='special' || c==='any' || treeCatOpen(c)) return;
     const fs=TREE_FRAMES.filter(F=>treeFrameOpen(F) && F.tags.indexOf(c)>=0 && treeLearned(F.id) && !treeGreen(F.id));
-    if(fs.length){ fs.forEach(F=>fr.add(TREE[F.id].hanzi)); cats.push(TREE_CAT[c].icon+' '+TREE_CAT[c].name); }
+    if(fs.length){ fs.forEach(F=>fr.add(S.settings.pyFirst?TREE[F.id].pinyin:TREE[F.id].hanzi)); cats.push(TREE_CAT[c].icon+' '+TREE_CAT[c].name); }
   });
   if(cats.length) out.push('ทวนผ่าน '+[...fr].join(' · ')+' → เปิดหมวด '+cats.join(' · '));
   const due1=Object.keys(S.tree||{}).filter(k=>TREE[k] && treeLearned(k) && (S.tree[k].box||0)<2).length;
   if(due1) out.unshift('พรุ่งนี้ทวน '+due1+' คำ — ผ่านแล้วเป็น 🟢');
-  if(!treeStage2Open()) out.push('ขั้น 2 (มี…ไหม · อยากไป… · …ได้ไหม/ต่อราคา · 师傅，去… บอกแท็กซี่): 🟢 '+g1+'/'+need);
+  if(!treeStage2Open()) out.push('ขั้น 2 (มี…ไหม · อยากไป… · …ได้ไหม/ต่อราคา · shī fu, qù… บอกแท็กซี่): 🟢 '+g1+'/'+need);
   return out;
 }
 function treeDoneRow(){
@@ -7175,7 +7186,8 @@ const TREE_CAT={
   special:{icon:'⭐', name:'ประโยคพิเศษ'}
 };
 // ลำดับขั้น 1: คำ/ก้อนก่อน ประโยค (โครง) จะเปิดเองเมื่อส่วนประกอบผ่านครบ
-const TREE_STAGE1=['你好','谢谢','这个','我要','不要','多少钱','不好意思','厕所','在哪儿','来一个','牛肉面','好的','不用了，谢谢','我就看看','服务员','买单','我想吃','听不懂','再说一遍','太贵了','便宜点','我是泰国人','我不会说中文','慢一点','等一下','老板','对','不对'];
+// lái (来) = วิธีสั่งอาหารที่คนจีนใช้จริง → เรียนก่อน และมีของกิน/ดื่มให้ต่อหลายคำตั้งแต่ขั้นแรก
+const TREE_STAGE1=['你好','谢谢','这个','来一个','牛肉面','米饭','水','服务员','买单','我要','不要','多少钱','不好意思','厕所','在哪儿','奶茶','啤酒','好的','不用了，谢谢','我就看看','我想吃','听不懂','再说一遍','太贵了','便宜点','我是泰国人','我不会说中文','慢一点','等一下','老板','对','不对'];
 const TREE_BRANCH_ORDER=['food','drink','taste','meat','place','temp','spice','num','thing','money','action','any','special'];
 
 const TREE={};                 // key -> รายการ
@@ -7206,6 +7218,42 @@ const TREE={};                 // key -> รายการ
     if(it.car && !CARRIER[it.hanzi]) CARRIER[it.hanzi]={t:norm(it.car.hanzi,false), raw:it.car.hanzi, py:it.car.pinyin, th:it.car.thaiRead, mean:it.car.meaning, lv:0};
   });
 })();
+/* พินอินแทนตัวจีนในข้อความ (หมายเหตุ/คำใบ้) — ผู้ใช้อ่านได้แต่พินอิน */
+const PY_EXTRA={'去冰':'qù bīng','少糖':'shǎo táng','无糖':'wú táng','对不起':'duì bu qǐ','请给我':'qǐng gěi wǒ','大熊猫基地':'dà xióng māo jī dì',
+  '二两':'èr liǎng','中辣':'zhōng là','特辣':'tè là','请带我去':'qǐng dài wǒ qù','不用袋子':'bú yòng dài zi','还要别的吗':'hái yào bié de ma',
+  '在这吃还是带走':'zài zhè chī hái shi dài zǒu','一壶':'yì hú','结账':'jié zhàng','美女':'měi nǚ','帅哥':'shuài gē','卫生间':'wèi shēng jiān',
+  '洗手间':'xǐ shǒu jiān','来':'lái','我要':'wǒ yào','要':'yào','不要':'bú yào','不用了':'bú yòng le','这个怎么卖':'zhè ge zěn me mài',
+  '请给我菜单':'qǐng gěi wǒ cài dān','有菜单吗':'yǒu cài dān ma','你推荐什么':'nǐ tuī jiàn shén me','在哪里':'zài nǎ lǐ','怎么走':'zěn me zǒu',
+  '扫码可以吗':'sǎo mǎ kě yǐ ma','能扫码吗':'néng sǎo mǎ ma','去':'qù','一碗':'yì wǎn','一瓶':'yì píng','一杯':'yì bēi','不要辣':'bú yào là',
+  '不要放香菜':'bú yào fàng xiāng cài','这儿':'zhèr','这里':'zhè lǐ','去这儿':'qù zhèr','便宜点':'pián yi diǎn','我中文不好':'wǒ zhōng wén bù hǎo','好嘞':'hǎo lei','行':'xíng'};
+let PY_MAP=null;
+function pyText(str){
+  if(!S.settings.pyFirst) return String(str||'');
+  if(!PY_MAP){
+    PY_MAP=Object.assign({}, PY_EXTRA);
+    Object.values(TREE).forEach(it=>{ if(it.kind!=='frame') PY_MAP[norm(it.hanzi,false)]=it.pinyin; if(it.car) PY_MAP[norm(it.car.hanzi,false)]=it.car.pinyin; });
+    TREE_FRAMES.forEach(F=>{ PY_MAP[norm(TREE[F.id].hanzi,false)]=TREE[F.id].pinyin; });
+  }
+  return String(str||'').replace(/[一-鿿]+/g, run=>{
+    const out=[]; let i=0;
+    while(i<run.length){
+      let hit=false;
+      for(let L=Math.min(8, run.length-i); L>=1; L--){
+        const w=run.substr(i,L);
+        if(PY_MAP[w]){ out.push(PY_MAP[w]); i+=L; hit=true; break; }
+      }
+      if(!hit){ out.push(CHAR_PY[run[i]]||run[i]); i++; }
+    }
+    return out.join(' ');
+  }).replace(/[，]/g,', ').replace(/[？]/g,'?').replace(/＿/g,'…');
+}
+function pyOf(k){ const it=TREE[k]; if(!it) return k; return it.kind==='frame' ? it.frame.py : it.pinyin; }
+/* หัวคำตัวใหญ่: พินอินก่อน (ตัวจีนตัวเล็กข้างใต้) หรือแบบเดิม */
+function bigWordHTML(hanzi, pinyin, marked){
+  if(!S.settings.pyFirst) return '<span class="zh">'+(marked||esc(hanzi))+'</span>';
+  const long=String(pinyin||'').length>22;
+  return '<span class="pybig'+(long?' long':'')+'">'+pyHTML(pinyin)+'</span><div class="zh zhsmall">'+(marked||esc(hanzi))+'</div>';
+}
 function treeTags(it){ return it.kind==='noun' ? [it.cat] : it.tag2 ? [it.tag2] : []; }
 function treeFits(F, n){ return n.kind!=='frame' && treeTags(n).some(t=>F.tags.indexOf(t)>=0) && (n.no||[]).indexOf(F.id)<0 && (!F.mw || !!n.mw); }
 function treeCompose(F, n){
@@ -7244,9 +7292,8 @@ function treeScore(it, alts){
 }
 function treeNaturalHTML(it, r, noNote){
   let h='';
-  if(r && r.altHit) h+='<div class="nearTip">✔ ถูก · แต่คนจีนมักพูดว่า <b class="zh">'+esc(it.hanzi)+'</b> (แบบที่พูดเป็นแบบหนังสือเรียน — ได้ 2★)</div>';
-  else if(r && r.okForm && r.score>=90) h+='<div class="small muted" style="margin-top:.3rem">✔ พูดแบบ <b class="zh">'+esc(r.okForm)+'</b> ก็เป็นธรรมชาติ</div>';
-  if(it.note && !noNote) h+='<div class="small muted" style="margin-top:.3rem">💬 '+esc(it.note)+'</div>';
+  if(r && r.altHit) h+='<div class="nearTip">✔ ใช้ได้ · คนจีนพูดว่า <b>'+esc(S.settings.pyFirst?it.pinyin:it.hanzi)+'</b></div>';
+  if(it.note && !noNote) h+='<div class="small muted" style="margin-top:.3rem">💬 '+esc(pyText(it.note))+'</div>';
   return h;
 }
 /* สถานะ: ⚪ ยังไม่เรียน · 🟠 กำลังจำ (box 0–1) · 🟢 จำได้ (box ≥ 2) */
@@ -7290,8 +7337,8 @@ function treeSamples(k){                          // ตัวอย่างป
 function treeDayRec(){ if(!S.treeDay || S.treeDay.d!==today()) S.treeDay={d:today(), n:0}; return S.treeDay; }
 function treeReviewRate3(){                        // ทบทวนผ่านเฉลี่ย 3 วันล่าสุด (null = ยังไม่มีข้อมูล)
   const st=S.treeStats||{}; let ok=0, n=0;
-  for(let o=-2;o<=0;o++){ const d=st[dayKey(o)]; if(d){ ok+=d.ok||0; n+=d.n||0; } }
-  return n>=8 ? ok/n : null;
+  for(let o=-2;o<=0;o++){ const d=st[dayKey(o)]; if(d && d.seen){ ok+=d.ok||0; n+=d.n||0; } }   // ข้อมูลแบบเก่า (นับทุกครั้งที่ลองซ้ำ) ไม่เอามาคิด
+  return n>=12 ? ok/n : null;
 }
 function treeDueList(){
   const now=Date.now();
@@ -7361,7 +7408,8 @@ function treeUseFor(k, greenOnly){
   if(it.kind==='noun' || it.tag2){
     const fs=TREE_FRAMES.filter(F=>treeFits(F,it) && (ok(F.id) || (!greenOnly && treeRec(F.id))));
     if(!fs.length) return null;
-    const F=fs[Math.floor(Math.random()*fs.length)];
+    const lai=fs.find(x=>x.id==='F12');
+    const F=(lai && Math.random()<0.75) ? lai : fs[Math.floor(Math.random()*fs.length)];
     return Object.assign(treeCompose(F,it), {frame:F, noun:it});
   }
   return null;
@@ -7447,8 +7495,15 @@ function treeStartDrill(label, why){
   const q=[];
   learned.slice(0,8).forEach(k=>{ const st=treeStep('quiz',k,{drill:true}); if(st) q.push(st); });
   const sents=[];
+  if(treeLearned('F12')){
+    const F12=TREE_FRAMES.find(x=>x.id==='F12');
+    learned.filter(k=>TREE[k].mw && treeFits(F12, TREE[k])).sort(()=>Math.random()-0.5).slice(0,3).forEach(k=>{
+      const u=Object.assign(treeCompose(F12, TREE[k]), {frame:F12, noun:TREE[k]});
+      const st=treeStep('quiz',k,{sent:true, drill:true, u:u}); if(st) sents.push(st);
+    });
+  }
   learned.filter(k=>TREE[k].kind==='noun' || TREE[k].kind==='frame').sort(()=>Math.random()-0.5).forEach(k=>{
-    if(sents.length>=4) return;
+    if(sents.length>=5) return;
     const st=treeStep('quiz',k,{sent:true, drill:true}); if(st && !sents.some(x=>x.hanzi===st.hanzi) && !q.some(x=>x.hanzi===st.hanzi)) sents.push(st);
   });
   // สลับ คำ : ประโยค
@@ -7497,19 +7552,17 @@ function renderTree(it){
   micState('');
   if(it.t==='see'){
     const nch=[...String(it.hanzi)].filter(c=>/[一-鿿]/.test(c)).length;
-    $('#pHan').className='han zh'+(nch>9?' long':'');
-    $('#pHan').innerHTML='<span class="zh">'+esc(it.hanzi)+'</span>';
-    $('#pPy').innerHTML=pyHTML(it.pinyin);
+    $('#pHan').className='han'+(S.settings.pyFirst?'':' zh')+(nch>9?' long':'');
+    $('#pHan').innerHTML=bigWordHTML(it.hanzi, it.pinyin);
+    $('#pPy').innerHTML=S.settings.pyFirst ? '' : pyHTML(it.pinyin);
     $('#pThai').textContent=it.thaiRead||'';
     $('#pMean').innerHTML=esc(it.meaning||'')+
-      (w.kind==='frame' ? '<div class="pairVs">🧩 ต่อจากคำที่เรียนแล้ว: <b class="zh">'+(w.parts||[]).map(k=>esc(TREE[k]?TREE[k].hanzi:k)).join(' + ')+'</b></div>'+
-        '<div class="pairVs">🌳 โครง <b class="zh">'+esc(w.frame.f)+'</b> = '+esc(w.frame.mean)+' · เติมคำอื่นได้อีก</div>' : '')+
+      (w.kind==='frame' ? '<div class="pairVs">🧩 ต่อจากคำที่เรียนแล้ว: <b>'+(w.parts||[]).map(k=>esc(S.settings.pyFirst?pyOf(k):(TREE[k]?TREE[k].hanzi:k))).join(' + ')+'</b></div>'+
+        '<div class="pairVs">🌳 โครง <b>'+esc(S.settings.pyFirst?w.frame.py:w.frame.f)+'</b> = '+esc(w.frame.mean)+' · เติมคำอื่นได้อีก</div>' : '')+
       (w.kind==='chunk' ? '<div class="pairVs">🧩 ก้อนคำ — เดี๋ยวจะเอาไปต่อกับคำอื่นเป็นประโยค</div>' : '')+
       (it.where ? '<div class="pairVs">📍 '+esc(it.where)+'</div>' : '')+
-      ((it.ok||[]).length ? '<div class="pairVs">✔ พูดแบบนี้ก็ได้: <span class="zh">'+it.ok.slice(0,3).map(esc).join(' · ')+'</span></div>' : '')+
-      ((it.alt||[]).length ? '<div class="pairVs" style="opacity:.75">📖 แบบหนังสือเรียน (คนจีนไม่ค่อยพูด): <span class="zh">'+it.alt.slice(0,2).map(esc).join(' · ')+'</span></div>' : '')+
-      (it.note ? '<div class="pairVs">💬 '+esc(it.note)+'</div>' : '')+
-      (w.car ? '<div class="pairVs">คำเดียวสั้นเกินให้ระบบฟัง — พูดเป็นวลี <b class="zh">'+esc(w.car.hanzi)+'</b></div>' : '')+noteHTML(Object.assign({}, it, {hanzi:w.key, store:'tree'}));
+      (it.note ? '<div class="pairVs">💬 '+esc(pyText(it.note))+'</div>' : '')+
+      (w.car ? '<div class="pairVs">คำเดียวสั้นเกินให้ระบบฟัง — พูดเป็นวลี <b>'+esc(S.settings.pyFirst?w.car.pinyin:w.car.hanzi)+'</b></div>' : '')+noteHTML(Object.assign({}, it, {hanzi:w.key, store:'tree'}));
     if(it.pass===0 && !it.again){
       speak(it.hanzi, ()=>setTimeout(()=>{ if(cur()===it) speak(it.hanzi, armMic, 1.0); }, 150), 0.8);
     }else speak(it.hanzi, armMic, 1.0);
@@ -7521,16 +7574,16 @@ function renderTree(it){
   $('#pPy').innerHTML='';
   $('#pThai').textContent='';
   $('#pMean').innerHTML=
-    (it.t==='use' && it.u ? '<div class="pairVs">🌳 ใช้โครง <b class="zh">'+esc(it.u.frame.f)+'</b> + '+esc(String(it.u.noun.meaning).split(/[(（/]/)[0])+'</div>' : '')+
+    (it.t==='use' && it.u ? '<div class="pairVs">🌳 ใช้โครง <b>'+esc(S.settings.pyFirst?it.u.frame.py:it.u.frame.f)+'</b> + '+esc(String(it.u.noun.meaning).split(/[(（/]/)[0])+'</div>' : '')+
     (it.t!=='use' && w.kind==='frame' ? '<div class="pairVs">🧩 '+(w.parts||[]).map(k=>esc(TREE[k]?String(TREE[k].meaning).split(/[(（/]/)[0].trim():k)).join(' + ')+'</div>' : '')+
     (it.t!=='use' && w.car ? '<div class="pairVs">พูดเป็นวลี (คำเดียวสั้นเกินให้ระบบฟัง)</div>' : '')+
     '<div class="small muted" style="margin-top:.3rem">พูดเป็นภาษาจีน</div>';
   if(S.settings.autoListen) armMic();
 }
 function treeReveal(it, heardNorm, silent){
-  $('#pHan').className='han zh';
-  $('#pHan').innerHTML='<span class="zh">'+markedHTML(it.hanzi, heardNorm||'')+'</span>';
-  $('#pPy').innerHTML=pyHTML(it.pinyin);
+  $('#pHan').className='han'+(S.settings.pyFirst?'':' zh');
+  $('#pHan').innerHTML=bigWordHTML(it.hanzi, it.pinyin, markedHTML(it.hanzi, heardNorm||''));
+  $('#pPy').innerHTML=S.settings.pyFirst ? '' : pyHTML(it.pinyin);
   $('#pThai').textContent=it.thaiRead||'';
   if(!silent) speak(it.hanzi);                    // ตอบถูกแล้วไม่ต้องฟังซ้ำ (ประหยัด ~1 วิ/ข้อ)
 }
@@ -7548,12 +7601,12 @@ function judgeTree(alts){
   dlog('tree', TSTEP_LABEL[it.t]+' '+it.k+' ('+it.hanzi+') -> '+r.score+'% (ได้ยิน: '+(r.heard||'—')+')');
   treeLog(it, st, r);
   save();
-  const heardHTML='<div class="lab">ได้ยินว่า</div><div class="small muted zh">'+esc(r.heard||'—')+'</div>'+
+  const heardHTML='<div class="lab">ได้ยินว่า</div><div class="small muted'+(S.settings.pyFirst?'':' zh')+'">'+esc(r.heard ? (S.settings.pyFirst?toPinyin(r.heard):r.heard) : '—')+'</div>'+
     '<div class="stars" style="color:var(--'+(st>=3?'ok':st>=2?'warn':'bad')+')">'+starStr(st)+' <span class="small">'+r.score+'%</span></div>'+
     (r.hints&&r.hints.length ? '<div class="nearTip">ใกล้แล้ว — '+r.hints.map(esc).join('<br>')+'</div>' : '')+
     (it.t==='see' ? (r.altHit ? treeNaturalHTML(it, r) : '') : '');
   if(it.t==='see'){
-    $('#pHan').innerHTML='<span class="zh">'+markedHTML(it.hanzi, norm(r.heard,false))+'</span>';
+    $('#pHan').innerHTML=bigWordHTML(it.hanzi, it.pinyin, markedHTML(it.hanzi, norm(r.heard,false)));
     $('#heard').innerHTML=heardHTML;
     if(st>=2){
       it.pass++; vib([30,40,30]); micState('ok');
@@ -7701,9 +7754,9 @@ function finishTree(){
 function treeChip(it){
   const c=treeColor(it.key);
   const dot=c==='g'?'🟢':c==='o'?'🟠':'⚪';
-  const label=it.kind==='frame' ? it.frame.f : it.hanzi;
+  const label=S.settings.pyFirst ? (it.kind==='frame' ? it.frame.py : it.pinyin) : (it.kind==='frame' ? it.frame.f : it.hanzi);
   const mean=it.kind==='frame' ? it.frame.mean : String(it.meaning).split(/[(（/]/)[0];
-  return '<span class="tchip t'+c+'">'+dot+' <b class="zh">'+esc(label)+'</b><i>'+esc(mean)+'</i></span>';
+  return '<span class="tchip t'+c+'">'+dot+' <b'+(S.settings.pyFirst?'':' class="zh"')+'>'+esc(label)+'</b><i>'+esc(mean)+'</i></span>';
 }
 function renderTreeScreen(){
   const all=Object.values(TREE);
@@ -7738,7 +7791,7 @@ function renderTreeScreen(){
   // ใบ
   const sm=treeSamples(4);
   h+='<div class="tlayer"><div class="tlh">🍃 ใบ · ประโยคที่พูดเองได้แล้ว</div>'+
-    (sm.length ? sm.map(x=>'<div class="tleaf"><b class="zh">'+esc(x.hanzi)+'</b><span>'+esc(x.meaning)+'</span></div>').join('')
+    (sm.length ? sm.map(x=>'<div class="tleaf"><b'+(S.settings.pyFirst?'':' class="zh"')+'>'+esc(S.settings.pyFirst?x.pinyin:x.hanzi)+'</b><span>'+esc(x.meaning)+'</span></div>').join('')
       : '<p class="small muted" style="margin:.3rem 0">ยังไม่มี — โครงกับคำนามต้องเป็น 🟢 ทั้งคู่ (ทวนผ่านวันถัดไป) แล้วประโยคจะงอกเองแบบทวีคูณ</p>')+'</div>';
   $('#trBody').innerHTML=h;
 }
@@ -8897,6 +8950,7 @@ function renderSettings(){
   $('#swRecall').textContent=S.settings.recallStrict?'เปิด':'ปิด'; $('#swRecall').classList.toggle('on',!!S.settings.recallStrict);
   $('#swPretest').textContent=S.settings.pretest?'เปิด':'ปิด'; $('#swPretest').classList.toggle('on',!!S.settings.pretest);
   $$('#goalChips .chip').forEach(c=>c.classList.toggle('on', +c.dataset.g===(S.settings.coachGoal||2)));
+  $('#swPy').textContent=S.settings.pyFirst?'เปิด':'ปิด'; $('#swPy').classList.toggle('on',!!S.settings.pyFirst);
   $('#swFocus').textContent=S.settings.focusTravel?'เปิด':'ปิด'; $('#swFocus').classList.toggle('on',!!S.settings.focusTravel);
   $$('#newChips .chip').forEach(c=>c.classList.toggle('on', +c.dataset.n===(S.settings.newPerDay||8)));
 }
@@ -8906,6 +8960,7 @@ $('#swAuto').onclick=()=>{ S.settings.autoListen=!S.settings.autoListen; save();
 $('#swVib').onclick =()=>{ S.settings.vibrate=!S.settings.vibrate; save(); renderSettings(); vib(30); };
 $('#swStrict').onclick=()=>{ S.settings.coachStrict=!S.settings.coachStrict; save(); renderSettings(); };
 $('#swRecall').onclick=()=>{ S.settings.recallStrict=!S.settings.recallStrict; save(); renderSettings(); };
+$('#swPy').onclick=()=>{ S.settings.pyFirst=!S.settings.pyFirst; save(); renderSettings(); };
 $('#swFocus').onclick=()=>{ S.settings.focusTravel=!S.settings.focusTravel; save(); renderSettings(); renderHome(); dlog('ตั้งค่า','โฟกัสเที่ยว '+(S.settings.focusTravel?'เปิด':'ปิด')); };
 $$('#newChips .chip').forEach(c=>c.onclick=()=>{ S.settings.newPerDay=+c.dataset.n; save(); renderSettings(); });
 $('#btnTreeOpen').onclick=()=>openTree();
