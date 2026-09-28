@@ -3295,7 +3295,7 @@ const MILESTONES = [
 /* ============================================================
    2.5 บันทึกปัญหา (diagnostics) — ไว้ส่งให้ผู้พัฒนาดูเวลาไมค์มีปัญหา
    ============================================================ */
-const BUILD='2026-10-01c';                     // เปลี่ยนทุกครั้งที่แก้ไฟล์ จะได้รู้ว่า log มาจากรุ่นไหน
+const BUILD='2026-10-01d';                     // เปลี่ยนทุกครั้งที่แก้ไฟล์ จะได้รู้ว่า log มาจากรุ่นไหน
 const DIAG=[], STUCK={}, T0=Date.now();
 /* log ปัญหาเก็บลงเครื่องด้วย: iPhone ปิดแอปหรือรีเฟรชแล้ว log เก่ายังอยู่ ส่งย้อนหลังได้ */
 const DKEY='zhgame-diag', DIAG_MAX=2500;
@@ -4840,7 +4840,7 @@ function judge(alts){
     if(store===S.tree){                           // 🌳 ผลทบทวนต้นไม้ → ประตูกั้นคำใหม่
       r.stage=Math.max(5, r.stage||0);
       S.treeStats=S.treeStats||{}; const td=S.treeStats[today()]||(S.treeStats[today()]={ok:0,n:0});
-      td.seen=td.seen||{};
+      if(!td.seen){ td.seen={}; td.ok=0; td.n=0; }        // เดิมนับทุกครั้งที่ลองซ้ำ → เริ่มนับใหม่
       if(!td.seen[skeyOf(it)]){ td.seen[skeyOf(it)]=1; td.n++; if(rawSt>=3 || r0.altHit) td.ok++; }   // ครั้งแรกของวันเท่านั้น
     }
     if(lat!==null){
@@ -5539,7 +5539,7 @@ function renderProd(it){
   $('#gloss').hidden=true; $('#pNote').hidden=true; $('#reviewBar').hidden=true;
   $('#prodBox').hidden=false;
   $('#prodLab').textContent = asPat ? 'ประกอบประโยคนี้เป็นภาษาจีน' : 'พูดเป็นภาษาจีนว่า';
-  $('#prodThai').textContent = asPat ? (it.frameThai||it.meaning) : it.meaning;
+  $('#prodThai').textContent = pyText(asPat ? (it.frameThai||it.meaning) : it.meaning);   // โหมดพินอิน: ตัวจีนในโจทย์เป็นพินอิน
   if(asPat && it.slotThai){
     $('#prodSlot').hidden=false;
     $('#prodSlot').innerHTML='<b>'+esc(it.slotThai)+'</b><span>เติมคำนี้ลงในช่องว่าง</span>';
@@ -5563,7 +5563,7 @@ function renderProd(it){
   $('#btnSkip').style.visibility='visible';
   $('#btnSelfPass').style.visibility='hidden';
   const r=storeOf(it)[skeyOf(it)];
-  $('#prodLab').textContent += r ? ('  ·  ทบทวนรอบที่ '+((r.tries||0)+1)) : '  ·  คำใหม่';
+  $('#prodLab').textContent += it.store==='tree' ? '  ·  🌳 ทบทวน' : r ? ('  ·  ทบทวนรอบที่ '+((r.tries||0)+1)) : '  ·  คำใหม่';
   micState('');
   if(LV.active){                               // 🪜 เลเวล
     $('#prodLab').textContent='🪜 เลเวล '+LV.n+' · '+LV_STAGES[LV.stage]+(it._rq?' · รอบแก้ตัว':'');
@@ -7448,7 +7448,7 @@ function treeGate(){
   const due=treeDueList().length;
   if(due>30) return 'วันนี้ทบทวนก่อน ของเก่ายังไม่แน่น (ค้างทวน '+due+' ข้อ)';
   const rt=treeReviewRate3();
-  if(rt!==null && rt<0.6) return 'วันนี้ทบทวนก่อน ของเก่ายังไม่แน่น (ทวนผ่าน 3 วันล่าสุด '+Math.round(rt*100)+'%)';
+  if(rt!==null && rt<0.6) return 'ของเก่ายังไม่แน่น (ทวนผ่าน 3 วันล่าสุด '+Math.round(rt*100)+'%) — วันนี้คำใหม่ 2 คำ';
   return '';
 }
 function treeFree(k){ const it=TREE[k]; return !!it && it.kind==='chunk' && !!it.fid && treeLearned(it.fid); }
@@ -7460,7 +7460,8 @@ function treePickChunk(n){
   const pending=Object.keys(S.tree||{}).filter(k=>TREE[k] && (S.tree[k].stage||0)<5).sort((a,b)=>(S.tree[a].first||0)-(S.tree[b].first||0));
   pending.forEach(k=>{ const it=TREE[k]; if(it.kind==='frame' && !treePartsReady(it.frame)) return; if(out.length<n) out.push(k); });   // ประโยคที่ค้าง: รอให้คำประกอบผ่านก่อน
   let quota=treeNewLeft();
-  if(treeGate()) quota=0;
+  if(treeDueList().length>30) quota=0;
+  else if(treeGate()) quota=Math.min(quota, 2);
   const s1=TREE_STAGE1.filter(k=>TREE[k] && !treeRec(k));
   const br=[];
   TREE_FRAMES.forEach(F=>{
@@ -7489,7 +7490,8 @@ function treePickChunk(n){
   let turn=0;
   while(out.length<n && quota>0){
     let k=null;
-    if(turn%2===0) k=s1.shift()||nextBranch(); else k=nextBranch()||s1.shift();
+    const core8 = s1.length && TREE_STAGE1.indexOf(s1[0])<8;       // ช่วงแรก (lái + ของสั่ง) มาก่อนเสมอ
+    if(core8 || turn%2===0) k=s1.shift()||nextBranch(); else k=nextBranch()||s1.shift();
     turn++;
     if(!k) break;
     if(out.indexOf(k)<0){ out.push(k); quota--; }
@@ -7521,7 +7523,7 @@ function treeItem(k, allowSent){
   const it=TREE[k]; if(!it) return null;
   const base={kind:'core', key:k, store:'tree', src:'tree', hanzi:it.hanzi, pinyin:it.pinyin, thaiRead:it.thaiRead, meaning:it.meaning,
     ok:it.ok||[], alt:it.alt||[], note:it.note||''};
-  if(it.kind==='frame') base.meaning=it.meaning+'  (โครง '+it.frame.f+')';
+  if(it.kind==='frame') base.meaning=it.meaning+'  (โครง '+(S.settings.pyFirst?it.frame.py:it.frame.f)+')';
   if(allowSent && Math.random()<0.5){
     const u=treeUseFor(k, true);
     if(u && it.kind!=='frame') return Object.assign(base, {hanzi:u.hanzi, pinyin:u.pinyin, thaiRead:u.thaiRead, meaning:u.meaning, sent:true, ok:u.ok||[], alt:u.alt||[], note:u.note||''});
