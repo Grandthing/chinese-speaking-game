@@ -3299,7 +3299,7 @@ const MILESTONES = [
 /* ============================================================
    2.5 บันทึกปัญหา (diagnostics) — ไว้ส่งให้ผู้พัฒนาดูเวลาไมค์มีปัญหา
    ============================================================ */
-const BUILD='2026-10-01f';                     // เปลี่ยนทุกครั้งที่แก้ไฟล์ จะได้รู้ว่า log มาจากรุ่นไหน
+const BUILD='2026-10-01h';                     // เปลี่ยนทุกครั้งที่แก้ไฟล์ จะได้รู้ว่า log มาจากรุ่นไหน
 const DIAG=[], STUCK={}, T0=Date.now();
 /* log ปัญหาเก็บลงเครื่องด้วย: iPhone ปิดแอปหรือรีเฟรชแล้ว log เก่ายังอยู่ ส่งย้อนหลังได้ */
 const DKEY='zhgame-diag', DIAG_MAX=2500;
@@ -7215,7 +7215,7 @@ const TREE_STAGE1=['你好','谢谢','这个','来一个','牛肉面','米饭','
 const TREE_BRANCH_ORDER=['food','drink','taste','meat','place','temp','spice','num','thing','money','action','any','special'];
 
 /* ---- ชุดเพิ่ม: ตลาดสด · อาหารเฉิงตู · ในร้าน · โรงแรม/DiDi/ฉุกเฉิน (ภาษาพูดจริง) ---- */
-MW.jin=['一斤','yì jīn','อี้ จิน',' 1 จิน (ครึ่งกิโล)'];
+MW.jin=['一斤','yì jīn','อี้ จิน',' 1 จิน'];
 MW.ge=['一个','yí ge','อี๋ เก้อ','ลูกนึง'];
 // ตลาดสดขายเป็น "จิน" (斤 = ครึ่งกิโล): …多少钱一斤？
 TREE_FRAMES.push({id:'F14', f:'＿多少钱一斤？', py:'… duō shao qián yì jīn', th:'… ตัว เส่า เฉียน อี้ จิน', mean:'…จินละเท่าไหร่', tags:['fruit','veg'],
@@ -7331,7 +7331,7 @@ const TREE={};                 // key -> รายการ
   TREE_FRAMES.forEach(F=>{
     const n=TREE[F.ex]||{hanzi:F.ex, pinyin:'', thaiRead:'', meaning:F.ex};
     const c=treeCompose(F, n);
-    TREE[F.id]={key:F.id, frame:F, hanzi:c.hanzi, pinyin:c.pinyin, thaiRead:c.thaiRead, meaning:c.meaning, cat:'frame', kind:'frame', no:[], parts:[F.ck, F.ex].filter(Boolean),
+    TREE[F.id]={key:F.id, frame:F, hanzi:c.hanzi, pinyin:c.pinyin, thaiRead:c.thaiRead, meaning:c.meaning, cat:'frame', kind:'frame', no:[], parts:treePartsOrder(F, F.ex),
       ok:c.ok, alt:c.alt, note:c.note, where:F.where||''};
   });
   // คำพยางค์เดียวในต้นไม้: ใช้วลีพาเดียวกับทั้งแอป (มีอยู่แล้วใช้ของเดิม) ให้ตอนเรียนกับตอนทบทวนพูดเหมือนกัน
@@ -7384,6 +7384,14 @@ function bigWordHTML(hanzi, pinyin, marked){
   const long=String(pinyin||'').length>22;
   return '<span class="pybig'+(long?' long':'')+'">'+pyHTML(pinyin)+'</span><div class="zh zhsmall">'+(marked||esc(hanzi))+'</div>';
 }
+/* โครงเต็ม + คำนาม เรียงตามประโยคจริง: "zhè ge + … duō shao qián" · "yǒu … ma + cài dān" · "lái … + niú ròu miàn" */
+function treeStructHTML(F, nk){
+  const fr = S.settings.pyFirst ? F.py : F.f;
+  const w=TREE[nk], mw=(F.mw && w && w.mw) ? w.mw : null;      // 来 + ลักษณนาม: lái … + yì wǎn niú ròu miàn
+  const n = w ? (S.settings.pyFirst ? (mw?mw[1]+' ':'')+w.pinyin : (mw?mw[0]:'')+w.hanzi) : nk;
+  return esc(String(F.zh).indexOf('{')===0 ? n+'  +  '+fr : fr+'  +  '+n);
+}
+function treePartsOrder(F, nk){ const p=[F.ck, nk].filter(Boolean); return String(F.zh).indexOf('{')===0 ? p.reverse() : p; }   // ลำดับเดียวกับในประโยค
 function treeTags(it){ return it.kind==='noun' ? [it.cat] : it.tag2 ? [it.tag2] : []; }
 function treeFits(F, n){ return n.kind!=='frame' && treeTags(n).some(t=>F.tags.indexOf(t)>=0) && (n.no||[]).indexOf(F.id)<0 && (!F.mw || !!n.mw); }
 function treeCompose(F, n){
@@ -7692,8 +7700,8 @@ function renderTree(it){
     $('#pPy').innerHTML=S.settings.pyFirst ? '' : pyHTML(it.pinyin);
     $('#pThai').textContent=it.thaiRead||'';
     $('#pMean').innerHTML=esc(it.meaning||'')+
-      (w.kind==='frame' ? '<div class="pairVs">🧩 ต่อจากคำที่เรียนแล้ว: <b>'+(w.parts||[]).map(k=>esc(S.settings.pyFirst?pyOf(k):(TREE[k]?TREE[k].hanzi:k))).join(' + ')+'</b></div>'+
-        '<div class="pairVs">🌳 โครง <b>'+esc(S.settings.pyFirst?w.frame.py:w.frame.f)+'</b> = '+esc(w.frame.mean)+' · เติมคำอื่นได้อีก</div>' : '')+
+      (w.kind==='frame' ? '<div class="pairVs">🧩 <b>'+treeStructHTML(w.frame, it.u ? it.u.noun.key : w.frame.ex)+'</b></div>'+
+        '<div class="pairVs">🌳 โครง '+esc(S.settings.pyFirst?w.frame.py:w.frame.f)+' = '+esc(w.frame.mean)+' · เติมคำอื่นได้อีก</div>' : '')+
       (w.kind==='chunk' ? '<div class="pairVs">🧩 ก้อนคำ — เดี๋ยวจะเอาไปต่อกับคำอื่นเป็นประโยค</div>' : '')+
       (it.where ? '<div class="pairVs">📍 '+esc(it.where)+'</div>' : '')+
       (it.note ? '<div class="pairVs">💬 '+esc(pyText(it.note))+'</div>' : '')+
@@ -7710,7 +7718,7 @@ function renderTree(it){
   $('#pThai').textContent='';
   $('#pMean').innerHTML=
     (it.t==='use' && it.u ? '<div class="pairVs">🌳 ใช้โครง <b>'+esc(S.settings.pyFirst?it.u.frame.py:it.u.frame.f)+'</b> + '+esc(String(it.u.noun.meaning).split(/[(（/]/)[0])+'</div>' : '')+
-    (it.t!=='use' && it.u ? '<div class="pairVs">🧩 '+[it.u.frame.ck, it.u.noun.key].map(k=>esc(TREE[k]?String(TREE[k].meaning).split(/[(（/]/)[0].trim():'')).filter(Boolean).join(' + ')+'</div>' :
+    (it.t!=='use' && it.u ? '<div class="pairVs">🧩 '+treePartsOrder(it.u.frame, it.u.noun.key).map(k=>esc(TREE[k]?String(TREE[k].meaning).split(/[(（/]/)[0].trim():'')).filter(Boolean).join(' + ')+'</div>' :
      it.t!=='use' && w.kind==='frame' ? '<div class="pairVs">🧩 '+(w.parts||[]).map(k=>esc(TREE[k]?String(TREE[k].meaning).split(/[(（/]/)[0].trim():k)).join(' + ')+'</div>' : '')+
     (it.t!=='use' && w.car ? '<div class="pairVs">พูดเป็นวลี (คำเดียวสั้นเกินให้ระบบฟัง)</div>' : '')+
     '<div class="small muted" style="margin-top:.3rem">พูดเป็นภาษาจีน</div>';
