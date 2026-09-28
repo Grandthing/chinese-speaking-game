@@ -199,7 +199,8 @@ h2{font-size:1.15rem;margin:1.5rem 0 .5rem}
 .tleaf span{font-size:.85rem;color:var(--muted)}
 .selfbox{margin-top:.6rem;display:flex;flex-wrap:wrap;gap:.4rem;justify-content:center;align-items:center}
 .pairVs{margin-top:.35rem;font-size:.9rem;color:var(--t3)}
-.pairVs .zh{font-weight:700;color:var(--ink);text-decoration:line-through;text-decoration-color:var(--bad)}
+.pairVs .zh{font-weight:700;color:var(--ink)}
+.pairVs .zh.vs{text-decoration:line-through;text-decoration-color:var(--bad)}
 .pairTip{margin-top:.5rem;font-size:.85rem;color:var(--t3);text-align:left;line-height:1.5}
 .nearTip{margin-top:.5rem;font-size:.9rem;color:var(--t3);background:#FBF1DC;border-radius:.5rem;padding:.45rem .65rem;text-align:left;line-height:1.5}
 .tip3{margin-top:.5rem;font-size:.85rem;color:var(--t3);background:#FBF1DC;border-radius:.5rem;padding:.4rem .6rem;display:inline-block}
@@ -3287,7 +3288,7 @@ const MILESTONES = [
 /* ============================================================
    2.5 บันทึกปัญหา (diagnostics) — ไว้ส่งให้ผู้พัฒนาดูเวลาไมค์มีปัญหา
    ============================================================ */
-const BUILD='2026-09-30e';                     // เปลี่ยนทุกครั้งที่แก้ไฟล์ จะได้รู้ว่า log มาจากรุ่นไหน
+const BUILD='2026-10-01a';                     // เปลี่ยนทุกครั้งที่แก้ไฟล์ จะได้รู้ว่า log มาจากรุ่นไหน
 const DIAG=[], STUCK={}, T0=Date.now();
 /* log ปัญหาเก็บลงเครื่องด้วย: iPhone ปิดแอปหรือรีเฟรชแล้ว log เก่ายังอยู่ ส่งย้อนหลังได้ */
 const DKEY='zhgame-diag', DIAG_MAX=2500;
@@ -4789,7 +4790,7 @@ function judge(alts){
   const it=cur(); if(!it) return;
   const prod = (MODE==='prod' || MODE==='pattern');
   if(prod && gaveUp) return judgeRepeat(it, alts);     // นึกไม่ออกแล้ว: รอบนี้คือพูดตาม ไม่นับคะแนน
-  const r0 = scoreAll(it.hanzi, alts);                 // เครื่องคิดคะแนนตัวเดียวกันทุกโหมด
+  const r0 = (it.store==='tree' && typeof treeScore==='function') ? treeScore(it, alts) : scoreAll(it.hanzi, alts);   // เครื่องคิดคะแนนตัวเดียวกันทุกโหมด (ต้นไม้: รับแบบธรรมชาติอื่น/แบบหนังสือเรียน)
   const heard=r0.heard, target=r0.target, hints=r0.hints;
   const rawScore=r0.score;                             // คะแนนจริงก่อนหักตัวช่วย
   let score=rawScore;
@@ -4826,7 +4827,7 @@ function judge(alts){
       S.coreDay.n=(S.coreDay.n||0)+1;
     }
     // ถูกแต่ช้า 3–6 วิ: คงกล่อง นัดตามระยะเดิม · เกิน 6 วิ: คงกล่อง ถามใหม่ใน 10 นาที
-    const neutral = slow==='slow' ? 'keep' : (slow==='vslow' || hintedButRight);
+    const neutral = r0.altHit ? 'keep' : slow==='slow' ? 'keep' : (slow==='vslow' || hintedButRight);   // แบบหนังสือเรียน: ไม่เลื่อน ไม่ลด
     const r=srsUpdate(skeyOf(it), st, neutral, store);
     if(store===S.srx){ r.src=it.src; if(it.slotRaw) r.slot=it.slotRaw; }
     if(store===S.tree){                           // 🌳 ผลทบทวนต้นไม้ → ประตูกั้นคำใหม่
@@ -4848,7 +4849,7 @@ function judge(alts){
 
   // แสดงผล + ไฮไลต์ตัวที่หาย/เพี้ยน
   const hn=norm(heard,false);
-  if(prod) revealProd(it, hn, st>=3 && !hintUsed && !slow);   // เฉลยหลังพูดทุกครั้ง · ถูกเองไม่ต้องฟังซ้ำ
+  if(prod) revealProd(it, hn, st>=3 && !hintUsed && !slow && !r0.altHit);   // เฉลยหลังพูดทุกครั้ง · ถูกเองไม่ต้องฟังซ้ำ
   else $('#pHan').innerHTML='<span class="zh">'+markedHTML(it.hanzi, hn)+'</span>';
   const heardPy = heard ? toPinyin(heard) : '';
   $('#heard').innerHTML =
@@ -4861,6 +4862,14 @@ function judge(alts){
     (slow==='slow' ? '<div class="nearTip">ถูก แต่ยังช้า ⏱ '+(lat/1000).toFixed(1)+' วิ — ลองให้คำออกมาภายใน 3 วิ รอบทบทวนจะยังไม่เลื่อน</div>' : '')+
     (slow==='vslow' ? '<div class="nearTip">ถูก แต่ช้ามาก ⏱ '+(lat/1000).toFixed(1)+' วิ — อีก 10 นาทีจะกลับมาถามใหม่</div>' : '');
 
+  if(it.store==='tree' && typeof treeNaturalHTML==='function' && (r0.altHit || it.note || r0.okForm)){
+    $('#heard').insertAdjacentHTML('beforeend', treeNaturalHTML(it, r0));
+  }
+  if(r0.altHit && prod){                            // พูดแบบหนังสือเรียนถูก: ผ่าน ไปต่อ (ฟังแบบธรรมชาติจากเฉลยแล้ว)
+    vib([30,40,30]); micState('ok');
+    setTimeout(()=>{ if(playing) next(); }, 2200);
+    return;
+  }
   if(LV.active && MODE==='prod' && !hintedButRight){
     // 🪜 Deliberate practice: ไม่ถามซ้ำทันทีหลังเห็นเฉลย (นั่นคือการลอก ไม่ใช่การนึก)
     // ข้อที่พลาดจะวนกลับมาถามอีกครั้งตอนท้ายขั้น · ด่านทดสอบตอบได้ครั้งเดียว
@@ -6874,7 +6883,7 @@ function renderPair(it, quiet){
   $('#pPy').innerHTML=pyHTML(it.pinyin);
   $('#pThai').textContent=it.thaiRead||'';
   $('#pMean').innerHTML=esc(it.meaning||'')+
-    '<div class="pairVs">ไม่ใช่ <span class="zh">'+esc(it.partner.hanzi)+'</span> '+esc(it.partner.pinyin)+' · '+esc(it.partner.meaning)+'</div>';
+    '<div class="pairVs">ไม่ใช่ <span class="zh vs">'+esc(it.partner.hanzi)+'</span> '+esc(it.partner.pinyin)+' · '+esc(it.partner.meaning)+'</div>';
   $('#heard').innerHTML='<div class="pairTip">👅 '+esc(F.tip)+'</div>';
   $('#playBar').style.width=(qi/Q.length*100)+'%';
   $('#playCount').textContent=(qi+1)+'/'+Q.length;
@@ -6934,7 +6943,7 @@ function treeNextHint(){
   if(cats.length) out.push('ทวนผ่าน '+[...fr].join(' · ')+' → เปิดหมวด '+cats.join(' · '));
   const due1=Object.keys(S.tree||{}).filter(k=>TREE[k] && treeLearned(k) && (S.tree[k].box||0)<2).length;
   if(due1) out.unshift('พรุ่งนี้ทวน '+due1+' คำ — ผ่านแล้วเป็น 🟢');
-  if(!treeStage2Open()) out.push('ขั้น 2 (มี…ไหม · อยากไป… · …ได้ไหม · ขอ…หน่อย · ต่อราคา): 🟢 '+g1+'/'+need);
+  if(!treeStage2Open()) out.push('ขั้น 2 (มี…ไหม · อยากไป… · …ได้ไหม/ต่อราคา · 师傅，去… บอกแท็กซี่): 🟢 '+g1+'/'+need);
   return out;
 }
 function treeDoneRow(){
@@ -6962,66 +6971,100 @@ COACH_RUN.BP=blk=>startPair(pairQueue(COACH.minutes===10?6:10, 2), 'โค้ช
    เรียนคำใหม่ 5 ขั้นในรอบเดียว (ดู+ฟัง → พูดตาม 2 ครั้ง → นึกทันที → นึกซ้ำหลัง 2 และ 5 ข้อ → ใช้ในประโยค) ครั้งละ 4 คำ
    ============================================================ */
 // โครงประโยค: {n}=คำนาม · tm = ความหมายไทยแบบเติมช่อง · st = ขั้นที่ปลดล็อก · ex = คำที่ใช้ตอนเรียนโครงครั้งแรก
+/* ---- กติกาภาษาธรรมชาติ (natural-check) ----
+   hanzi = แบบที่คนจีนแผ่นดินใหญ่ (เฉิงตู/เมืองท่องเที่ยว) พูดจริง
+   ok    = แบบอื่นที่เป็นธรรมชาติพอกัน → ได้เต็ม
+   alt   = แบบหนังสือเรียน → ผ่าน แต่ได้สูงสุด 2★ พร้อมบอกว่าคนจีนนิยมพูดแบบไหน
+   note  = โชว์หลังตอบ 1 บรรทัด · where = ใช้ที่ไหน
+   โครง: {n}=คำนาม {mw}=ลักษณนาม (来一碗…) · คำนาม ok = คำแทนที่ใส่ในโครงได้ (香菜 → 放香菜 = 不要放香菜) */
 const TREE_FRAMES=[
-  {id:'F1', f:'我要＿',     py:'wǒ yào …',        th:'หว่อ เย่า …',        mean:'ฉันเอา…',      tags:['food','drink','thing','num','spice','any'], zh:'我要{n}',     tp:'wǒ yào {p}',        tt:'หว่อ เย่า {t}',        tm:'เอา{m}',        ex:'这个', st:1},
-  {id:'F2', f:'不要＿',     py:'bú yào …',        th:'ปู๋ เย่า …',          mean:'ไม่เอา…',      tags:['food','drink','taste','thing','any'],        zh:'不要{n}',     tp:'bú yào {p}',        tt:'ปู๋ เย่า {t}',          tm:'ไม่เอา{m}',     ex:'这个', st:1},
-  {id:'F4', f:'＿多少钱？', py:'… duō shao qián',  th:'… ตัว เส่า เฉียน',    mean:'…เท่าไหร่',    tags:['food','drink','thing','any'],                zh:'{n}多少钱？', tp:'{p} duō shao qián',  tt:'{t} ตัว เส่า เฉียน',   tm:'{m}เท่าไหร่',   ex:'这个', st:1},
-  {id:'F5', f:'＿在哪儿？', py:'… zài nǎr',       th:'… จ้าย หน่าร์',       mean:'…อยู่ที่ไหน',  tags:['place'],                                     zh:'{n}在哪儿？', tp:'{p} zài nǎr',       tt:'{t} จ้าย หน่าร์',      tm:'{m}อยู่ที่ไหน', ex:'洗手间', st:1},
-  {id:'F9', f:'我想吃＿',   py:'wǒ xiǎng chī …',  th:'หวอ เสี่ยง ชือ …',     mean:'ฉันอยากกิน…',  tags:['food','any'],                                zh:'我想吃{n}',   tp:'wǒ xiǎng chī {p}',  tt:'หวอ เสี่ยง ชือ {t}',   tm:'อยากกิน{m}',    ex:'这个', st:1},
-  {id:'F10',f:'我要喝＿',   py:'wǒ yào hē …',     th:'หว่อ เย่า เฮอ …',     mean:'ฉันขอดื่ม…',   tags:['drink'],                                     zh:'我要喝{n}',   tp:'wǒ yào hē {p}',     tt:'หว่อ เย่า เฮอ {t}',    tm:'ขอดื่ม{m}',     ex:'水',   st:1},
-  {id:'F3', f:'有＿吗？',   py:'yǒu … ma',        th:'โหย่ว … มะ',          mean:'มี…ไหม',       tags:['food','drink','thing','any'],                zh:'有{n}吗？',   tp:'yǒu {p} ma',        tt:'โหย่ว {t} มะ',         tm:'มี{m}ไหม',      ex:'这个', st:2},
-  {id:'F6', f:'我想去＿',   py:'wǒ xiǎng qù …',   th:'หวอ เสี่ยง ชวี่ …',    mean:'ฉันอยากไป…',   tags:['place'],                                     zh:'我想去{n}',   tp:'wǒ xiǎng qù {p}',   tt:'หวอ เสี่ยง ชวี่ {t}',  tm:'อยากไป{m}',     ex:'这里', st:2},
-  {id:'F7', f:'可以＿吗？', py:'kě yǐ … ma',       th:'เขอ อี่ … มะ',        mean:'…ได้ไหม',      tags:['action'],                                    zh:'可以{n}吗？', tp:'kě yǐ {p} ma',       tt:'เขอ อี่ {t} มะ',       tm:'{m}ได้ไหม',     ex:'扫码', st:2},
-  {id:'F8', f:'请给我＿',   py:'qǐng gěi wǒ …',   th:'ฉิง เก๋ย หว่อ …',     mean:'ขอ…หน่อย',     tags:['food','drink','thing','any'],                zh:'请给我{n}',   tp:'qǐng gěi wǒ {p}',   tt:'ฉิง เก๋ย หว่อ {t}',    tm:'ขอ{m}หน่อย',    ex:'这个', st:2},
-  {id:'F11',f:'＿可以吗？', py:'… kě yǐ ma',       th:'… เขอ อี่ มะ',        mean:'…ได้ไหม (ต่อราคา)', tags:['money'],                                zh:'{n}可以吗？', tp:'{p} kě yǐ ma',       tt:'{t} เขอ อี่ มะ',       tm:'{m}ได้ไหม',     ex:'二十块', st:2}
+  {id:'F1', f:'我要＿',    py:'wǒ yào …',       th:'หว่อ เย่า …',        mean:'เอา… (ชี้/เลือก)',   tags:['any','thing','num','spice','temp'],
+   zh:'我要{n}', tp:'wǒ yào {p}', tt:'หว่อ เย่า {t}', tm:'เอา{m}', ok:['要{n}'], ex:'这个', st:1, where:'ร้านค้า',
+   note:'ชี้ของ/เลือกขนาดใช้ 我要 ได้ปกติ · แต่สั่งอาหาร/เครื่องดื่ม คนจีนใช้ 来 (โครง 来＿)'},
+  {id:'F12',f:'来＿',      py:'lái …',          th:'ไหล …',              mean:'ขอ… (สั่งอาหาร/เครื่องดื่ม)', tags:['food','drink'], mw:true,
+   zh:'来{mw}{n}', tp:'lái {mp} {p}', tt:'ไหล {mt} {t}', tm:'ขอ{m}{mm}', ok:['要{mw}{n}','{mw}{n}'], alt:['我要{mw}{n}','我要{n}'], ex:'牛肉面', st:1, where:'ร้านอาหาร',
+   note:'来 ตอนสั่งของแปลว่า "ขอ…" ไม่ได้แปลว่า "มา" · คนจีนสั่งด้วย 来 มากกว่า 我要'},
+  {id:'F2', f:'不要＿',    py:'bú yào …',       th:'ปู๋ เย่า …',          mean:'ไม่เอา… / ไม่ใส่…',  tags:['taste','meat','any','thing'],
+   zh:'不要{n}', tp:'bú yào {p}', tt:'ปู๋ เย่า {t}', tm:'ไม่เอา{m}', ex:'这个', st:1, where:'ร้านอาหาร',
+   note:'ใช้กับรสชาติได้ปกติ (不要辣) · ถ้ามีคนเสนอของให้ ตอบ 不用了，谢谢 สุภาพกว่า 不要'},
+  {id:'F4', f:'＿多少钱？', py:'… duō shao qián', th:'… ตัว เส่า เฉียน',    mean:'…เท่าไหร่',          tags:['food','drink','thing','any'],
+   zh:'{n}多少钱？', tp:'{p} duō shao qián', tt:'{t} ตัว เส่า เฉียน', tm:'{m}เท่าไหร่', ok:['{n}怎么卖？'], ex:'这个', st:1, where:'ร้านค้า/ตลาด',
+   note:'ของชั่งกิโล ผลไม้ ของตลาด คนจีนมักถาม 这个怎么卖？'},
+  {id:'F5', f:'＿在哪儿？', py:'… zài nǎr',       th:'… จ้าย หน่าร์',       mean:'…อยู่ที่ไหน',        tags:['place'],
+   zh:'{n}在哪儿？', tp:'{p} zài nǎr', tt:'{t} จ้าย หน่าร์', tm:'{m}อยู่ที่ไหน', ok:['{n}在哪里？','{n}怎么走？'], ex:'厕所', st:1, where:'ถามทาง',
+   note:'在哪里 ก็ได้ (คนใต้พูดบ่อย) · 怎么走？ = ไปทางไหน'},
+  {id:'F9', f:'我想吃＿',  py:'wǒ xiǎng chī …', th:'หวอ เสี่ยง ชือ …',    mean:'อยากกิน…',          tags:['food','meat','any'],
+   zh:'我想吃{n}', tp:'wǒ xiǎng chī {p}', tt:'หวอ เสี่ยง ชือ {t}', tm:'อยากกิน{m}', ok:['想吃{n}'], ex:'这个', st:1, where:'ร้านอาหาร'},
+  {id:'F3', f:'有＿吗？',   py:'yǒu … ma',       th:'โหย่ว … มะ',          mean:'มี…ไหม',             tags:['food','drink','meat','thing','any','temp'],
+   zh:'有{n}吗？', tp:'yǒu {p} ma', tt:'โหย่ว {t} มะ', tm:'มี{m}ไหม', ok:['有没有{n}？'], ex:'菜单', st:2, where:'ร้านอาหาร/ร้านค้า',
+   note:'ขอเมนูพูด 有菜单吗？ เป็นธรรมชาติกว่า 请给我菜单'},
+  {id:'F6', f:'我想去＿',  py:'wǒ xiǎng qù …',  th:'หวอ เสี่ยง ชวี่ …',   mean:'อยากไป…',           tags:['place'],
+   zh:'我想去{n}', tp:'wǒ xiǎng qù {p}', tt:'หวอ เสี่ยง ชวี่ {t}', tm:'อยากไป{m}', ok:['我要去{n}'], ex:'熊猫基地', st:2, where:'คุยกับคน/ถามทาง'},
+  {id:'F7', f:'＿可以吗？', py:'… kě yǐ ma',      th:'… เขอ อี่ มะ',        mean:'…ได้ไหม',            tags:['action','money'],
+   zh:'{n}可以吗？', tp:'{p} kě yǐ ma', tt:'{t} เขอ อี่ มะ', tm:'{m}ได้ไหม', ok:['能{n}吗？','可以{n}吗？'], ex:'扫码', st:2, where:'จ่ายเงิน/ต่อราคา',
+   note:'扫码可以吗？ กับ 能扫码吗？ พูดได้ทั้งสองแบบ'},
+  {id:'F13',f:'师傅，去＿', py:'shī fu, qù …',    th:'ซือ ฟู่, ชวี่ …',     mean:'พี่ ไป… (บอกแท็กซี่)', tags:['place'],
+   zh:'师傅，去{n}', tp:'shī fu, qù {p}', tt:'ซือ ฟู่, ชวี่ {t}', tm:'พี่ ไป{m}', ok:['去{n}','师傅，到{n}'], alt:['我要去{n}','请带我去{n}'], ex:'熊猫基地', st:2, where:'แท็กซี่/DiDi',
+   note:'เรียกคนขับว่า 师傅 · บอกแค่ 去…  ก็พอ ไม่ต้องใช้ 请带我去'}
 ];
-// [hanzi, pinyin, คำอ่านไทย, ความหมาย(สั้น ใช้เติมช่อง), tag, ตัวเลือกเพิ่ม]
-// car = วลีพาสำหรับคำพยางค์เดียว (ระบบถอดเสียงฟังคำเดี่ยวไม่ออก) · no = โครงที่ห้ามใช้ด้วย (ประกอบแล้วแปลก)
+// ลักษณนามสำหรับ 来＿ : [จีน, พินอิน, คำอ่าน, ไทย]
+const MW={ wan:['一碗','yì wǎn','อี้ หว่าน','ชามนึง'], fen:['一份','yí fèn','อี๋ เฟิ่น','ที่นึง'], liangge:['两个','liǎng ge','เหลี่ยง เก้อ','สองลูก'],
+  ping:['一瓶','yì píng','อี้ ผิง','ขวดนึง'], bei:['一杯','yì bēi','อี้ เปย','แก้วนึง'] };
+// [hanzi, pinyin, คำอ่านไทย, ความหมาย, {ok, alt, note, where, tag, car}]
 const TREE_SURVIVE=[
-  ['你好','nǐ hǎo','หนี ห่าว','สวัสดี'],
+  ['你好','nǐ hǎo','หนี ห่าว','สวัสดี (ใช้เรียกพนักงานได้ด้วย)'],
   ['谢谢','xiè xie','เซี่ย เซีย','ขอบคุณ'],
-  ['不好意思','bù hǎo yì si','ปู้ ห่าว อี้ ซือ','ขอโทษนะ / ขอโทษที่รบกวน'],
-  ['好的','hǎo de','ห่าว เตอะ','ได้ / โอเค'],
-  ['对','duì','ตุ้ย','ใช่',{car:['对的','duì de','ตุ้ย เตอะ','ใช่แล้ว']}],
-  ['不对','bú duì','ปู๋ ตุ้ย','ไม่ใช่'],
-  ['听不懂','tīng bu dǒng','ทิง ปู ต่ง','ฟังไม่เข้าใจ'],
-  ['请再说一遍','qǐng zài shuō yí biàn','ฉิ่ง จ้าย ซัว อี๋ เปี้ยน','ช่วยพูดอีกครั้ง'],
-  ['慢一点','màn yì diǎn','ม่าน อี้ เตี่ยน','ช้าลงหน่อย'],
+  ['不好意思','bù hǎo yì si','ปู้ ห่าว อี้ ซือ','ขอโทษนะ / ขอโทษที่รบกวน',{note:'ใช้ขอทาง ขอถาม ขอโทษเล็กๆ น้อยๆ บ่อยกว่า 对不起'}],
+  ['好的','hǎo de','ห่าว เตอะ','ได้ / โอเค',{ok:['行','好嘞','好吧'], note:'ตกลงแบบกันเองพูด 行 (สิง) หรือ 好嘞 ก็ได้'}],
+  ['不用了，谢谢','bú yòng le, xiè xie','ปู๋ ย่ง เลอะ เซี่ย เซีย','ไม่เป็นไร ขอบคุณ (ปฏิเสธสุภาพ)',{ok:['不用了'], alt:['不要'], note:'ถ้ามีคนเสนอของ/ถุง/บริการ ตอบ 不用了 — 不要 ห้วนเกินเมื่อพูดกับคน', where:'ร้านค้า'}],
+  ['我就看看','wǒ jiù kàn kan','หว่อ จิ้ว ค่าน คัน','แค่ดูเฉยๆ',{ok:['我看看','随便看看'], alt:['我不要'], note:'คนขายเข้ามาเชียร์ ตอบ 我就看看 จะไม่ดูห้วน', where:'ร้านค้า'}],
+  ['服务员','fú wù yuán','ฝู อู้ เหวียน','พนักงาน! (เรียก)',{ok:['美女','帅哥','你好'], note:'คนเฉิงตูเรียกพนักงานว่า 美女 (หญิง) / 帅哥 (ชาย) เป็นเรื่องปกติ ไม่ได้แซว', where:'ร้านอาหาร'}],
+  ['老板','lǎo bǎn','หล่าว ป่าน','เถ้าแก่! (เรียกคนขาย)',{note:'ใช้เรียกเจ้าของร้าน/คนขายทั่วไป', where:'ร้านค้า/ตลาด'}],
+  ['买单','mǎi dān','หม่าย ตาน','เช็กบิล',{ok:['结账','服务员，买单','美女，买单'], alt:['我要付钱'], note:'เรียกพนักงานแล้วบอก 买单 คำเดียวพอ', where:'ร้านอาหาร'}],
+  ['等一下','děng yí xià','เติ่ง อี๋ เซี่ย','รอเดี๋ยวนะ',{ok:['稍等','等一下哈'], alt:['请等一下']}],
+  ['听不懂','tīng bu dǒng','ทิง ปู ต่ง','ฟังไม่เข้าใจ',{ok:['我听不懂']}],
+  ['再说一遍','zài shuō yí biàn','จ้าย ซัว อี๋ เปี้ยน','พูดอีกทีได้ไหม',{ok:['不好意思，再说一遍','再说一次'], alt:['请再说一遍'], note:'ขึ้นต้นด้วย 不好意思 จะสุภาพขึ้น'}],
+  ['慢一点','màn yì diǎn','ม่าน อี้ เตี่ยน','ช้าลงหน่อย',{ok:['慢点','说慢一点','慢点说']}],
   ['太贵了','tài guì le','ไท่ กุ้ย เลอะ','แพงไป'],
-  ['便宜一点','pián yi yì diǎn','เพียน อี๋ อี้ เตี่ยน','ลดหน่อย',{tag:'action'}],
+  ['便宜点','pián yi diǎn','เพียน อี๋ เตี่ยน','ลดหน่อย',{tag:'action', ok:['便宜点呗','能便宜点吗','便宜点吧'], alt:['便宜一点','可以便宜一点吗'], note:'พูดตัด 一 ออก (便宜点) เป็นธรรมชาติกว่า', where:'ตลาด/ร้านค้า'}],
   ['我是泰国人','wǒ shì Tài guó rén','หว่อ ชื่อ ไท่ กว๋อ เหริน','ฉันเป็นคนไทย'],
-  ['我不会说中文','wǒ bú huì shuō Zhōng wén','หว่อ ปู๋ ฮุ่ย ซัว จง เหวิน','ฉันพูดจีนไม่เป็น']
+  ['我不会说中文','wǒ bú huì shuō Zhōng wén','หว่อ ปู๋ ฮุ่ย ซัว จง เหวิน','ฉันพูดจีนไม่เป็น',{ok:['我中文不好','我不太会说中文'], note:'ถ้าพูดได้นิดหน่อย บอก 我中文不好 (ภาษาจีนไม่เก่ง) จะตรงกว่า'}],
+  ['对','duì','ตุ้ย','ใช่',{car:['对的','duì de','ตุ้ย เตอะ','ใช่แล้ว'], ok:['对对对','是的']}],
+  ['不对','bú duì','ปู๋ ตุ้ย','ไม่ใช่',{ok:['不是']}]
 ];
+// [hanzi, pinyin, คำอ่าน, ความหมาย(สั้น ใช้เติมช่อง), หมวด, {mw, no, ok, alt, note, where, car}]
 const TREE_NOUNS=[
-  // food
   ['这个','zhè ge','เจ้อ เก้อ','อันนี้','any'],
   ['那个','nà ge','น่า เก้อ','อันนั้น','any'],
-  ['米饭','mǐ fàn','หมี่ ฟ่าน','ข้าวสวย','food'],
-  ['面条','miàn tiáo','เมี่ยน เถียว','บะหมี่','food'],
-  ['担担面','dàn dàn miàn','ต้าน ต้าน เมี่ยน','บะหมี่ตันตัน (ของเฉิงตู)','food'],
-  ['饺子','jiǎo zi','เจี่ยว จึ','เกี๊ยว','food'],
-  ['包子','bāo zi','ปาว จึ','ซาลาเปา','food'],
-  ['猪肉','zhū ròu','จู โร่ว','หมู','food'],
-  ['鸡肉','jī ròu','จี โร่ว','ไก่','food'],
-  ['牛肉','niú ròu','หนิว โร่ว','เนื้อวัว','food'],
-  ['鱼','yú','หยวี','ปลา','food',{car:['我想吃鱼','wǒ xiǎng chī yú','หวอ เสี่ยง ชือ หยวี','อยากกินปลา']}],
-  ['青菜','qīng cài','ชิง ไช่','ผักเขียว','food'],
-  ['火锅','huǒ guō','หั่ว กัว','หม้อไฟ','food'],
-  // drink
-  ['水','shuǐ','สุ่ย','น้ำเปล่า','drink',{car:['一瓶水','yì píng shuǐ','อี้ ผิง สุ่ย','น้ำหนึ่งขวด']}],
-  ['冰水','bīng shuǐ','ปิง สุ่ย','น้ำเย็น','drink'],
-  ['热水','rè shuǐ','เย่อ สุ่ย','น้ำร้อน','drink'],
-  ['茶','chá','ฉา','ชา','drink',{car:['一杯茶','yì bēi chá','อี้ เปย ฉา','ชาหนึ่งแก้ว']}],
-  ['奶茶','nǎi chá','หน่าย ฉา','ชานม','drink'],
-  ['咖啡','kā fēi','คา เฟย','กาแฟ','drink'],
-  ['啤酒','pí jiǔ','ผี จิ่ว','เบียร์','drink'],
-  ['可乐','kě lè','เข่อ เล่อ','โค้ก','drink'],
-  // taste (ใช้กับ 不要＿)
-  ['辣','là','ล่า','เผ็ด','taste',{car:['不要辣','bú yào là','ปู๋ เย่า ล่า','ไม่เอาเผ็ด']}],
-  ['冰','bīng','ปิง','น้ำแข็ง','taste',{car:['不要冰','bú yào bīng','ปู๋ เย่า ปิง','ไม่ใส่น้ำแข็ง']}],
-  ['糖','táng','ถาง','น้ำตาล','taste',{car:['不要糖','bú yào táng','ปู๋ เย่า ถาง','ไม่ใส่น้ำตาล']}],
-  ['香菜','xiāng cài','เซียง ไช่','ผักชี','taste'],
-  ['微辣','wēi là','เวย ล่า','เผ็ดน้อย','spice'],
+  // food — ของที่สั่งเป็นจาน (来一碗…)
+  ['牛肉面','niú ròu miàn','หนิว โร่ว เมี่ยน','บะหมี่เนื้อ','food',{mw:MW.wan}],
+  ['担担面','dàn dàn miàn','ต้าน ต้าน เมี่ยน','บะหมี่ตันตัน','food',{mw:MW.wan, note:'บะหมี่เผ็ดชาของเฉิงตู'}],
+  ['米饭','mǐ fàn','หมี่ ฟ่าน','ข้าวสวย','food',{mw:MW.wan}],
+  ['饺子','jiǎo zi','เจี่ยว จึ','เกี๊ยว','food',{mw:MW.fen, note:'บางร้านสั่งเป็นน้ำหนัก เช่น 二两饺子'}],
+  ['包子','bāo zi','ปาว จึ','ซาลาเปา','food',{mw:MW.liangge}],
+  ['青菜','qīng cài','ชิง ไช่','ผักเขียว','food',{mw:MW.fen}],
+  ['火锅','huǒ guō','หั่ว กัว','หม้อไฟ','food',{no:['F3','F4']}],
+  // meat — วัตถุดิบ (อยากกิน / ไม่เอา / มีไหม)
+  ['猪肉','zhū ròu','จู โร่ว','หมู','meat'],
+  ['鸡肉','jī ròu','จี โร่ว','ไก่','meat'],
+  ['牛肉','niú ròu','หนิว โร่ว','เนื้อวัว','meat'],
+  ['鱼','yú','หยวี','ปลา','meat',{car:['我想吃鱼','wǒ xiǎng chī yú','หวอ เสี่ยง ชือ หยวี','อยากกินปลา']}],
+  // drink (来一瓶… / 来一杯…)
+  ['水','shuǐ','สุ่ย','น้ำเปล่า','drink',{mw:MW.ping}],
+  ['热水','rè shuǐ','เย่อ สุ่ย','น้ำร้อน','drink',{mw:MW.bei, note:'ร้านอาหารจีนมักให้ 热水 ฟรี ถาม 有热水吗？ ได้'}],
+  ['茶','chá','ฉา','ชา','drink',{mw:MW.bei, note:'ร้านน้ำชาเฉิงตูบางร้านสั่งเป็นกา (一壶) — ถ้าไม่แน่ใจ 一杯 ใช้ได้เสมอ'}],
+  ['奶茶','nǎi chá','หน่าย ฉา','ชานม','drink',{mw:MW.bei}],
+  ['咖啡','kā fēi','คา เฟย','กาแฟ','drink',{mw:MW.bei}],
+  ['啤酒','pí jiǔ','ผี จิ่ว','เบียร์','drink',{mw:MW.ping}],
+  ['可乐','kě lè','เข่อ เล่อ','โค้ก','drink',{mw:MW.ping}],
+  // taste — ใช้กับ 不要＿ (คำแทน ok: 香菜 → 放香菜 = 不要放香菜)
+  ['辣','là','ล่า','เผ็ด','taste',{car:['不要辣','bú yào là','ปู๋ เย่า ล่า','ไม่เอาเผ็ด'], ok:['放辣']}],
+  ['香菜','xiāng cài','เซียง ไช่','ผักชี','taste',{ok:['放香菜'], note:'不要放香菜 (ไม่ใส่ผักชี) ก็พูดกันบ่อย'}],
+  ['冰','bīng','ปิง','น้ำแข็ง','taste',{car:['不要冰','bú yào bīng','ปู๋ เย่า ปิง','ไม่ใส่น้ำแข็ง'], ok:['放冰'], note:'ร้านชานมใช้คำว่า 去冰 = ไม่ใส่น้ำแข็ง'}],
+  ['糖','táng','ถาง','น้ำตาล','taste',{car:['不要糖','bú yào táng','ปู๋ เย่า ถาง','ไม่ใส่น้ำตาล'], ok:['放糖'], note:'ร้านชานมถามระดับหวาน: 少糖 หวานน้อย · 无糖 ไม่หวาน'}],
+  ['微辣','wēi là','เวย ล่า','เผ็ดน้อย','spice',{note:'ร้านจะถาม 微辣、中辣、特辣？ ตอบคำเดียวก็ได้'}],
+  ['冰的','bīng de','ปิง เตอะ','แบบเย็น','temp'],
+  ['热的','rè de','เย่อ เตอะ','แบบร้อน','temp'],
   // num / money
   ['一个','yí ge','อี๋ เก้อ','หนึ่งอัน','num'],
   ['两个','liǎng ge','เหลี่ยง เก้อ','สองอัน','num'],
@@ -7030,128 +7073,131 @@ const TREE_NOUNS=[
   ['二十块','èr shí kuài','เอ้อร์ สือ ไคว่','20 หยวน','money'],
   ['五十块','wǔ shí kuài','อู่ สือ ไคว่','50 หยวน','money'],
   ['一百块','yì bǎi kuài','อี้ ป่าย ไคว่','100 หยวน','money'],
-  // thing (ร้านค้า · อุทยาน)
-  ['门票','mén piào','เหมิน เพี่ยว','ตั๋วเข้าชม','thing'],
-  ['袋子','dài zi','ต้าย จึ','ถุง','thing'],
+  // thing
+  ['菜单','cài dān','ไช่ ตาน','เมนู','thing',{no:['F1','F2','F4']}],
   ['大的','dà de','ต้า เตอะ','อันใหญ่','thing'],
   ['小的','xiǎo de','เสี่ยว เตอะ','อันเล็ก','thing'],
-  ['别的颜色','bié de yán sè','เปี๋ย เตอะ เหยียน เซ่อ','สีอื่น','thing',{no:['F2','F4','F8']}],
-  ['菜单','cài dān','ไช่ ตาน','เมนู','thing',{no:['F4','F2']}],
-  ['充电宝','chōng diàn bǎo','ชง เตี้ยน ป่าว','พาวเวอร์แบงก์','thing'],
-  ['球拍','qiú pāi','ฉิว พาย','ไม้แบด','thing'],
-  ['羽毛球','yǔ máo qiú','หยวี่ เหมา ฉิว','ลูกแบด','thing'],
-  ['鞋','xié','เสีย','รองเท้า','thing',{car:['一双鞋','yì shuāng xié','อี้ ซวาง เสีย','รองเท้าหนึ่งคู่']}],
+  ['别的颜色','bié de yán sè','เปี๋ย เตอะ เหยียน เซ่อ','สีอื่น','thing',{no:['F2','F4']}],
+  ['袋子','dài zi','ต้าย จึ','ถุง','thing',{no:['F1'], note:'ไม่เอาถุง พูด 不用袋子 ก็ได้'}],
+  ['门票','mén piào','เหมิน เพี่ยว','ตั๋วเข้าชม','thing',{no:['F1','F2']}],
+  ['充电宝','chōng diàn bǎo','ชง เตี้ยน ป่าว','พาวเวอร์แบงก์','thing',{no:['F2']}],
+  ['球拍','qiú pāi','ฉิว พาย','ไม้แบด','thing',{no:['F2']}],
+  ['羽毛球','yǔ máo qiú','หยวี่ เหมา ฉิว','ลูกแบด','thing',{no:['F2']}],
+  ['鞋','xié','เสีย','รองเท้า','thing',{no:['F1','F2'], car:['一双鞋','yì shuāng xié','อี้ ซวาง เสีย','รองเท้าหนึ่งคู่']}],
   // place
-  ['洗手间','xǐ shǒu jiān','สี โส่ว เจียน','ห้องน้ำ','place'],
+  ['厕所','cè suǒ','เช่อ สั่ว','ห้องน้ำ','place',{ok:['洗手间','卫生间'], note:'厕所 ใช้ทั่วไป · 洗手间/卫生间 สุภาพขึ้น ใช้ในโรงแรม/ห้าง'}],
   ['地铁站','dì tiě zhàn','ตี้ เถี่ย จ้าน','สถานีรถไฟใต้ดิน','place'],
-  ['熊猫基地','xióng māo jī dì','สฺยง เมา จี ตี้','ศูนย์แพนด้า','place'],
+  ['熊猫基地','xióng māo jī dì','สฺยง เมา จี ตี้','ศูนย์แพนด้า','place',{note:'ชื่อเต็ม 大熊猫基地 · คนขับรู้จักแค่ 熊猫基地'}],
   ['入口','rù kǒu','รู่ โข่ว','ทางเข้า','place'],
   ['出口','chū kǒu','ชู โข่ว','ทางออก','place'],
   ['酒店','jiǔ diàn','จิ่ว เตี้ยน','โรงแรม','place'],
-  ['这里','zhè lǐ','เจ้อ หลี่','ที่นี่','place',{no:['F5']}],
+  ['这儿','zhèr','เจ้อร์','ที่นี่','place',{no:['F5','F6'], ok:['这里','这个地方'], note:'这儿 กับ 这里 ใช้ได้ทั้งคู่ — โชว์แผนที่ในมือถือแล้วบอก 去这儿'}],
   ['超市','chāo shì','เชา ชื่อ','ซูเปอร์มาร์เก็ต','place'],
   ['商场','shāng chǎng','ซาง ฉ่าง','ห้าง','place'],
   ['火车站','huǒ chē zhàn','หั่ว เชอ จ้าน','สถานีรถไฟ','place'],
   ['机场','jī chǎng','จี ฉ่าง','สนามบิน','place'],
-  // action (ใช้กับ 可以＿吗？)
+  // action (＿可以吗？)
   ['扫码','sǎo mǎ','เส่า หม่า','สแกนจ่าย','action'],
   ['刷卡','shuā kǎ','ซวา ข่า','รูดบัตร','action'],
-  ['试试','shì shi','ชื่อ ชือ','ลองดู','action'],
+  ['试一下','shì yí xià','ชื่อ อี๋ เซี่ย','ลองดู','action',{ok:['试试']}],
   ['拍照','pāi zhào','พาย เจ้า','ถ่ายรูป','action'],
-  ['打包','dǎ bāo','ต่า ปาว','ห่อกลับ','action'],
-  ['买单','mǎi dān','หม่าย ตาน','เช็กบิล','action'],
-  ['停这里','tíng zhè lǐ','ถิง เจ้อ หลี่','จอดตรงนี้','action']
+  ['打包','dǎ bāo','ต่า ปาว','ห่อกลับ','action']
 ];
-// ประโยคพิเศษที่ไม่ได้มาจากโครง (เรียนเป็นก้อน) — ปลดล็อกพร้อมขั้น 2
+// ประโยคพิเศษ (เรียนเป็นก้อน) — ปลดล็อกพร้อมขั้น 2
 const TREE_SPECIAL=[
-  ['一共多少钱？','yí gòng duō shao qián','อี๋ ก้ง ตัว เส่า เฉียน','ทั้งหมดเท่าไหร่'],
-  ['你推荐什么？','nǐ tuī jiàn shén me','หนี่ ทุย เจี้ยน เสิน เมอะ','แนะนำอะไรดี'],
+  ['一共多少钱？','yí gòng duō shao qián','อี๋ ก้ง ตัว เส่า เฉียน','ทั้งหมดเท่าไหร่',{ok:['一共多少'], where:'จ่ายเงิน'}],
+  ['有什么好吃的？','yǒu shén me hǎo chī de','โหย่ว เสิน เมอะ ห่าว ชือ เตอะ','มีอะไรอร่อยบ้าง',{ok:['什么好吃？','你们这儿什么好吃？'], alt:['你推荐什么？'], note:'ถามให้ร้านแนะนำแบบนี้เป็นธรรมชาติกว่า 你推荐什么', where:'ร้านอาหาร'}],
   ['这个好吃吗？','zhè ge hǎo chī ma','เจ้อ เก้อ ห่าว ชือ มะ','อันนี้อร่อยไหม'],
-  ['这个是什么？','zhè ge shì shén me','เจ้อ เก้อ ชื่อ เสิน เมอะ','อันนี้คืออะไร'],
-  ['我就要这个','wǒ jiù yào zhè ge','หว่อ จิ้ว เย่า เจ้อ เก้อ','เอาอันนี้แหละ'],
-  ['就这些','jiù zhè xiē','จิ้ว เจ้อ เซีย','แค่นี้ (ไม่เอาเพิ่ม)'],
-  ['这个有大的吗？','zhè ge yǒu dà de ma','เจ้อ เก้อ โหย่ว ต้า เตอะ มะ','อันนี้มีไซซ์ใหญ่ไหม'],
-  ['不要太辣','bú yào tài là','ปู๋ เย่า ไท่ ล่า','ไม่เอาเผ็ดมาก'],
-  ['在这里吃','zài zhè lǐ chī','จ้าย เจ้อ หลี่ ชือ','กินที่นี่'],
-  ['带走','dài zǒu','ต้าย โจ่ว','ห่อกลับบ้าน'],
-  ['可以用微信吗？','kě yǐ yòng Wēi xìn ma','เขอ อี่ ย่ง เวย ซิ่น มะ','จ่ายด้วย WeChat ได้ไหม'],
-  ['我要两张门票','wǒ yào liǎng zhāng mén piào','หว่อ เย่า เหลี่ยง จาง เหมิน เพี่ยว','ขอตั๋วสองใบ'],
-  ['几点关门？','jǐ diǎn guān mén','จี๋ เตี่ยน กวาน เหมิน','ปิดกี่โมง'],
-  ['请带我去这里','qǐng dài wǒ qù zhè lǐ','ฉิ่ง ต้าย หว่อ ชวี่ เจ้อ หลี่','ช่วยพาไปที่นี่']
+  ['这个是什么？','zhè ge shì shén me','เจ้อ เก้อ ชื่อ เสิน เมอะ','อันนี้คืออะไร',{ok:['这是什么？']}],
+  ['这个怎么卖？','zhè ge zěn me mài','เจ้อ เก้อ เจิ่น เมอะ ม่าย','อันนี้ขายยังไง (ราคาเท่าไหร่)',{ok:['这个多少钱？'], note:'ใช้กับของชั่งกิโล/ผลไม้/ของตลาด', where:'ตลาด'}],
+  ['我就要这个','wǒ jiù yào zhè ge','หว่อ จิ้ว เย่า เจ้อ เก้อ','เอาอันนี้แหละ',{ok:['就要这个','就这个吧']}],
+  ['就这些','jiù zhè xiē','จิ้ว เจ้อ เซีย','แค่นี้ (ไม่เอาเพิ่ม)',{ok:['就这些吧','够了'], note:'ตอบเมื่อร้านถาม 还要别的吗？'}],
+  ['有大一点的吗？','yǒu dà yì diǎn de ma','โหย่ว ต้า อี้ เตี่ยน เตอะ มะ','มีใหญ่กว่านี้ไหม',{ok:['有大点的吗？','有没有大一点的？'], alt:['这个有大的吗？'], where:'ร้านค้า'}],
+  ['少放辣','shǎo fàng là','เส่า ฟ่าง ล่า','ใส่พริกน้อยๆ',{ok:['少放点辣','微辣'], alt:['不要太辣'], note:'สั่งเผ็ดน้อย: 少放辣 หรือ 微辣 · ไม่เผ็ดเลย: 不要辣', where:'ร้านอาหาร'}],
+  ['在这儿吃','zài zhèr chī','จ้าย เจ้อร์ ชือ','กินที่นี่',{ok:['在这里吃','这里吃','在这吃'], where:'ร้านอาหาร'}],
+  ['带走','dài zǒu','ต้าย โจ่ว','ห่อกลับ',{ok:['打包'], note:'ร้านถาม 在这吃还是带走？ ตอบคำเดียว'}],
+  ['微信可以吗？','Wēi xìn kě yǐ ma','เวย ซิ่น เขอ อี่ มะ','จ่าย WeChat ได้ไหม',{ok:['能用微信吗？','支付宝可以吗？'], alt:['可以用微信吗？'], where:'จ่ายเงิน'}],
+  ['买两张票','mǎi liǎng zhāng piào','หม่าย เหลี่ยง จาง เพี่ยว','ขอซื้อตั๋วสองใบ',{ok:['两张票','两张'], alt:['我要两张门票'], where:'อุทยาน'}],
+  ['几点关门？','jǐ diǎn guān mén','จี๋ เตี่ยน กวาน เหมิน','ปิดกี่โมง',{where:'อุทยาน/ร้านค้า'}],
+  ['就这儿停','jiù zhèr tíng','จิ้ว เจ้อร์ ถิง','จอดตรงนี้เลย',{ok:['停这儿就行','就在这儿停','就这里停'], alt:['请停车'], note:'บอกคนขับตอนถึง', where:'แท็กซี่'}]
 ];
-// ฟังออกไหม: สิ่งที่คนขาย / เจ้าหน้าที่อุทยานพูดกับเรา (ข้อแรกของ choices = คำตอบ)
+// ฟัง: ประโยคที่พนักงาน/คนขาย/เจ้าหน้าที่พูดจริง (ข้อแรกของ choices = คำตอบ)
 const TREE_LISTEN=[
-  {id:'T1', scene:'ร้านแนะนำ', zh:'你要什么？', py:'nǐ yào shén me', th:'คุณเอาอะไร', q:'คนขายถามอะไร?', choices:['เอาอะไร','ชื่ออะไร','มากี่คน','จ่ายยังไง']},
+  {id:'T1', scene:'ร้านแนะนำ', zh:'吃点什么？', py:'chī diǎn shén me', th:'จะกินอะไรดี', q:'พนักงานถามอะไร?', choices:['จะกินอะไร','มากี่คน','จ่ายยังไง','กินที่นี่ไหม']},
   {id:'T2', scene:'ร้านแนะนำ', zh:'还要别的吗？', py:'hái yào bié de ma', th:'เอาอย่างอื่นอีกไหม', q:'คนขายถามอะไร?', choices:['เอาอย่างอื่นอีกไหม','เอาถุงไหม','เอาเผ็ดไหม','กินที่นี่ไหม']},
   {id:'T3', scene:'ร้านแนะนำ', zh:'这个很好吃。', py:'zhè ge hěn hǎo chī', th:'อันนี้อร่อยมาก', q:'คนขายแนะนำว่าอะไร?', choices:['อันนี้อร่อยมาก','อันนี้ถูกมาก','อันนี้หมดแล้ว','อันนี้เผ็ดมาก']},
   {id:'T4', scene:'ร้านแนะนำ', zh:'这个卖得最好。', py:'zhè ge mài de zuì hǎo', th:'อันนี้ขายดีที่สุด', q:'คนขายแนะนำว่าอะไร?', choices:['อันนี้ขายดีที่สุด','อันนี้ใหม่ที่สุด','อันนี้ถูกที่สุด','อันนี้ใหญ่ที่สุด']},
-  {id:'T5', scene:'ร้านแนะนำ', zh:'你可以试试。', py:'nǐ kě yǐ shì shi', th:'ลองได้นะ', q:'คนขายบอกอะไร?', choices:['ลองได้นะ','ถ่ายรูปได้นะ','จ่ายทีหลังได้','ห่อกลับได้']},
+  {id:'T5', scene:'ร้านแนะนำ', zh:'可以试一下。', py:'kě yǐ shì yí xià', th:'ลองได้นะ', q:'คนขายบอกอะไร?', choices:['ลองได้นะ','ถ่ายรูปได้นะ','จ่ายทีหลังได้','ห่อกลับได้']},
   {id:'T6', scene:'ร้านแนะนำ', zh:'有大的，也有小的。', py:'yǒu dà de, yě yǒu xiǎo de', th:'มีทั้งอันใหญ่และอันเล็ก', q:'คนขายบอกอะไร?', choices:['มีทั้งใหญ่และเล็ก','มีแต่อันใหญ่','ไม่มีอันเล็ก','หมดทุกขนาด']},
   {id:'T7', scene:'ร้านแนะนำ', zh:'要几个？', py:'yào jǐ ge', th:'เอากี่อัน', q:'คนขายถามอะไร?', choices:['เอากี่อัน','เอาอันไหน','เอาเมื่อไหร่','เอาสีอะไร']},
   {id:'T8', scene:'ร้านแนะนำ', zh:'没有了。', py:'méi yǒu le', th:'หมดแล้ว', q:'คนขายบอกอะไร?', choices:['หมดแล้ว','ไม่แพง','ไม่เผ็ด','ไม่ใช่']},
-  {id:'T9', scene:'ร้านแนะนำ', zh:'要微辣还是中辣？', py:'yào wēi là hái shi zhōng là', th:'เอาเผ็ดน้อยหรือเผ็ดกลาง', q:'คนขายถามอะไร?', choices:['เผ็ดน้อยหรือเผ็ดกลาง','ร้อนหรือเย็น','ใหญ่หรือเล็ก','กินที่นี่หรือห่อ']},
-  {id:'T10',scene:'อุทยาน', zh:'门票五十五块。', py:'mén piào wǔ shí wǔ kuài', th:'ตั๋ว 55 หยวน', q:'ตั๋วราคาเท่าไหร่?', choices:['55 หยวน','15 หยวน','50 หยวน','45 หยวน']},
-  {id:'T11',scene:'อุทยาน', zh:'请出示护照。', py:'qǐng chū shì hù zhào', th:'กรุณาแสดงพาสปอร์ต', q:'เจ้าหน้าที่ขออะไร?', choices:['ขอดูพาสปอร์ต','ขอดูตั๋ว','ให้ต่อแถว','ห้ามถ่ายรูป']},
+  {id:'T9', scene:'ร้านแนะนำ', zh:'微辣、中辣还是特辣？', py:'wēi là, zhōng là hái shi tè là', th:'เผ็ดน้อย กลาง หรือเผ็ดมาก', q:'พนักงานถามอะไร?', choices:['เผ็ดระดับไหน','ร้อนหรือเย็น','ใหญ่หรือเล็ก','กินที่นี่หรือห่อ']},
+  {id:'T17',scene:'ร้านแนะนำ', zh:'扫这里就行。', py:'sǎo zhè lǐ jiù xíng', th:'สแกนตรงนี้ได้เลย', q:'คนขายบอกอะไร?', choices:['สแกนตรงนี้ได้เลย','จ่ายเงินสดได้','ไม่รับบัตร','รอสักครู่']},
+  {id:'T10',scene:'อุทยาน', zh:'门票五十五。', py:'mén piào wǔ shí wǔ', th:'ตั๋ว 55 (หยวน)', q:'ตั๋วราคาเท่าไหร่?', choices:['55 หยวน','15 หยวน','50 หยวน','45 หยวน']},
+  {id:'T11',scene:'อุทยาน', zh:'护照给我看一下。', py:'hù zhào gěi wǒ kàn yí xià', th:'ขอดูพาสปอร์ตหน่อย', q:'เจ้าหน้าที่ขออะไร?', choices:['ขอดูพาสปอร์ต','ขอดูตั๋ว','ให้ต่อแถว','ห้ามถ่ายรูป']},
   {id:'T12',scene:'อุทยาน', zh:'入口在那边。', py:'rù kǒu zài nà biān', th:'ทางเข้าอยู่ทางนั้น', q:'เขาบอกอะไร?', choices:['ทางเข้าอยู่ทางนั้น','ทางออกอยู่ทางนั้น','ห้องน้ำอยู่ทางนั้น','ขายตั๋วตรงนั้น']},
-  {id:'T13',scene:'อุทยาน', zh:'这里不可以拍照。', py:'zhè lǐ bù kě yǐ pāi zhào', th:'ตรงนี้ห้ามถ่ายรูป', q:'เขาบอกอะไร?', choices:['ห้ามถ่ายรูป','ห้ามกินอาหาร','ห้ามเข้า','ห้ามจอดรถ']},
+  {id:'T13',scene:'อุทยาน', zh:'这里不能拍照。', py:'zhè lǐ bù néng pāi zhào', th:'ตรงนี้ห้ามถ่ายรูป', q:'เขาบอกอะไร?', choices:['ห้ามถ่ายรูป','ห้ามกินอาหาร','ห้ามเข้า','ห้ามจอดรถ']},
   {id:'T14',scene:'อุทยาน', zh:'下午五点关门。', py:'xià wǔ wǔ diǎn guān mén', th:'ปิดห้าโมงเย็น', q:'ปิดกี่โมง?', choices:['5 โมงเย็น','5 โมงเช้า','เที่ยง','3 โมงเย็น']},
-  {id:'T15',scene:'ห้องน้ำ', zh:'洗手间在二楼。', py:'xǐ shǒu jiān zài èr lóu', th:'ห้องน้ำอยู่ชั้นสอง', q:'ห้องน้ำอยู่ที่ไหน?', choices:['ชั้น 2','ชั้น 1','ชั้น 10','ไม่มีห้องน้ำ']},
+  {id:'T15',scene:'ห้องน้ำ', zh:'厕所在二楼。', py:'cè suǒ zài èr lóu', th:'ห้องน้ำอยู่ชั้นสอง', q:'ห้องน้ำอยู่ที่ไหน?', choices:['ชั้น 2','ชั้น 1','ชั้น 10','ไม่มีห้องน้ำ']},
   {id:'T16',scene:'ห้องน้ำ', zh:'往前走，在右边。', py:'wǎng qián zǒu, zài yòu biān', th:'เดินตรงไป อยู่ทางขวา', q:'ต้องไปทางไหน?', choices:['ตรงไป ทางขวา','ตรงไป ทางซ้าย','เลี้ยวซ้าย','ขึ้นบันได']}
 ];
 TREE_LISTEN.forEach(x=>{ if(!LISTEN.some(y=>y.id===x.id)) LISTEN.push(Object.assign({tree:true}, x)); });
 
-// ก้อนคำของแต่ละโครง: เรียนเป็นคำก่อน แล้วค่อย + คำนามเป็นประโยค [hanzi, pinyin, ไทย, ความหมาย, โครง]
+// ก้อนคำของแต่ละโครง: เรียนเป็นคำก่อน แล้วค่อย + คำนามเป็นประโยค [hanzi, pinyin, ไทย, ความหมาย, โครง, {…}]
 const TREE_CHUNKS=[
   ['我要','wǒ yào','หว่อ เย่า','ฉันเอา','F1'],
+  ['来一个','lái yí ge','ไหล อี๋ เก้อ','ขอหนึ่งอัน (สั่ง)','F12',{ok:['来个'], note:'来 + จำนวน + ลักษณนาม: 来一碗 (ชาม) · 来一瓶 (ขวด) · 来一杯 (แก้ว)'}],
   ['不要','bú yào','ปู๋ เย่า','ไม่เอา','F2'],
   ['多少钱','duō shao qián','ตัว เส่า เฉียน','เท่าไหร่','F4'],
-  ['在哪儿','zài nǎr','จ้าย หน่าร์','อยู่ที่ไหน','F5'],
+  ['在哪儿','zài nǎr','จ้าย หน่าร์','อยู่ที่ไหน','F5',{ok:['在哪里']}],
   ['我想吃','wǒ xiǎng chī','หวอ เสี่ยง ชือ','อยากกิน','F9'],
-  ['我要喝','wǒ yào hē','หว่อ เย่า เฮอ','ขอดื่ม','F10'],
   ['有','yǒu','โหย่ว','มี','F3'],
   ['我想去','wǒ xiǎng qù','หวอ เสี่ยง ชวี่','อยากไป','F6'],
-  ['可以','kě yǐ','เขอ อี่','ได้ / ทำได้','F7'],
-  ['请给我','qǐng gěi wǒ','ฉิง เก๋ย หว่อ','ขอ…หน่อย','F8'],
-  ['可以吗','kě yǐ ma','เขอ อี่ มะ','ได้ไหม','F11']
+  ['可以吗','kě yǐ ma','เขอ อี่ มะ','ได้ไหม','F7'],
+  ['师傅','shī fu','ซือ ฟู่','พี่ (เรียกคนขับ/ช่าง)','F13',{note:'เรียกคนขับแท็กซี่ ช่าง พ่อครัว ว่า 师傅'}]
 ];
 const TREE_CAT={
   chunk:{icon:'🧩', name:'ก้อนคำ'},
   survive:{icon:'🆘', name:'วลีเอาตัวรอด'},
   frame:{icon:'🌳', name:'โครงประโยค'},
   any:{icon:'👉', name:'ชี้ของ'},
-  food:{icon:'🍜', name:'อาหาร'},
+  food:{icon:'🍜', name:'อาหาร (สั่ง)'},
+  meat:{icon:'🥩', name:'เนื้อ/วัตถุดิบ'},
   drink:{icon:'🥤', name:'เครื่องดื่ม'},
-  taste:{icon:'🌶️', name:'รสชาติ / ไม่ใส่'},
+  taste:{icon:'🌶️', name:'ไม่ใส่…'},
   spice:{icon:'🔥', name:'ระดับเผ็ด'},
+  temp:{icon:'🧊', name:'ร้อน/เย็น'},
   num:{icon:'🔢', name:'จำนวน'},
   money:{icon:'💴', name:'ราคา (ต่อราคา)'},
   thing:{icon:'🛍️', name:'ของ / ตั๋ว'},
   place:{icon:'📍', name:'สถานที่'},
-  action:{icon:'✋', name:'ขอทำ…ได้ไหม'},
+  action:{icon:'✋', name:'…ได้ไหม'},
   special:{icon:'⭐', name:'ประโยคพิเศษ'}
 };
-// ลำดับเรียนขั้น 1 (ลำต้น) — โครงก่อน สลับกับวลีเอาตัวรอด
-const TREE_STAGE1=['你好','谢谢','这个','我要','不要','多少钱','不好意思','洗手间','在哪儿','好的','水','我要喝','我想吃','太贵了','便宜一点','听不懂','请再说一遍','慢一点','我是泰国人','我不会说中文','对','不对'];
-// ลำดับกิ่งที่เปิดให้เรียนก่อน (ของที่ใช้บ่อยที่สุดตอนเที่ยวมาก่อน)
-const TREE_BRANCH_ORDER=['food','drink','place','any','taste','num','spice','thing','money','action','special'];
+// ลำดับขั้น 1: คำ/ก้อนก่อน ประโยค (โครง) จะเปิดเองเมื่อส่วนประกอบผ่านครบ
+const TREE_STAGE1=['你好','谢谢','这个','我要','不要','多少钱','不好意思','厕所','在哪儿','来一个','牛肉面','好的','不用了，谢谢','我就看看','服务员','买单','我想吃','听不懂','再说一遍','太贵了','便宜点','我是泰国人','我不会说中文','慢一点','等一下','老板','对','不对'];
+const TREE_BRANCH_ORDER=['food','drink','taste','meat','place','temp','spice','num','thing','money','action','any','special'];
 
 const TREE={};                 // key -> รายการ
 (function buildTree(){
   const lexTh=h=>{ const x=LEX[norm(h,false)]; return x && x.th ? x.th : null; };
   const mk=(a,cat,kind)=>{
-    const o=a[5]||(a[4]&&typeof a[4]==='object'?a[4]:{})||{};
-    const it={key:a[0], hanzi:a[0], pinyin:a[1], thaiRead:lexTh(a[0])||a[2], meaning:a[3], cat:cat, kind:kind, no:o.no||[]};
+    const o=[...a].reverse().find(x=>x && typeof x==='object' && !Array.isArray(x)) || {};
+    const it={key:a[0], hanzi:a[0], pinyin:a[1], thaiRead:lexTh(a[0])||a[2], meaning:a[3], cat:cat, kind:kind, no:o.no||[],
+      ok:o.ok||[], alt:o.alt||[], note:o.note||'', where:o.where||'', mw:o.mw||null};
     if(o.car) it.car={hanzi:o.car[0], pinyin:o.car[1], thaiRead:o.car[2], meaning:o.car[3]};
+    if(o.tag) it.tag2=o.tag;
     return it;
   };
-  TREE_SURVIVE.forEach(a=>{ const it=mk(a,'survive','phrase'); const o=a[4]||{}; if(o.tag) it.tag2=o.tag; TREE[a[0]]=it; });
+  TREE_SURVIVE.forEach(a=>{ TREE[a[0]]=mk(a,'survive','phrase'); });
   TREE_NOUNS.forEach(a=>{ TREE[a[0]]=mk(a,a[4],'noun'); });
   TREE_SPECIAL.forEach(a=>{ TREE[a[0]]=mk(a,'special','sent'); });
   TREE_CHUNKS.forEach(a=>{ const it=mk(a,'chunk','chunk'); it.fid=a[4]; TREE[a[0]]=it; const F=TREE_FRAMES.find(x=>x.id===a[4]); if(F) F.ck=a[0]; });
   TREE_FRAMES.forEach(F=>{
     const n=TREE[F.ex]||{hanzi:F.ex, pinyin:'', thaiRead:'', meaning:F.ex};
     const c=treeCompose(F, n);
-    TREE[F.id]={key:F.id, frame:F, hanzi:c.hanzi, pinyin:c.pinyin, thaiRead:c.thaiRead, meaning:c.meaning, cat:'frame', kind:'frame', no:[], parts:[F.ck, F.ex].filter(Boolean)};
+    TREE[F.id]={key:F.id, frame:F, hanzi:c.hanzi, pinyin:c.pinyin, thaiRead:c.thaiRead, meaning:c.meaning, cat:'frame', kind:'frame', no:[], parts:[F.ck, F.ex].filter(Boolean),
+      ok:c.ok, alt:c.alt, note:c.note, where:F.where||''};
   });
   // คำพยางค์เดียวในต้นไม้: ใช้วลีพาเดียวกับทั้งแอป (มีอยู่แล้วใช้ของเดิม) ให้ตอนเรียนกับตอนทบทวนพูดเหมือนกัน
   Object.values(TREE).forEach(it=>{
@@ -7161,15 +7207,47 @@ const TREE={};                 // key -> รายการ
   });
 })();
 function treeTags(it){ return it.kind==='noun' ? [it.cat] : it.tag2 ? [it.tag2] : []; }
-function treeFits(F, n){ return n.kind!=='frame' && treeTags(n).some(t=>F.tags.indexOf(t)>=0) && (n.no||[]).indexOf(F.id)<0; }
+function treeFits(F, n){ return n.kind!=='frame' && treeTags(n).some(t=>F.tags.indexOf(t)>=0) && (n.no||[]).indexOf(F.id)<0 && (!F.mw || !!n.mw); }
 function treeCompose(F, n){
   const nm=String(n.meaning||'').split(/[(（/]/)[0].trim();
+  const mw=n.mw||['','','',''];
+  const fill=(tpl, nh)=>String(tpl).replace('{n}', nh).replace('{mw}', mw[0]);
+  const hanzi=fill(F.zh, n.hanzi);
+  const ok=[], alt=[];
+  (F.ok||[]).forEach(t=>ok.push(fill(t, n.hanzi)));
+  (n.ok||[]).forEach(x=>{ ok.push(fill(F.zh, x)); (F.ok||[]).forEach(t=>ok.push(fill(t, x))); });   // 香菜 → 不要放香菜
+  (F.alt||[]).forEach(t=>alt.push(fill(t, n.hanzi)));
+  (n.alt||[]).forEach(x=>alt.push(fill(F.zh, x)));
+  const uniq=a=>[...new Set(a)].filter(x=>x && x!==hanzi);
   return {
-    hanzi:F.zh.replace('{n}', n.hanzi),
-    pinyin:F.tp.replace('{p}', n.pinyin),
-    thaiRead:F.tt.replace('{t}', n.thaiRead),
-    meaning:F.tm.replace('{m}', nm)
+    hanzi:hanzi,
+    pinyin:F.tp.replace('{p}', n.pinyin).replace('{mp}', mw[1]).replace(/\s+/g,' ').trim(),
+    thaiRead:F.tt.replace('{t}', n.thaiRead).replace('{mt}', mw[2]).replace(/\s+/g,' ').trim(),
+    meaning:F.tm.replace('{m}', nm).replace('{mm}', mw[3]),
+    ok:uniq(ok), alt:uniq(alt).filter(x=>ok.indexOf(x)<0),
+    note:[F.note, n.note].filter(Boolean).join(' · ')
   };
+}
+function treeScore(it, alts){
+  const r=scoreAll(it.hanzi, alts);
+  if(r.score>=90) return r;
+  // แบบอื่นที่ผ่าน ≥ 90: ถ้าเข้าได้หลายแบบ เอาแบบที่ยาวที่สุด (ตรงกว่า) — 我要一碗牛肉面 ต้องเป็น "หนังสือเรียน" ไม่ใช่ "要一碗牛肉面" ที่ซ่อนอยู่ข้างใน
+  const L=f=>norm(f,false).length;
+  let hit=null;
+  (it.ok||[]).forEach(f=>{ const x=scoreAll(f, alts); if(x.score>=90 && (!hit || L(f)>L(hit.f))) hit={x:x, f:f, alt:false}; });
+  (it.alt||[]).forEach(f=>{ const x=scoreAll(f, alts); if(x.score>=90 && (!hit || L(f)>L(hit.f))) hit={x:x, f:f, alt:true}; });
+  if(hit && hit.alt) return Object.assign({}, hit.x, {score:80, altHit:true, altForm:hit.f, main:it.hanzi});
+  if(hit) return Object.assign({}, hit.x, {okForm:hit.f});
+  let best=r;
+  (it.ok||[]).forEach(f=>{ const x=scoreAll(f, alts); if(x.score>best.score) best=x; });
+  return best;
+}
+function treeNaturalHTML(it, r, noNote){
+  let h='';
+  if(r && r.altHit) h+='<div class="nearTip">✔ ถูก · แต่คนจีนมักพูดว่า <b class="zh">'+esc(it.hanzi)+'</b> (แบบที่พูดเป็นแบบหนังสือเรียน — ได้ 2★)</div>';
+  else if(r && r.okForm && r.score>=90) h+='<div class="small muted" style="margin-top:.3rem">✔ พูดแบบ <b class="zh">'+esc(r.okForm)+'</b> ก็เป็นธรรมชาติ</div>';
+  if(it.note && !noNote) h+='<div class="small muted" style="margin-top:.3rem">💬 '+esc(it.note)+'</div>';
+  return h;
 }
 /* สถานะ: ⚪ ยังไม่เรียน · 🟠 กำลังจำ (box 0–1) · 🟢 จำได้ (box ≥ 2) */
 function treeRec(k){ S.tree=S.tree||{}; return S.tree[k]||null; }
@@ -7291,11 +7369,12 @@ function treeUseFor(k, greenOnly){
 /* ข้อสำหรับทบทวนในโหมดนึกเอง: คำนามที่มีโครง🟢 เข้าคู่ได้ ครึ่งหนึ่งถามเป็นประโยค (ใบ) */
 function treeItem(k, allowSent){
   const it=TREE[k]; if(!it) return null;
-  const base={kind:'core', key:k, store:'tree', src:'tree', hanzi:it.hanzi, pinyin:it.pinyin, thaiRead:it.thaiRead, meaning:it.meaning};
+  const base={kind:'core', key:k, store:'tree', src:'tree', hanzi:it.hanzi, pinyin:it.pinyin, thaiRead:it.thaiRead, meaning:it.meaning,
+    ok:it.ok||[], alt:it.alt||[], note:it.note||''};
   if(it.kind==='frame') base.meaning=it.meaning+'  (โครง '+it.frame.f+')';
   if(allowSent && Math.random()<0.5){
     const u=treeUseFor(k, true);
-    if(u && it.kind!=='frame') return Object.assign(base, {hanzi:u.hanzi, pinyin:u.pinyin, thaiRead:u.thaiRead, meaning:u.meaning, sent:true});
+    if(u && it.kind!=='frame') return Object.assign(base, {hanzi:u.hanzi, pinyin:u.pinyin, thaiRead:u.thaiRead, meaning:u.meaning, sent:true, ok:u.ok||[], alt:u.alt||[], note:u.note||''});
   }
   return base;
 }
@@ -7325,10 +7404,13 @@ function treeStep(t, k, extra){
     const u=s.u || treeUseFor(k, false);
     if(!u) return null;
     s.u=u; s.hanzi=u.hanzi; s.pinyin=u.pinyin; s.thaiRead=u.thaiRead; s.meaning=u.meaning;
+    s.ok=u.ok||[]; s.alt=u.alt||[]; s.note=u.note||'';
   }else{
     s.hanzi=treeSay(it); s.pinyin=it.car?it.car.pinyin:it.pinyin; s.thaiRead=it.car?it.car.thaiRead:it.thaiRead;
     s.meaning=it.car ? it.car.meaning+'  ('+it.meaning+')' : it.meaning;
+    s.ok=it.car?[]:(it.ok||[]); s.alt=it.car?[]:(it.alt||[]); s.note=it.note||'';
   }
+  s.where=it.where||'';
   return s;
 }
 function treeInsert(pos, step){ if(!step) return; Q.splice(Math.min(Q.length, pos), 0, step); }
@@ -7423,6 +7505,10 @@ function renderTree(it){
       (w.kind==='frame' ? '<div class="pairVs">🧩 ต่อจากคำที่เรียนแล้ว: <b class="zh">'+(w.parts||[]).map(k=>esc(TREE[k]?TREE[k].hanzi:k)).join(' + ')+'</b></div>'+
         '<div class="pairVs">🌳 โครง <b class="zh">'+esc(w.frame.f)+'</b> = '+esc(w.frame.mean)+' · เติมคำอื่นได้อีก</div>' : '')+
       (w.kind==='chunk' ? '<div class="pairVs">🧩 ก้อนคำ — เดี๋ยวจะเอาไปต่อกับคำอื่นเป็นประโยค</div>' : '')+
+      (it.where ? '<div class="pairVs">📍 '+esc(it.where)+'</div>' : '')+
+      ((it.ok||[]).length ? '<div class="pairVs">✔ พูดแบบนี้ก็ได้: <span class="zh">'+it.ok.slice(0,3).map(esc).join(' · ')+'</span></div>' : '')+
+      ((it.alt||[]).length ? '<div class="pairVs" style="opacity:.75">📖 แบบหนังสือเรียน (คนจีนไม่ค่อยพูด): <span class="zh">'+it.alt.slice(0,2).map(esc).join(' · ')+'</span></div>' : '')+
+      (it.note ? '<div class="pairVs">💬 '+esc(it.note)+'</div>' : '')+
       (w.car ? '<div class="pairVs">คำเดียวสั้นเกินให้ระบบฟัง — พูดเป็นวลี <b class="zh">'+esc(w.car.hanzi)+'</b></div>' : '')+noteHTML(Object.assign({}, it, {hanzi:w.key, store:'tree'}));
     if(it.pass===0 && !it.again){
       speak(it.hanzi, ()=>setTimeout(()=>{ if(cur()===it) speak(it.hanzi, armMic, 1.0); }, 150), 0.8);
@@ -7455,7 +7541,7 @@ function treeLog(it, st, r, extra){
 }
 function judgeTree(alts){
   const it=cur(); if(!it || it.kind!=='tstep') return;
-  const r=scoreAll(it.hanzi, alts), st=starsOf(r.score);
+  const r=treeScore(it, alts), st=starsOf(r.score);
   sessUtter++; sessStars+=st; S.stats.utter++; S.stats.stars+=st;
   bestPer[qi]=Math.max(bestPer[qi]||0, r.score);
   const rec=treeRec(it.k); if(rec) rec.tries=(rec.tries||0)+1;
@@ -7464,7 +7550,8 @@ function judgeTree(alts){
   save();
   const heardHTML='<div class="lab">ได้ยินว่า</div><div class="small muted zh">'+esc(r.heard||'—')+'</div>'+
     '<div class="stars" style="color:var(--'+(st>=3?'ok':st>=2?'warn':'bad')+')">'+starStr(st)+' <span class="small">'+r.score+'%</span></div>'+
-    (r.hints&&r.hints.length ? '<div class="nearTip">ใกล้แล้ว — '+r.hints.map(esc).join('<br>')+'</div>' : '');
+    (r.hints&&r.hints.length ? '<div class="nearTip">ใกล้แล้ว — '+r.hints.map(esc).join('<br>')+'</div>' : '')+
+    (it.t==='see' ? (r.altHit ? treeNaturalHTML(it, r) : '') : '');
   if(it.t==='see'){
     $('#pHan').innerHTML='<span class="zh">'+markedHTML(it.hanzi, norm(r.heard,false))+'</span>';
     $('#heard').innerHTML=heardHTML;
@@ -7489,13 +7576,14 @@ function judgeTree(alts){
     setTimeout(()=>{ if(playing && cur()===it) next(); }, 1300);
     return;
   }
-  // recall / use / quiz — ต้องได้ 3 ดาว
-  if(st>=3){
-    treeReveal(it, norm(r.heard,false), true);
-    $('#heard').innerHTML=heardHTML;
+  // recall / use / quiz — ต้องได้ 3 ดาว (หรือพูดแบบหนังสือเรียนถูก = ผ่าน 2★ พร้อมบอกแบบธรรมชาติ)
+  if(st>=3 || r.altHit){
+    treeReveal(it, norm(r.heard,false), !r.altHit);
+    TL.noted=TL.noted||{}; const showNote=!!it.note && !TL.noted[it.k]; if(showNote) TL.noted[it.k]=true;   // หมายเหตุโชว์ครั้งเดียวต่อรอบ
+    $('#heard').innerHTML=heardHTML+treeNaturalHTML(it, r, !showNote);
     vib([30,40,30]); micState('ok');
     treeSuccess(it);
-    setTimeout(()=>{ if(playing && cur()===it) next(); }, 600);
+    setTimeout(()=>{ if(playing && cur()===it) next(); }, r.altHit ? 2000 : showNote ? 1300 : 600);
     return;
   }
   it.tries++; vib(140); micState('');
