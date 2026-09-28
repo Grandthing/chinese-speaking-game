@@ -3299,7 +3299,7 @@ const MILESTONES = [
 /* ============================================================
    2.5 บันทึกปัญหา (diagnostics) — ไว้ส่งให้ผู้พัฒนาดูเวลาไมค์มีปัญหา
    ============================================================ */
-const BUILD='2026-10-01e';                     // เปลี่ยนทุกครั้งที่แก้ไฟล์ จะได้รู้ว่า log มาจากรุ่นไหน
+const BUILD='2026-10-01f';                     // เปลี่ยนทุกครั้งที่แก้ไฟล์ จะได้รู้ว่า log มาจากรุ่นไหน
 const DIAG=[], STUCK={}, T0=Date.now();
 /* log ปัญหาเก็บลงเครื่องด้วย: iPhone ปิดแอปหรือรีเฟรชแล้ว log เก่ายังอยู่ ส่งย้อนหลังได้ */
 const DKEY='zhgame-diag', DIAG_MAX=2500;
@@ -7017,13 +7017,13 @@ const TREE_FRAMES=[
    zh:'我要{n}', tp:'wǒ yào {p}', tt:'หว่อ เย่า {t}', tm:'เอา{m}', ok:['要{n}'], ex:'这个', st:1, where:'ร้านค้า',
    note:'ชี้ของ/เลือกขนาดใช้ 我要 ได้ปกติ · แต่สั่งอาหาร/เครื่องดื่ม คนจีนใช้ 来 (โครง 来＿)'},
   {id:'F12',f:'来＿',      py:'lái …',          th:'ไหล …',              mean:'ขอ… (สั่งอาหาร/เครื่องดื่ม)', tags:['food','drink'], mw:true,
-   zh:'来{mw}{n}', tp:'lái {mp} {p}', tt:'ไหล {mt} {t}', tm:'ขอ{m}{mm}', ok:['要{mw}{n}','{mw}{n}'], alt:['我要{mw}{n}','我要{n}'], ex:'牛肉面', st:1, where:'ร้านอาหาร',
+   zh:'来{mw}{n}', tp:'lái {mp} {p}', tt:'ไหล {mt} {t}', tm:'ขอ{m}{mm}', ok:['要{mw}{n}','{mw}{n}','来一个{n}','来个{n}'], alt:['我要{mw}{n}','我要{n}'], ex:'牛肉面', st:1, where:'ร้านอาหาร',
    note:'来 ตอนสั่งของแปลว่า "ขอ…" ไม่ได้แปลว่า "มา" · คนจีนสั่งด้วย 来 มากกว่า 我要'},
   {id:'F2', f:'不要＿',    py:'bú yào …',       th:'ปู๋ เย่า …',          mean:'ไม่เอา… / ไม่ใส่…',  tags:['taste','meat','any','thing'],
    zh:'不要{n}', tp:'bú yào {p}', tt:'ปู๋ เย่า {t}', tm:'ไม่เอา{m}', ex:'这个', st:1, where:'ร้านอาหาร',
    note:'ใช้กับรสชาติได้ปกติ (不要辣) · ถ้ามีคนเสนอของให้ ตอบ 不用了，谢谢 สุภาพกว่า 不要'},
   {id:'F4', f:'＿多少钱？', py:'… duō shao qián', th:'… ตัว เส่า เฉียน',    mean:'…เท่าไหร่',          tags:['food','drink','thing','any'],
-   zh:'{n}多少钱？', tp:'{p} duō shao qián', tt:'{t} ตัว เส่า เฉียน', tm:'{m}เท่าไหร่', ok:['{n}怎么卖？'], ex:'这个', st:1, where:'ร้านค้า/ตลาด',
+   zh:'{mw}{n}多少钱？', tp:'{mp} {p} duō shao qián', tt:'{mt} {t} ตัว เส่า เฉียน', tm:'{m}{mm}เท่าไหร่', ok:['{n}怎么卖？'], ex:'这个', st:1, where:'ร้านค้า/ตลาด',
    note:'ของชั่งกิโล ผลไม้ ของตลาด คนจีนมักถาม 这个怎么卖？'},
   {id:'F5', f:'＿在哪儿？', py:'… zài nǎr',       th:'… จ้าย หน่าร์',       mean:'…อยู่ที่ไหน',        tags:['place'],
    zh:'{n}在哪儿？', tp:'{p} zài nǎr', tt:'{t} จ้าย หน่าร์', tm:'{m}อยู่ที่ไหน', ok:['{n}在哪里？','{n}怎么走？'], ex:'厕所', st:1, where:'ถามทาง',
@@ -7085,7 +7085,7 @@ const TREE_NOUNS=[
   ['牛肉','niú ròu','หนิว โร่ว','เนื้อวัว','meat'],
   ['鱼','yú','หยวี','ปลา','meat',{car:['我想吃鱼','wǒ xiǎng chī yú','หวอ เสี่ยง ชือ หยวี','อยากกินปลา']}],
   // drink (来一瓶… / 来一杯…)
-  ['水','shuǐ','สุ่ย','น้ำเปล่า','drink',{mw:MW.ping}],
+  ['水','shuǐ','สุ่ย','น้ำเปล่า','drink',{mw:MW.ping, car:['一瓶水','yì píng shuǐ','อี้ ผิง สุ่ย','น้ำหนึ่งขวด']}],
   ['热水','rè shuǐ','เย่อ สุ่ย','น้ำร้อน','drink',{mw:MW.bei, note:'ร้านอาหารจีนมักให้ 热水 ฟรี ถาม 有热水吗？ ได้'}],
   ['茶','chá','ฉา','ชา','drink',{mw:MW.bei, note:'ร้านน้ำชาเฉิงตูบางร้านสั่งเป็นกา (一壶) — ถ้าไม่แน่ใจ 一杯 ใช้ได้เสมอ'}],
   ['奶茶','nǎi chá','หน่าย ฉา','ชานม','drink',{mw:MW.bei}],
@@ -7337,8 +7337,8 @@ const TREE={};                 // key -> รายการ
   // คำพยางค์เดียวในต้นไม้: ใช้วลีพาเดียวกับทั้งแอป (มีอยู่แล้วใช้ของเดิม) ให้ตอนเรียนกับตอนทบทวนพูดเหมือนกัน
   Object.values(TREE).forEach(it=>{
     const c0=CARRIER[it.hanzi];
-    if(c0 && (it.car || [...it.hanzi].length===1)) it.car={hanzi:c0.raw, pinyin:c0.py, thaiRead:c0.th, meaning:c0.mean};
-    if(it.car && !CARRIER[it.hanzi]) CARRIER[it.hanzi]={t:norm(it.car.hanzi,false), raw:it.car.hanzi, py:it.car.pinyin, th:it.car.thaiRead, mean:it.car.meaning, lv:0};
+    if(c0 && !it.car && [...it.hanzi].length===1) it.car={hanzi:c0.raw, pinyin:c0.py, thaiRead:c0.th, meaning:c0.mean};
+    if(it.car) CARRIER[it.hanzi]={t:norm(it.car.hanzi,false), raw:it.car.hanzi, py:it.car.pinyin, th:it.car.thaiRead, mean:it.car.meaning, lv:0};   // วลีของต้นไม้ใช้ทั้งแอป
   });
 })();
 /* พินอินแทนตัวจีนในข้อความ (หมายเหตุ/คำใบ้) — ผู้ใช้อ่านได้แต่พินอิน */
@@ -7350,6 +7350,13 @@ const PY_EXTRA={'去冰':'qù bīng','少糖':'shǎo táng','无糖':'wú táng'
   '扫码可以吗':'sǎo mǎ kě yǐ ma','能扫码吗':'néng sǎo mǎ ma','去':'qù','一碗':'yì wǎn','一瓶':'yì píng','一杯':'yì bēi','不要辣':'bú yào là',
   '不要放香菜':'bú yào fàng xiāng cài','这儿':'zhèr','这里':'zhè lǐ','去这儿':'qù zhèr','便宜点':'pián yi diǎn','我中文不好':'wǒ zhōng wén bù hǎo','好嘞':'hǎo lei','行':'xíng'};
 let PY_MAP=null;
+(function treeCharPy(){                                  // ตัวอักษรที่ CHAR_PY ยังไม่มี: เอาจากคำในต้นไม้ที่พยางค์ตรงกับตัวอักษร
+  const add=(h,py)=>{ const cs=[...String(h||'')].filter(c=>/[一-鿿]/.test(c)), ss=String(py||'').split(/[\s,，.。?？!！]+/).filter(Boolean);
+    if(cs.length===ss.length) cs.forEach((c,i)=>{ if(!CHAR_PY[c]) CHAR_PY[c]=ss[i]; }); };
+  Object.values(TREE).forEach(it=>{ if(it.kind!=='frame'){ add(it.hanzi,it.pinyin); if(it.car) add(it.car.hanzi,it.car.pinyin); } });
+  Object.values(MW).forEach(m=>add(m[0],m[1]));
+  TREE_LISTEN.forEach(x=>add(x.zh,x.py));
+})();
 function pyText(str){
   if(!S.settings.pyFirst) return String(str||'');
   if(!PY_MAP){
@@ -7670,7 +7677,7 @@ function renderTree(it){
   }
   const cat=TREE_CAT[w.cat]||{icon:'',name:''};
   const nRc=(TL&&TL.rc[it.k])||0;
-  $('#pKind').textContent='🌳 '+cat.icon+' '+cat.name+' · '+TSTEP_LABEL[it.drill?'drill':it.t]+
+  $('#pKind').textContent='🌳 '+(w.cat==='frame'?'':cat.icon+' ')+cat.name+' · '+TSTEP_LABEL[it.drill?'drill':it.t]+
     (it.t==='see'?' ('+Math.min(2,it.pass)+'/2)':'')+(it.t==='recall'?' ('+(nRc+1)+'/3)':'')+(it.again?' · ทวนอีกรอบ':'');
   $('#playBar').style.width=(qi/Q.length*100)+'%';
   $('#playCount').textContent=(qi+1)+'/'+Q.length;
@@ -7703,7 +7710,8 @@ function renderTree(it){
   $('#pThai').textContent='';
   $('#pMean').innerHTML=
     (it.t==='use' && it.u ? '<div class="pairVs">🌳 ใช้โครง <b>'+esc(S.settings.pyFirst?it.u.frame.py:it.u.frame.f)+'</b> + '+esc(String(it.u.noun.meaning).split(/[(（/]/)[0])+'</div>' : '')+
-    (it.t!=='use' && w.kind==='frame' ? '<div class="pairVs">🧩 '+(w.parts||[]).map(k=>esc(TREE[k]?String(TREE[k].meaning).split(/[(（/]/)[0].trim():k)).join(' + ')+'</div>' : '')+
+    (it.t!=='use' && it.u ? '<div class="pairVs">🧩 '+[it.u.frame.ck, it.u.noun.key].map(k=>esc(TREE[k]?String(TREE[k].meaning).split(/[(（/]/)[0].trim():'')).filter(Boolean).join(' + ')+'</div>' :
+     it.t!=='use' && w.kind==='frame' ? '<div class="pairVs">🧩 '+(w.parts||[]).map(k=>esc(TREE[k]?String(TREE[k].meaning).split(/[(（/]/)[0].trim():k)).join(' + ')+'</div>' : '')+
     (it.t!=='use' && w.car ? '<div class="pairVs">พูดเป็นวลี (คำเดียวสั้นเกินให้ระบบฟัง)</div>' : '')+
     '<div class="small muted" style="margin-top:.3rem">พูดเป็นภาษาจีน</div>';
   if(S.settings.autoListen) armMic();
@@ -7729,7 +7737,7 @@ function judgeTree(alts){
   dlog('tree', TSTEP_LABEL[it.t]+' '+it.k+' ('+it.hanzi+') -> '+r.score+'% (ได้ยิน: '+(r.heard||'—')+')');
   treeLog(it, st, r);
   save();
-  const heardHTML='<div class="lab">ได้ยินว่า</div><div class="small muted'+(S.settings.pyFirst?'':' zh')+'">'+esc(r.heard ? (S.settings.pyFirst?toPinyin(r.heard):r.heard) : '—')+'</div>'+
+  const heardHTML='<div class="lab">ได้ยินว่า</div><div class="small muted'+(S.settings.pyFirst?'':' zh')+'">'+esc(r.heard ? (S.settings.pyFirst?pyText(r.heard):r.heard) : '—')+'</div>'+
     '<div class="stars" style="color:var(--'+(st>=3?'ok':st>=2?'warn':'bad')+')">'+starStr(st)+' <span class="small">'+r.score+'%</span></div>'+
     (r.hints&&r.hints.length ? '<div class="nearTip">ใกล้แล้ว — '+r.hints.map(esc).join('<br>')+'</div>' : '')+
     (it.t==='see' ? (r.altHit ? treeNaturalHTML(it, r) : '') : '');
