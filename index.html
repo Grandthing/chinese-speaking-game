@@ -3299,7 +3299,7 @@ const MILESTONES = [
 /* ============================================================
    2.5 บันทึกปัญหา (diagnostics) — ไว้ส่งให้ผู้พัฒนาดูเวลาไมค์มีปัญหา
    ============================================================ */
-const BUILD='2026-10-01i';                     // เปลี่ยนทุกครั้งที่แก้ไฟล์ จะได้รู้ว่า log มาจากรุ่นไหน
+const BUILD='2026-10-02a';                     // เปลี่ยนทุกครั้งที่แก้ไฟล์ จะได้รู้ว่า log มาจากรุ่นไหน
 const DIAG=[], STUCK={}, T0=Date.now();
 /* log ปัญหาเก็บลงเครื่องด้วย: iPhone ปิดแอปหรือรีเฟรชแล้ว log เก่ายังอยู่ ส่งย้อนหลังได้ */
 const DKEY='zhgame-diag', DIAG_MAX=2500;
@@ -7312,6 +7312,89 @@ TREE_BRANCH_ORDER.splice(0, TREE_BRANCH_ORDER.length, 'food','drink','fruit','mk
   {id:'T27',scene:'ถามทาง', zh:'就在对面。', py:'jiù zài duì miàn', th:'อยู่ฝั่งตรงข้ามเลย', q:'อยู่ที่ไหน?', choices:['ฝั่งตรงข้าม','ข้างๆ','ชั้นบน','ไกลมาก']}
 ].forEach(x=>{ TREE_LISTEN.push(x); if(!LISTEN.some(y=>y.id===x.id)) LISTEN.push(Object.assign({tree:true}, x)); });
 
+/* ---- ชุดเพิ่ม 2 (travel-china-spoken-guide.md): ภาษาพูดทั่วประเทศ · ขอให้แนะนำ · สตรีทฟู้ด · รสชาติ ---- */
+const treeRow=(arr,key,row)=>{ const i=arr.findIndex(a=>a[0]===key || a[1]===key); if(i>=0) arr[i]=row; else arr.push(row); };
+MW.ge2=['一个','yí ge','อี๋ เก้อ',' อันนึง'];
+// 1) "ที่นี่" = 这里 (คนเฉิงตู/ภาคใต้ไม่ม้วนลิ้น เข้าใจทั่วประเทศ)
+treeRow(TREE_NOUNS,'这儿',['这里','zhè lǐ','เจ้อ หลี่','ที่นี่','place',{no:['F5','F6'], ok:['这儿','在这'], note:'คนเฉิงตูและภาคใต้แทบไม่ม้วนลิ้น ใช้ zhè lǐ ปลอดภัย เข้าใจทั่วประเทศ'}]);
+treeRow(TREE_SPECIAL,'在这儿吃',['在这吃','zài zhè chī','จ้าย เจ้อ ชือ','กินที่นี่',{ok:['在这里吃','这里吃','在这儿吃'], note:'ร้านริมทางถามสั้นๆ ว่า zài zhè chī hái shi dài zǒu? ตอบคำเดียวได้เลย', where:'ร้านอาหาร/ริมทาง'}]);
+treeRow(TREE_SPECIAL,'就这儿停',['就在这停','jiù zài zhè tíng','จิ้ว จ้าย เจ้อ ถิง','จอดตรงนี้เลย',{ok:['停这里就行','就这里停','就这儿停','在这停'], alt:['请停车'], note:'บอกคนขับตอนถึง', where:'แท็กซี่'}]);
+treeRow(TREE_SPECIAL,'有什么好吃的？',['有什么推荐的？','yǒu shén me tuī jiàn de','โหย่ว เสิน เมอะ ทุย เจี้ยน เตอะ','มีอะไรแนะนำบ้าง',{ok:['有什么好吃的？','什么好吃？'], alt:['你推荐什么？'], where:'ร้านอาหาร/คาเฟ่'}]);
+// รสชาติ: 辣 ใช้ได้ทั้ง 不要辣 และ 这个辣不辣？
+treeRow(TREE_NOUNS,'辣',['辣','là','ล่า','เผ็ด','taste',{car:['不要辣','bú yào là','ปู๋ เย่า ล่า','ไม่เอาเผ็ด'], ok:['放辣'], tag:'flavor'}]);
+treeRow(TREE_NOUNS,'串串',['串串','chuàn chuan','ช่วน ชวน','ชวนชวน (หม้อไฟไม้เสียบ)','food',{no:['F3','F4'], ok:['串串香'], note:'ชื่อเต็ม chuàn chuan xiāng · กินเสร็จนับไม้คิดเงิน'}]);
+// 2) ขนาดชาม (ร้านเส้น/เกี๊ยว)
+TREE_NOUNS.push(
+  ['二两','èr liǎng','เอ้อร์ เหลี่ยง','สองเหลี่ยง (ชามปกติ)','size',{note:'ร้านเส้น/เกี๊ยวในเฉิงตูคิดเป็นเหลี่ยง: èr liǎng = ชามปกติ 1 คนอิ่ม · เมืองอื่นสั่ง dà wǎn / xiǎo wǎn'}],
+  ['大碗','dà wǎn','ต้า หว่าน','ชามใหญ่','size'],
+  ['小碗','xiǎo wǎn','เสียว หว่าน','ชามเล็ก','size'],
+  // 3) ไม่ใส่… / ของที่ขอเพิ่ม
+  ['葱','cōng','ชง','ต้นหอม','taste',{car:['不要葱','bú yào cōng','ปู๋ เย่า ชง','ไม่ใส่ต้นหอม']}],
+  ['蒜','suàn','ซ่วน','กระเทียม','taste',{car:['不要蒜','bú yào suàn','ปู๋ เย่า ซ่วน','ไม่ใส่กระเทียม']}],
+  ['竹签','zhú qiān','จู๋ เชียน','ไม้จิ้ม','thing',{no:['F1','F2','F4'], note:'เอาไว้จิ้มกินระหว่างเดิน'}],
+  ['手套','shǒu tào','โส่ว เท่า','ถุงมือพลาสติก','thing',{no:['F1','F2','F4'], note:'ร้านไก่ทอด/ซี่โครง/ปิ้งย่าง มีถุงมือให้'}],
+  // 4) รสชาติ/รสสัมผัส (ใช้กับ zhè ge … bu …?)
+  ['甜','tián','เถียน','หวาน','flavor',{car:['很甜','hěn tián','เหิ่น เถียน','หวานมาก']}],
+  ['咸','xián','เสียน','เค็ม','flavor',{car:['太咸了','tài xián le','ไท่ เสียน เลอะ','เค็มไป']}],
+  ['酸','suān','ซวน','เปรี้ยว','flavor',{car:['有点酸','yǒu diǎn suān','โหยว เตี่ยน ซวน','เปรี้ยวนิดหน่อย']}],
+  ['麻','má','หมา','ชา (ลิ้นชา)','flavor',{car:['很麻','hěn má','เหิ่น หมา','ชามาก'], note:'รสชาจากฮวาเจียว (มะแขว่นจีน) ขึ้นชื่อของเสฉวน · ชาน้อย = wēi má'}],
+  ['脆','cuì','ชุ่ย','กรอบ','flavor',{car:['很脆','hěn cuì','เหิ่น ชุ่ย','กรอบมาก']}],
+  ['嫩','nèn','เนิ่น','นุ่ม (เนื้อ/เต้าหู้)','flavor',{car:['很嫩','hěn nèn','เหิ่น เนิ่น','นุ่มมาก']}],
+  ['糯','nuò','นั่ว','เหนียวนุ่ม','flavor',{car:['很糯','hěn nuò','เหิ่น นั่ว','เหนียวนุ่มมาก'], note:'หนึบแบบแป้งข้าวเหนียว/โมจิ'}],
+  // 5) สตรีทฟู้ด
+  ['炸鸡','zhá jī','จ๋า จี','ไก่ทอด','street',{mw:MW.fen, note:'มักโรยผงหม่าล่าหรือผงยี่หร่า'}],
+  ['烤串','kǎo chuàn','ข่าว ช่วน','ปิ้งย่างเสียบไม้','street',{note:'เลือกไม้ใส่ตะกร้าแล้วยื่นให้คนขายย่าง'}],
+  ['煎饼果子','jiān bǐng guǒ zi','เจียน ปิ๋ง กั่ว จึ','เครปจีน','street',{mw:MW.ge2}],
+  ['肉夹馍','ròu jiā mó','โร่ว เจีย หมัว','เบอร์เกอร์จีน','street',{mw:MW.ge2}],
+  ['烤冷面','kǎo lěng miàn','เขา เหลิ่ง เมี่ยน','บะหมี่เย็นย่าง','street',{mw:MW.fen}],
+  ['臭豆腐','chòu dòu fu','โช่ว โต้ว ฟู่','เต้าหู้เหม็นทอด','street',{mw:MW.fen}],
+  ['鲜切水果','xiān qiē shuǐ guǒ','เซียน เชีย สุย กั่ว','ผลไม้หั่นพร้อมกิน','street',{mw:MW.fen}]
+);
+// โครงใหม่: ถามรสชาติ "อันนี้…ไหม" (这个辣不辣？)
+TREE_FRAMES.push({id:'F15', f:'这个＿不＿？', py:'zhè ge … bu …', th:'เจ้อ เก้อ … ปู้ …', mean:'อันนี้…ไหม (ถามรสชาติ)', tags:['flavor'],
+  zh:'这个{n}不{n}？', tp:'zhè ge {p} bu {p}', tt:'เจ้อ เก้อ {t} ปู้ {t}', tm:'อันนี้{m}ไหม', ok:['这个{n}吗？','{n}不{n}？'], ex:'辣', st:1, where:'ร้านอาหาร/ตลาด',
+  note:'X bu X = X ไหม ถามรสชาติก่อนสั่ง'});
+TREE_FRAMES.find(x=>x.id==='F1').tags.push('size');
+['F12','F9','F3','F4'].forEach(id=>TREE_FRAMES.find(x=>x.id===id).tags.push('street'));
+// ประโยคตามสถานการณ์
+TREE_SIT.push(
+  ['mkt','阿姨','ā yí','อา อี๋','ป้า/น้า! (เรียกแม่ค้า)',{note:'เรียกแม่ค้าสูงอายุแบบเป็นกันเอง · ผู้ชายเรียก shī fu หรือ lǎo bǎn', where:'ตลาด'}],
+  ['mkt','来两串','lái liǎng chuàn','ไหล เหลี่ยง ช่วน','ขอสองไม้',{ok:['来一串','来三串','要两串'], note:'ไม้เสียบ (หม่าล่า ปิ้งย่าง ไส้กรอก) นับเป็น chuàn', where:'สตรีทฟู้ด'}],
+  ['mkt','来半斤','lái bàn jīn','ไหล ป้าน จิน','เอาครึ่งจิน (250 กรัม)',{ok:['要半斤'], where:'ตลาด'}],
+  ['mkt','来十块钱的','lái shí kuài qián de','ไหล สือ ไคว่ เฉียน เตอะ','เอา 10 หยวน (ให้หยิบตามราคา)',{ok:['要十块钱的'], note:'บอกงบไปเลย สะดวกเวลาซื้อผลไม้/ขนม', where:'ตลาด'}],
+  ['mkt','可以拼一下吗？','kě yǐ pīn yí xià ma','เขอ อี่ พิน อี๋ เซี่ย มะ','คละหลายอย่างได้ไหม',{ok:['能拼一下吗？'], where:'ตลาด/ร้านขนม'}],
+  ['mkt','现在吃','xiàn zài chī','เซี่ยน จ้าย ชือ','กินตอนนี้เลย',{ok:['现在就吃'], note:'แม่ค้าจะแกะไม้/เปิดกล่อง/ให้ถุงมือ', where:'สตรีทฟู้ด'}],
+  ['mkt','帮我热一下','bāng wǒ rè yí xià','ปาง หว่อ เย่อ อี๋ เซี่ย','ช่วยอุ่นให้หน่อย',{where:'สตรีทฟู้ด'}],
+  ['mkt','帮我切一下','bāng wǒ qiē yí xià','ปาง หว่อ เชีย อี๋ เซี่ย','ช่วยหั่นให้หน่อย',{where:'ตลาด/สตรีทฟู้ด'}],
+  ['eat','你们家招牌是什么？','nǐ men jiā zhāo pai shì shén me','หนี่ เมิน เจีย จาว ไพ ชื่อ เสิน เมอะ','เมนูเด็ดของร้านคืออะไร',{ok:['招牌是什么？','你们的招牌菜是什么？'], where:'ร้านอาหาร'}],
+  ['eat','哪个卖得最好？','nǎ ge mài de zuì hǎo','หน่า เก้อ ม่าย เตอะ จุ้ย ห่าว','อันไหนขายดีที่สุด',{ok:['什么卖得最好？'], where:'แผงลอย/ร้าน'}],
+  ['eat','有什么特色？','yǒu shén me tè sè','โหย่ว เสิน เมอะ เท่อ เซ่อ','มีอะไรเป็นของขึ้นชื่อ',{ok:['有什么特色菜？'], where:'ร้านท้องถิ่น'}],
+  ['eat','这个是什么味道？','zhè ge shì shén me wèi dào','เจ้อ เก้อ ชื่อ เสิน เมอะ เว่ย ต้าว','อันนี้รสชาติเป็นยังไง',{ok:['什么味道？','这是什么味道？']}],
+  ['eat','是甜的还是咸的？','shì tián de hái shi xián de','ชื่อ เถียน เตอะ ไห ชือ เสียน เตอะ','หวานหรือเค็ม',{ok:['甜的还是咸的？'], where:'ร้านขนม'}],
+  ['eat','大家一般点哪个？','dà jiā yì bān diǎn nǎ ge','ต้า เจีย อี้ ปาน เตี๋ยน หน่า เก้อ','ปกติคนสั่งอันไหนกัน',{ok:['一般点哪个？']}],
+  ['eat','少油','shǎo yóu','เส่า โหยว','น้ำมันน้อยๆ',{ok:['少放油','少点油'], where:'ร้านอาหาร'}],
+  ['eat','不要太咸','bú yào tài xián','ปู๋ เย่า ไท่ เสียน','อย่าเค็มเกินไป',{ok:['少放盐'], where:'ร้านอาหาร'}],
+  ['eat','酱料分开','jiàng liào fēn kāi','เจี้ยง เลี่ยว เฟิน ไค','แยกซอส/น้ำจิ้ม',{ok:['酱分开放','酱料分开放'], where:'ร้านอาหาร/ริมทาง'}]
+);
+TREE_CAT.mkt={icon:'🧺', name:'ตลาดสด · สตรีทฟู้ด'};
+TREE_CAT.street={icon:'🍢', name:'สตรีทฟู้ด'};
+TREE_CAT.flavor={icon:'😋', name:'รสชาติ (…ไหม)'};
+TREE_CAT.size={icon:'🥣', name:'ขนาดชาม'};
+TREE_OPENS_WITH.mkt=['fruit','street'];
+TREE_BRANCH_ORDER.splice(0, TREE_BRANCH_ORDER.length, 'food','drink','street','fruit','mkt','eat','flavor','veg','taste','meat','size','place','trip','temp','spice','num','thing','money','action','any','special');
+// 6) ประโยคที่คนขายพูด (ฝึกฟัง)
+[
+  {id:'T28',scene:'สตรีทฟู้ด', zh:'现在吃还是带走？', py:'xiàn zài chī hái shi dài zǒu', th:'กินตอนนี้เลยหรือห่อกลับ', q:'แม่ค้าถามอะไร?', choices:['กินเลยหรือห่อกลับ','เผ็ดหรือไม่เผ็ด','เอากี่ไม้','จ่ายยังไง']},
+  {id:'T29',scene:'สตรีทฟู้ด', zh:'要不要放辣？', py:'yào bu yào fàng là', th:'ใส่พริกไหม', q:'แม่ค้าถามอะไร?', choices:['ใส่พริกไหม','ใส่ผักชีไหม','เอาถุงไหม','กินที่นี่ไหม']},
+  {id:'T30',scene:'สตรีทฟู้ด', zh:'葱花香菜都要吗？', py:'cōng huā xiāng cài dōu yào ma', th:'ต้นหอมกับผักชีใส่หมดเลยไหม', q:'แม่ค้าถามอะไร?', choices:['ใส่ต้นหอมผักชีหมดไหม','เอาทั้งหมดนี่ไหม','ใส่พริกไหม','แยกซอสไหม']},
+  {id:'T31',scene:'สตรีทฟู้ด', zh:'要几串？', py:'yào jǐ chuàn', th:'เอากี่ไม้', q:'แม่ค้าถามอะไร?', choices:['เอากี่ไม้','เอากี่ชาม','เอากี่จิน','เอาอันไหน']},
+  {id:'T32',scene:'ตลาดสด', zh:'称一下。', py:'chēng yí xià', th:'ชั่งก่อนนะ', q:'แม่ค้าบอกอะไร?', choices:['ชั่งก่อนนะ','รอสักครู่','ชิมก่อนนะ','จ่ายก่อนนะ']},
+  {id:'T33',scene:'สตรีทฟู้ด', zh:'现烤的，要等五分钟。', py:'xiàn kǎo de, yào děng wǔ fēn zhōng', th:'ย่างสดใหม่ ต้องรอ 5 นาที', q:'แม่ค้าบอกอะไร?', choices:['ย่างใหม่ รอ 5 นาที','ย่างเสร็จแล้ว','รอ 15 นาที','หมดแล้ว']},
+  {id:'T34',scene:'สตรีทฟู้ด', zh:'十块钱三样。', py:'shí kuài qián sān yàng', th:'10 หยวน เลือกได้ 3 อย่าง', q:'แม่ค้าบอกอะไร?', choices:['10 หยวน 3 อย่าง','3 หยวน 10 อย่าง','10 หยวน 1 อย่าง','30 หยวน 3 อย่าง']},
+  {id:'T35',scene:'สตรีทฟู้ด', zh:'还有两分钟就好。', py:'hái yǒu liǎng fēn zhōng jiù hǎo', th:'อีก 2 นาทีเสร็จ', q:'แม่ค้าบอกอะไร?', choices:['อีก 2 นาทีเสร็จ','อีก 10 นาทีเสร็จ','เสร็จแล้ว','ต้องรอนาน']},
+  {id:'T36',scene:'สตรีทฟู้ด', zh:'小心烫！', py:'xiǎo xīn tàng', th:'ระวังร้อนนะ', q:'แม่ค้าบอกอะไร?', choices:['ระวังร้อน','ระวังเผ็ด','ระวังตก','ระวังหก']}
+].forEach(x=>{ TREE_LISTEN.push(x); if(!LISTEN.some(y=>y.id===x.id)) LISTEN.push(Object.assign({tree:true}, x)); });
+
 const TREE={};                 // key -> รายการ
 (function buildTree(){
   const lexTh=h=>{ const x=LEX[norm(h,false)]; return x && x.th ? x.th : null; };
@@ -7392,12 +7475,12 @@ function treeStructHTML(F, nk){
   return esc(String(F.zh).indexOf('{')===0 ? n+'  +  '+fr : fr+'  +  '+n);
 }
 function treePartsOrder(F, nk){ const p=[F.ck, nk].filter(Boolean); return String(F.zh).indexOf('{')===0 ? p.reverse() : p; }   // ลำดับเดียวกับในประโยค
-function treeTags(it){ return it.kind==='noun' ? [it.cat] : it.tag2 ? [it.tag2] : []; }
+function treeTags(it){ return it.kind==='noun' ? [it.cat].concat(it.tag2?[it.tag2]:[]) : it.tag2 ? [it.tag2] : []; }
 function treeFits(F, n){ return n.kind!=='frame' && treeTags(n).some(t=>F.tags.indexOf(t)>=0) && (n.no||[]).indexOf(F.id)<0 && (!F.mw || !!n.mw); }
 function treeCompose(F, n){
   const nm=String(n.meaning||'').split(/[(（/]/)[0].trim();
   const mw=n.mw||['','','',''];
-  const fill=(tpl, nh)=>String(tpl).replace('{n}', nh).replace('{mw}', mw[0]);
+  const fill=(tpl, nh)=>String(tpl).split('{n}').join(nh).replace('{mw}', mw[0]);
   const hanzi=fill(F.zh, n.hanzi);
   const ok=[], alt=[];
   (F.ok||[]).forEach(t=>ok.push(fill(t, n.hanzi)));
@@ -7407,9 +7490,9 @@ function treeCompose(F, n){
   const uniq=a=>[...new Set(a)].filter(x=>x && x!==hanzi);
   return {
     hanzi:hanzi,
-    pinyin:F.tp.replace('{p}', n.pinyin).replace('{mp}', mw[1]).replace(/\s+/g,' ').trim(),
-    thaiRead:F.tt.replace('{t}', n.thaiRead).replace('{mt}', mw[2]).replace(/\s+/g,' ').trim(),
-    meaning:F.tm.replace('{m}', nm).replace('{mm}', mw[3]),
+    pinyin:F.tp.split('{p}').join(n.pinyin).replace('{mp}', mw[1]).replace(/\s+/g,' ').trim(),
+    thaiRead:F.tt.split('{t}').join(n.thaiRead).replace('{mt}', mw[2]).replace(/\s+/g,' ').trim(),
+    meaning:F.tm.split('{m}').join(nm).replace('{mm}', mw[3]),
     ok:uniq(ok), alt:uniq(alt).filter(x=>ok.indexOf(x)<0),
     note:[F.note, n.note].filter(Boolean).join(' · ')
   };
@@ -7449,7 +7532,7 @@ function treeFrameOpen(F){ return F.st===1 || treeStage2Open(); }
 function treeCatOpen(cat){
   if(cat==='survive' || cat==='frame') return true;
   if(cat==='special') return treeStage2Open();
-  if(TREE_OPENS_WITH[cat]) return treeCatOpen(TREE_OPENS_WITH[cat]);
+  if(TREE_OPENS_WITH[cat]) return [].concat(TREE_OPENS_WITH[cat]).some(treeCatOpen);
   return TREE_FRAMES.some(F=>treeFrameOpen(F) && F.tags.indexOf(cat)>=0 && treeGreen(F.id));
 }
 function treeCatWhy(cat){
@@ -7515,14 +7598,20 @@ function treePickChunk(n){
     if(out.length<n && quota>0 && treeFrameOpen(F) && !treeRec(F.id) && treePartsReady(F)){ out.push(F.id); quota--; }
   });
   const byCat={}; TREE_BRANCH_ORDER.forEach(c=>byCat[c]=Object.values(TREE).filter(w=>w.cat===c && !treeRec(w.key) && TREE_STAGE1.indexOf(w.key)<0).map(w=>w.key));
-  let ci=0;
+  // หมวดที่ได้เรียนน้อยที่สุด (เทียบกับลำดับความสำคัญ) มาก่อน — ทุกหมวดได้ถึงคิว ไม่ใช่วนเริ่มที่อาหารทุกก้อน
+  const started={}; Object.keys(S.tree||{}).forEach(k=>{ const it=TREE[k]; if(it) started[it.cat]=(started[it.cat]||0)+1; });
+  out.forEach(k=>{ const it=TREE[k]; if(it) started[it.cat]=(started[it.cat]||0)+1; });
   const nextBranch=()=>{
-    if(br.length) return br.shift();                // โครงขั้น 2 ที่เพิ่งเปิดมาก่อน
-    for(let t=0;t<TREE_BRANCH_ORDER.length;t++){
-      const c=TREE_BRANCH_ORDER[(ci+t)%TREE_BRANCH_ORDER.length];
-      if(treeCatOpen(c) && byCat[c].length){ ci=(ci+t+1)%TREE_BRANCH_ORDER.length; return byCat[c].shift(); }
-    }
-    return null;
+    if(br.length) return br.shift();                // โครงขั้น 2 / ก้อนคำของโครงที่เพิ่งเปิดมาก่อน
+    let best=null, bs=1e9;
+    TREE_BRANCH_ORDER.forEach((c,i)=>{
+      if(!treeCatOpen(c) || !byCat[c].length) return;
+      const sc=(started[c]||0) + i*0.1;             // ได้เรียนน้อย + อยู่ต้นลำดับ = มาก่อน
+      if(sc<bs){ bs=sc; best=c; }
+    });
+    if(!best) return null;
+    started[best]=(started[best]||0)+1;
+    return byCat[best].shift();
   };
   s1.filter(treeFree).forEach(k=>{ if(out.length<n && out.indexOf(k)<0) out.push(k); });   // ทวนแบบแยกชิ้น ไม่นับเป็นคำใหม่
   for(let i=s1.length-1;i>=0;i--) if(treeFree(s1[i])) s1.splice(i,1);
@@ -8020,7 +8109,7 @@ function treeListenQueue(n){
   });
   // ขั้น 3: ของจริงในร้าน/อุทยาน — เปิดเมื่อจำได้ (🟢) อย่างน้อย 15 คำ
   if(learned.filter(treeGreen).length>=15){
-    const SC=['ร้านแนะนำ','ตลาดสด','อุทยาน','ห้องน้ำ','ร้านอาหาร','จ่ายเงิน','ซื้อของ','ต่อราคา','DiDi','โรงแรม','ถามทาง'];
+    const SC=['ร้านแนะนำ','ตลาดสด','สตรีทฟู้ด','อุทยาน','ห้องน้ำ','ร้านอาหาร','จ่ายเงิน','ซื้อของ','ต่อราคา','DiDi','โรงแรม','ถามทาง'];
     const okIds=new Set((S.listen.hist||[]).slice(-80).filter(h=>h.ok && !h.as).map(h=>h.id));
     LISTEN.filter(L=>SC.indexOf(L.scene)>=0).sort(()=>Math.random()-0.5)
       .sort((a,b)=>((okIds.has(a.id)?1:0)-(okIds.has(b.id)?1:0)) || ((b.tree?1:0)-(a.tree?1:0)))
