@@ -766,6 +766,10 @@ td.r,th.r{text-align:right}
       <p class="small muted" style="margin:.4rem 0 0">ปุ่มใบ้ล็อก 5 วินาทีแรก (หรือจนกว่าจะลองพูด) ใบ้ได้ 3 ขั้น: ตัวแรกของแต่ละพยางค์ → พินอินไม่มีวรรณยุกต์ → คำอ่านไทย · ปิด = แบบเดิม</p>
     </div>
     <div class="card">
+      <div class="row"><b class="grow">🗣️ เสียงพูด</b><span id="voiceChips"><button class="chip" data-v="mix">สลับ ชาย/หญิง</button> <button class="chip" data-v="f">หญิง</button> <button class="chip" data-v="m">ชาย</button></span></div>
+      <p class="small muted" id="voiceNote" style="margin:.4rem 0 0"></p>
+    </div>
+    <div class="card">
       <div class="row"><b class="grow">🔤 พินอินเป็นตัวหลัก</b><button class="chip" id="swPy">เปิด</button></div>
       <p class="small muted" style="margin:.4rem 0 0">โชว์พินอินตัวใหญ่ ตัวจีนตัวเล็ก (ต้นไม้คำเที่ยว · เฉลย · ฟัง) — เหมาะกับคนที่ยังอ่านตัวจีนไม่ออก</p>
     </div>
@@ -3295,7 +3299,7 @@ const MILESTONES = [
 /* ============================================================
    2.5 บันทึกปัญหา (diagnostics) — ไว้ส่งให้ผู้พัฒนาดูเวลาไมค์มีปัญหา
    ============================================================ */
-const BUILD='2026-10-01d';                     // เปลี่ยนทุกครั้งที่แก้ไฟล์ จะได้รู้ว่า log มาจากรุ่นไหน
+const BUILD='2026-10-01e';                     // เปลี่ยนทุกครั้งที่แก้ไฟล์ จะได้รู้ว่า log มาจากรุ่นไหน
 const DIAG=[], STUCK={}, T0=Date.now();
 /* log ปัญหาเก็บลงเครื่องด้วย: iPhone ปิดแอปหรือรีเฟรชแล้ว log เก่ายังอยู่ ส่งย้อนหลังได้ */
 const DKEY='zhgame-diag', DIAG_MAX=2500;
@@ -3331,7 +3335,8 @@ function diagText(){
     'protocol   : '+location.protocol+'   secureContext: '+window.isSecureContext+'   จำสิทธิ์ไมค์ได้: '+PERSIST_OK,
     'UA         : '+navigator.userAgent,
     'ตรวจเสียง  : '+(HAS_SR?'รองรับ':'ไม่รองรับ')+'   สิทธิ์ไมค์: '+micPerm+'   โหมดไม่ใช้ไมค์: '+manualMode,
-    'ออนไลน์    : '+navigator.onLine+'   เสียงจีน: '+(zhVoice?(zhVoice.name+' / '+zhVoice.lang):'ไม่พบ')+'   เสียงทั้งหมด: '+vs.length,
+    'ออนไลน์    : '+navigator.onLine+'   เสียงจีน: '+(zhVoice?(zhVoice.name+' / '+zhVoice.lang):'ไม่พบ')+'   เสียงชาย: '+(zhVoiceM?zhVoiceM.name:'ไม่มี (ใช้เสียงหญิงแบบทุ้ม)')+'   เสียงทั้งหมด: '+vs.length,
+    'เสียงจีนในเครื่อง: '+(zhVoiceList.join(' · ')||'—'),
     'สถานะเกม   : ด่าน '+levelId+'  ข้อ '+(qi+1)+'/'+Q.length+'  playing='+playing+'  autoListen='+S.settings.autoListen,
     'ไมค์ตอนนี้  : recActive='+recActive+'  recStarting='+recStarting+'  heldStream='+(!!heldStream),
     '─────────────────────────────────────────',
@@ -3360,7 +3365,7 @@ function blank(){return{
   v:1,
   settings:{showThai:true, rate:0.8, autoListen:false, vibrate:true, sv:2,
              coachMin:25, coachStrict:true, coachGoal:2, recallStrict:true, pretest:true,
-             newPerDay:8, focusTravel:true, pyFirst:true},
+             newPerDay:8, focusTravel:true, pyFirst:true, voiceMode:'mix'},
   progress:{},   // levelId -> {best, stars, plays, done}
   words:{},      // hanzi -> {py,th,mean,lv,att,fails,d2:[],d3:[]}
   mistakes:{},   // hanzi -> count
@@ -4150,14 +4155,32 @@ const IS_SAMSUNG_BROWSER = /SamsungBrowser/i.test(UA);
 const IS_IOS = /iPad|iPhone|iPod/.test(UA) || (navigator.platform==='MacIntel' && navigator.maxTouchPoints>1);
 let zhVoice=null, voicesChecked=false;
 
+/* เสียงชาย: ชื่อเสียงจีนชายที่พบบ่อย (iOS: Li-mu · Windows/Edge: Kangkang, Yunxi, Yunjian, Yunyang · Android บางรุ่นมีคำว่า male) */
+const MALE_RE=/li-?mu|kangkang|yunxi|yunjian|yunyang|yunhao|yunze|male|男/i;
+let zhVoiceM=null, zhVoiceList=[];
 function pickVoice(){
   const vs = (window.speechSynthesis && speechSynthesis.getVoices()) || [];
-  zhVoice = vs.find(v=>/^zh[-_]?CN/i.test(v.lang)) || vs.find(v=>/^zh/i.test(v.lang)) || null;
+  const cn = vs.filter(v=>/^zh[-_]?CN/i.test(v.lang));
+  const zh = cn.length ? cn : vs.filter(v=>/^zh/i.test(v.lang) && !/HK|TW|yue/i.test(v.lang+v.name));
+  zhVoiceList = zh.map(v=>v.name+' ('+v.lang+')'+(MALE_RE.test(v.name)?' ♂':''));
+  const fem = zh.filter(v=>!MALE_RE.test(v.name));
+  zhVoice = fem[0] || zh[0] || vs.find(v=>/^zh/i.test(v.lang)) || null;
+  zhVoiceM = zh.find(v=>MALE_RE.test(v.name)) || null;
   return zhVoice;
+}
+/* เสียงสลับ: ข้อความใหม่ = สลับคนพูด · ข้อความเดิม (ฟังซ้ำ/พูดตามรอบสอง) = คนเดิม */
+let voiceLastText='', voiceIsMale=false;
+function voiceFor(text){
+  const mode=S.settings.voiceMode||'mix';               // mix | f | m
+  if(mode==='f') return {v:zhVoice, male:false};
+  if(text!==voiceLastText){ voiceLastText=text; voiceIsMale = mode==='m' ? true : !voiceIsMale; }
+  if(!voiceIsMale) return {v:zhVoice, male:false};
+  return {v:zhVoiceM||zhVoice, male:true, fake:!zhVoiceM};  // ไม่มีเสียงชายในเครื่อง = ใช้เสียงหญิงแบบทุ้มลง
 }
 function checkVoices(){
   if(!window.speechSynthesis) { banner('bad','เครื่องนี้ไม่มีระบบอ่านออกเสียง','ปุ่มฟังต้นแบบจะไม่มีเสียง'); voicesChecked=true; return; }
   pickVoice();
+  dlog('เสียง','เสียงจีนในเครื่อง: '+(zhVoiceList.join(' · ')||'ไม่พบ')+' · เสียงชาย: '+(zhVoiceM?zhVoiceM.name:'ไม่มี → ใช้เสียงหญิงแบบทุ้ม'));
   if(!zhVoice && voicesChecked) banner('warn','ยังไม่พบเสียงภาษาจีนในเครื่อง','กดดูวิธีติดตั้ง', 'วิธีติดตั้ง', ()=>openM('mTts'));
   voicesChecked=true;
 }
@@ -4330,8 +4353,9 @@ function speak(text, done, rate){
   if(!zhVoice) pickVoice();
   const rt = rate || S.settings.rate;          // ส่งความเร็วมาชั่วคราวได้ ค่าที่ตั้งไว้ไม่เปลี่ยน
   const u=new SpeechSynthesisUtterance(String(text).replace(/[A-Za-z]+/g,''));
-  u.lang='zh-CN'; u.rate=rt; u.pitch=1;
-  if(zhVoice) u.voice=zhVoice;
+  const vf=voiceFor(String(text));
+  u.lang='zh-CN'; u.rate=rt; u.pitch = vf.male && vf.fake ? 0.62 : 1;
+  if(vf.v) u.voice=vf.v;
   speaking=true;
   let fired=false;
   const fin=()=>{ if(fired) return; fired=true; speaking=false; done&&done(); };
@@ -9054,6 +9078,11 @@ function renderSettings(){
   $('#swRecall').textContent=S.settings.recallStrict?'เปิด':'ปิด'; $('#swRecall').classList.toggle('on',!!S.settings.recallStrict);
   $('#swPretest').textContent=S.settings.pretest?'เปิด':'ปิด'; $('#swPretest').classList.toggle('on',!!S.settings.pretest);
   $$('#goalChips .chip').forEach(c=>c.classList.toggle('on', +c.dataset.g===(S.settings.coachGoal||2)));
+  $$('#voiceChips .chip').forEach(c=>c.classList.toggle('on', c.dataset.v===(S.settings.voiceMode||'mix')));
+  pickVoice();
+  $('#voiceNote').innerHTML = zhVoiceM
+    ? 'เครื่องนี้มีเสียงชาย: '+esc(zhVoiceM.name)+' · ฟังคนพูดหลายแบบช่วยให้หูชินกับเสียงจริง'
+    : 'เครื่องนี้ยังไม่มีเสียงผู้ชายภาษาจีน ตอนนี้ใช้เสียงผู้หญิงแบบทุ้มลงแทน · ถ้าอยากได้เสียงชายจริงบน iPhone: <b>ตั้งค่า → การช่วยการเข้าถึง → เนื้อหาที่พูด → เสียง → จีน (จีนแผ่นดินใหญ่) → ดาวน์โหลด Li-mu</b> แล้วปิดเปิดแอปใหม่';
   $('#swPy').textContent=S.settings.pyFirst?'เปิด':'ปิด'; $('#swPy').classList.toggle('on',!!S.settings.pyFirst);
   $('#swFocus').textContent=S.settings.focusTravel?'เปิด':'ปิด'; $('#swFocus').classList.toggle('on',!!S.settings.focusTravel);
   $$('#newChips .chip').forEach(c=>c.classList.toggle('on', +c.dataset.n===(S.settings.newPerDay||8)));
@@ -9064,6 +9093,7 @@ $('#swAuto').onclick=()=>{ S.settings.autoListen=!S.settings.autoListen; save();
 $('#swVib').onclick =()=>{ S.settings.vibrate=!S.settings.vibrate; save(); renderSettings(); vib(30); };
 $('#swStrict').onclick=()=>{ S.settings.coachStrict=!S.settings.coachStrict; save(); renderSettings(); };
 $('#swRecall').onclick=()=>{ S.settings.recallStrict=!S.settings.recallStrict; save(); renderSettings(); };
+$$('#voiceChips .chip').forEach(c=>c.onclick=()=>{ S.settings.voiceMode=c.dataset.v; voiceLastText=''; voiceIsMale=(c.dataset.v!=='m'); save(); renderSettings(); speak('你好，欢迎光临'); });
 $('#swPy').onclick=()=>{ S.settings.pyFirst=!S.settings.pyFirst; save(); renderSettings(); };
 $('#swFocus').onclick=()=>{ S.settings.focusTravel=!S.settings.focusTravel; save(); renderSettings(); renderHome(); dlog('ตั้งค่า','โฟกัสเที่ยว '+(S.settings.focusTravel?'เปิด':'ปิด')); };
 $$('#newChips .chip').forEach(c=>c.onclick=()=>{ S.settings.newPerDay=+c.dataset.n; save(); renderSettings(); });
