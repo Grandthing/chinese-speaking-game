@@ -202,6 +202,13 @@ h2{font-size:1.15rem;margin:1.5rem 0 .5rem}
 .pybig.long{font-size:1.6rem}
 .zhsmall{font-size:1.05rem;opacity:.65}
 .pairVs{margin-top:.35rem;font-size:.9rem;color:var(--t3)}
+.glossbox{margin-top:.45rem}
+.glossbtn{font:inherit;font-size:.85rem;background:none;border:1px solid var(--rule);color:var(--t1);border-radius:1rem;padding:.2rem .7rem;cursor:pointer}
+.glossbox.on .glossbtn{opacity:.6}
+.gloss2{display:none;flex-wrap:wrap;gap:.3rem .5rem;justify-content:center;margin-top:.4rem;font-size:.9rem;color:var(--muted)}
+.glossbox.on .gloss2{display:flex}
+.gloss2 span{border:1px solid var(--rule);background:var(--card);border-radius:.45rem;padding:.12rem .45rem;white-space:nowrap}
+.gloss2 b{color:var(--ink)}
 .pairVs .zh{font-weight:700;color:var(--ink)}
 .pairVs .zh.vs{text-decoration:line-through;text-decoration-color:var(--bad)}
 .pairTip{margin-top:.5rem;font-size:.85rem;color:var(--t3);text-align:left;line-height:1.5}
@@ -367,6 +374,7 @@ td.r,th.r{text-align:right}
       <div class="row"><b class="grow">🌳 ต้นไม้คำเที่ยว</b><span class="small muted" id="tcSub"></span></div>
       <div class="tccount"><span id="tcCount">0</span><span>🗣️ ประโยคที่พูดเองได้</span></div>
       <button class="btn" id="btnTreeOpen" style="margin-top:.5rem">🌳 ดูต้นไม้ · เรียนคำใหม่</button>
+      <button class="btn ghost" id="btnTreeNext" style="margin-top:.45rem;white-space:normal;flex-direction:column" hidden></button>
     </div>
     <div class="card coachcard" id="coachCard">
       <div class="row"><b class="grow">🎯 โค้ชวันนี้</b><span class="small" id="ccStreak"></span></div>
@@ -470,6 +478,7 @@ td.r,th.r{text-align:right}
       <div class="small muted" id="trSub" style="text-align:center"></div>
       <div class="small" id="trToday" style="text-align:center;margin-top:.35rem"></div>
       <button class="btn" id="btnTreeGo" style="margin-top:.7rem">▶ เรียนวันนี้ (15 นาที)</button>
+      <button class="btn ghost" id="btnTreeNext2" style="margin-top:.45rem;white-space:normal;flex-direction:column" hidden></button>
       <button class="btn ghost sm" id="btnTreeOnly" style="margin-top:.45rem;width:100%">➕ เรียนคำใหม่อย่างเดียว (ครั้งละ 4 คำ)</button>
     </div>
     <p class="sub">🟢 จำได้ (ทวนผ่านวันถัดไป) · 🟠 กำลังจำ · ⚪ ยังไม่เรียน — ประโยค = โครง🟢 × คำ🟢 ที่ใช้คู่กันได้</p>
@@ -698,6 +707,7 @@ td.r,th.r{text-align:right}
     </div>
     <button class="btn" id="btnCoachBreak">🍅 พัก 5 นาที แล้วเริ่มอีกรอบ</button>
     <button class="btn" id="btnCoachAgain" hidden>▶ เริ่มรอบใหม่</button>
+    <button class="btn ghost" id="btnCoachLevel" style="margin-top:.5rem;white-space:normal;flex-direction:column" hidden></button>
     <button class="btn ghost" id="btnCoachHome" style="margin-top:.5rem">กลับหน้าแรก</button>
   </section>
 
@@ -3299,7 +3309,7 @@ const MILESTONES = [
 /* ============================================================
    2.5 บันทึกปัญหา (diagnostics) — ไว้ส่งให้ผู้พัฒนาดูเวลาไมค์มีปัญหา
    ============================================================ */
-const BUILD='2026-10-02c';                     // เปลี่ยนทุกครั้งที่แก้ไฟล์ จะได้รู้ว่า log มาจากรุ่นไหน
+const BUILD='2026-10-02d';                     // เปลี่ยนทุกครั้งที่แก้ไฟล์ จะได้รู้ว่า log มาจากรุ่นไหน
 const DIAG=[], STUCK={}, T0=Date.now();
 /* log ปัญหาเก็บลงเครื่องด้วย: iPhone ปิดแอปหรือรีเฟรชแล้ว log เก่ายังอยู่ ส่งย้อนหลังได้ */
 const DKEY='zhgame-diag', DIAG_MAX=2500;
@@ -6052,6 +6062,7 @@ function coachWeakToday(n){
     .filter(r=>r.it).slice(0, n||5);
 }
 function renderCoachDone(ms){
+  { const nl=S.settings.focusTravel ? treeNextLevelHTML() : ''; $('#btnCoachLevel').hidden=!nl; $('#btnCoachLevel').innerHTML=nl; }
   const day=coachDay(), goal=S.settings.coachGoal||2, streak=coachStreak();
   const reached=day.rounds>=goal;
   $('#cdIcon').textContent = reached ? '🏆' : '🍅';
@@ -7469,6 +7480,88 @@ function bigWordHTML(hanzi, pinyin, marked){
   const long=String(pinyin||'').length>22;
   return '<span class="pybig'+(long?' long':'')+'">'+pyHTML(pinyin)+'</span><div class="zh zhsmall">'+(marked||esc(hanzi))+'</div>';
 }
+/* ---- 🔍 แปลทีละคำ: คำที่ใช้บ่อยก่อน (ยาวสุดก่อน) ไม่เจอค่อยแปลทีละตัวอักษร ---- */
+const WORD_TH={'你好':'สวัสดี','谢谢':'ขอบคุณ','不好意思':'ขอโทษนะ','好的':'โอเค','不用':'ไม่ต้อง','看看':'ดูๆ','随便':'ตามสบาย','服务员':'พนักงาน','美女':'สาวสวย','帅哥':'หนุ่มหล่อ',
+'老板':'เถ้าแก่','买单':'เช็กบิล','结账':'เช็กบิล','等一下':'รอเดี๋ยว','一下':'สักหน่อย','稍等':'รอแป๊บ','听不懂':'ฟังไม่เข้าใจ','一点':'นิดหน่อย','一点点':'นิดเดียว',
+'便宜':'ถูก (ราคา)','泰国':'ประเทศไทย','泰国人':'คนไทย','中文':'ภาษาจีน','不好':'ไม่ดี','只会':'ทำได้แค่','这个':'อันนี้','那个':'อันนั้น','哪个':'อันไหน','牛肉':'เนื้อวัว','米饭':'ข้าวสวย','饺子':'เกี๊ยว',
+'包子':'ซาลาเปา','青菜':'ผักเขียว','火锅':'หม้อไฟ','猪肉':'หมู','鸡肉':'ไก่','我想':'ฉันอยาก','想吃':'อยากกิน','想去':'อยากไป','热水':'น้ำร้อน','奶茶':'ชานม','咖啡':'กาแฟ','啤酒':'เบียร์','可乐':'โค้ก',
+'不要':'ไม่เอา','我要':'ฉันเอา','香菜':'ผักชี','微辣':'เผ็ดน้อย','大的':'อันใหญ่','小的':'อันเล็ก','别的':'อย่างอื่น','颜色':'สี','袋子':'ถุง','门票':'ตั๋วเข้าชม','充电宝':'พาวเวอร์แบงก์','充电':'ชาร์จแบต',
+'球拍':'ไม้แบด','羽毛球':'ลูกแบด','厕所':'ห้องน้ำ','洗手间':'ห้องน้ำ','卫生间':'ห้องน้ำ','地铁站':'สถานีรถไฟใต้ดิน','地铁':'รถไฟใต้ดิน','熊猫':'แพนด้า','基地':'ศูนย์','入口':'ทางเข้า','出口':'ทางออก',
+'酒店':'โรงแรม','这里':'ที่นี่','这儿':'ที่นี่','在这':'ที่นี่','哪儿':'ที่ไหน','哪里':'ที่ไหน','在哪儿':'อยู่ที่ไหน','超市':'ซูเปอร์มาร์เก็ต','商场':'ห้าง','火车站':'สถานีรถไฟ','机场':'สนามบิน',
+'扫码':'สแกนจ่าย','刷卡':'รูดบัตร','拍照':'ถ่ายรูป','打包':'ห่อกลับ','苹果':'แอปเปิ้ล','香蕉':'กล้วย','橘子':'ส้ม','葡萄':'องุ่น','芒果':'มะม่วง','草莓':'สตรอว์เบอร์รี','桃子':'ลูกพีช','猕猴桃':'กีวี',
+'荔枝':'ลิ้นจี่','西瓜':'แตงโม','土豆':'มันฝรั่ง','西红柿':'มะเขือเทศ','黄瓜':'แตงกวา','白菜':'ผักกาดขาว','辣椒':'พริก','鸡蛋':'ไข่ไก่','豆腐':'เต้าหู้','麻婆':'หมาโผ (ชื่อเมนู)','回锅肉':'หมูผัดสองรอบ',
+'宫保':'กงเป่า (ชื่อเมนู)','鸡丁':'ไก่หั่นเต๋า','抄手':'เกี๊ยวน้ำ','冰粉':'ปิงเฝิ่น','豆花':'เต้าฮวย','串串':'ไม้เสียบ','串串香':'ชวนชวนเซียง','菜市场':'ตลาดสด','药店':'ร้านขายยา','宽窄巷子':'ตรอกกว้าง-แคบ',
+'春熙路':'ถนนชุนซี','锦里':'จิ่นหลี่ (ชื่อถนน)','房卡':'คีย์การ์ด','行李':'กระเป๋าเดินทาง','多少钱':'เท่าไหร่','多少':'เท่าไร','一共':'ทั้งหมด','什么':'อะไร','推荐':'แนะนำ','怎么':'อย่างไร','这些':'พวกนี้',
+'够了':'พอแล้ว','没有':'ไม่มี','带走':'ห่อกลับ','微信':'WeChat','支付宝':'Alipay','可以':'ได้','几点':'กี่โมง','关门':'ปิด (ร้าน)','新鲜':'สด','抹零':'ปัดเศษ','帮我':'ช่วยฉัน',
+'好吃':'อร่อย','房间':'ห้อง','退房':'เช็กเอาต์','密码':'รหัส','寄存':'ฝากของ','门口':'หน้าประตู','马上':'ทันที','叫个车':'เรียกรถ','迷路':'หลงทาง','舒服':'สบาย','阿姨':'ป้า/น้า',
+'现在':'ตอนนี้','你们':'พวกคุณ','你们家':'ร้านคุณ','招牌':'เมนูเด็ด','卖得':'ขายได้','最好':'ดีที่สุด','特色':'ของขึ้นชื่อ','味道':'รสชาติ','还是':'หรือ','大家':'ทุกคน','一般':'ปกติ',
+'少油':'น้ำมันน้อย','分开':'แยก','酱料':'ซอส/เครื่องปรุง','师傅':'พี่ (คนขับ/ช่าง)','竹签':'ไม้จิ้ม','手套':'ถุงมือ','炸鸡':'ไก่ทอด','烤串':'ปิ้งย่างเสียบไม้',
+'煎饼果子':'เครปจีน','煎饼':'แผ่นแป้งทอด','肉夹馍':'เบอร์เกอร์จีน','烤冷面':'บะหมี่เย็นย่าง','臭豆腐':'เต้าหู้เหม็น','水果':'ผลไม้','不辣':'ไม่เผ็ด','冰的':'แบบเย็น','热的':'แบบร้อน','不辣的':'แบบไม่เผ็ด',
+'不用了':'ไม่ต้องแล้ว','就在':'ตรงที่','订了':'จองแล้ว',
+'再来':'ขออีก',
+'有点':'นิดหน่อย','太咸了':'เค็มไป','很甜':'หวานมาก','拼一下':'คละกันหน่อย','热一下':'อุ่นหน่อย','切一下':'หั่นหน่อย','尝一下':'ชิมหน่อย','试一下':'ลองหน่อย','看一下':'ดูหน่อย'};
+const CHAR_TH={'你':'คุณ','好':'ดี','谢':'ขอบคุณ','不':'ไม่','意':'ความหมาย','思':'คิด','的':'(ของ/แบบ)','行':'ได้เลย','嘞':'(คำลงท้าย)','吧':'(นะ)','用':'ใช้','了':'(แล้ว)','我':'ฉัน','就':'แค่/ก็',
+'看':'ดู','随':'ตาม','便':'สะดวก','服':'บริการ','务':'งาน','员':'คน (ทำงาน)','美':'สวย','女':'ผู้หญิง','帅':'หล่อ','哥':'พี่ชาย','老':'แก่/เก่า','板':'แผ่น','买':'ซื้อ','单':'ใบ/รายการ',
+'结':'สรุป','账':'บัญชี','等':'รอ','一':'หนึ่ง','下':'(สักครั้ง)','稍':'นิดหน่อย','哈':'(คำลงท้าย)','听':'ฟัง','懂':'เข้าใจ','再':'อีก','说':'พูด','遍':'รอบ','次':'ครั้ง','慢':'ช้า','点':'นิด/สั่ง/โมง',
+'太':'เกินไป','贵':'แพง','宜':'เหมาะ','呗':'(นะ)','能':'สามารถ','吗':'ไหม (คำถาม)','是':'คือ/เป็น','泰':'ไทย','国':'ประเทศ','人':'คน','中':'กลาง/จีน','文':'ภาษา','只':'แค่','会':'เป็น/ทำได้',
+'对':'ถูก/ใช่','这':'นี้','个':'อัน (ลักษณนาม)','那':'นั้น','牛':'วัว','肉':'เนื้อ','面':'บะหมี่','担':'หาบ','米':'ข้าว','饭':'ข้าว','饺':'เกี๊ยว','子':'(ท้ายคำนาม)','包':'ห่อ/ซาลาเปา','青':'เขียว',
+'菜':'ผัก/อาหาร','火':'ไฟ','锅':'หม้อ','猪':'หมู','鸡':'ไก่','鱼':'ปลา','想':'อยาก','吃':'กิน','水':'น้ำ','瓶':'ขวด','热':'ร้อน','茶':'ชา','奶':'นม','咖':'(กา)','啡':'(แฟ)','啤':'(เบียร์)',
+'酒':'เหล้า','可':'ได้','乐':'สนุก','辣':'เผ็ด','要':'เอา','放':'ใส่','香':'หอม','冰':'น้ำแข็ง/เย็น','糖':'น้ำตาล','微':'นิดเดียว','两':'สอง','三':'สาม','十':'สิบ','块':'หยวน','二':'สอง','五':'ห้า',
+'百':'ร้อย','大':'ใหญ่','小':'เล็ก','别':'อื่น','颜':'สี','色':'สี','袋':'ถุง','门':'ประตู','票':'ตั๋ว','充':'เติม','电':'ไฟฟ้า','宝':'ของมีค่า','球':'ลูกบอล','拍':'ไม้ตี/ถ่าย','羽':'ขนนก','毛':'ขน',
+'鞋':'รองเท้า','双':'คู่','厕':'ห้องน้ำ','所':'สถานที่','洗':'ล้าง','手':'มือ','间':'ห้อง','卫':'อนามัย','生':'ชีวิต','地':'พื้นดิน','铁':'เหล็ก','站':'สถานี','熊':'หมี','猫':'แมว','基':'ฐาน','入':'เข้า',
+'口':'ทาง/ปาก','出':'ออก','店':'ร้าน','里':'ใน','儿':'(ม้วนลิ้น)','在':'อยู่','超':'เหนือ','市':'ตลาด','商':'การค้า','场':'สถานที่','车':'รถ','机':'เครื่อง','扫':'สแกน','码':'รหัส','刷':'รูด','卡':'บัตร',
+'试':'ลอง','照':'ภาพ','打':'ทำ/ตี','苹':'(แอปเปิ้ล)','果':'ผลไม้','蕉':'กล้วย','橘':'ส้ม','葡':'(องุ่น)','萄':'(องุ่น)','芒':'(มะม่วง)','草':'หญ้า','莓':'เบอร์รี','桃':'ลูกพีช','猕':'(ลิง)','猴':'ลิง',
+'荔':'(ลิ้นจี่)','枝':'กิ่ง','西':'ตะวันตก','瓜':'แตง','土':'ดิน','豆':'ถั่ว','红':'แดง','柿':'พลับ','黄':'เหลือง','白':'ขาว','椒':'พริก','蛋':'ไข่','麻':'ชา (ลิ้น)','婆':'ยาย','腐':'(เต้าหู้)','回':'กลับ',
+'宫':'วัง','保':'ปกป้อง','丁':'ชิ้นเต๋า','抄':'ห่อ','粉':'แป้ง/วุ้น','花':'ดอกไม้','串':'ไม้เสียบ','尝':'ชิม','药':'ยา','宽':'กว้าง','窄':'แคบ','巷':'ตรอก','春':'ฤดูใบไม้ผลิ','熙':'(ชื่อ)','路':'ถนน',
+'锦':'(ชื่อ)','房':'ห้อง','李':'(สัมภาระ)','碗':'ชาม','葱':'ต้นหอม','蒜':'กระเทียม','竹':'ไผ่','签':'ไม้จิ้ม','套':'ปลอก/ถุง','甜':'หวาน','很':'มาก','咸':'เค็ม','酸':'เปรี้ยว','有':'มี','脆':'กรอบ',
+'嫩':'นุ่ม','糯':'เหนียว','炸':'ทอด','烤':'ย่าง','煎':'จี่/ทอด','饼':'แผ่นแป้ง','夹':'สอดไส้','馍':'ขนมปังจีน','冷':'เย็น','臭':'เหม็น','鲜':'สด','切':'หั่น','共':'รวม','多':'มาก','少':'น้อย','钱':'เงิน',
+'什':'(อะไร)','么':'(อะไร)','推':'ดัน','荐':'แนะนำ','怎':'อย่างไร','卖':'ขาย','些':'พวก','够':'พอ','没':'ไม่มี','带':'พา/พก','走':'ไป','信':'จดหมาย','以':'(ได้)','支':'จ่าย','付':'จ่าย','张':'ใบ',
+'几':'กี่','关':'ปิด','停':'จอด','新':'ใหม่','抹':'ลบ/ตัด','零':'เศษ/ศูนย์','帮':'ช่วย','挑':'เลือก','给':'ให้','位':'ท่าน','俩':'สองคน','来':'ขอ (ตอนสั่ง) / มา','份':'ที่ (ลักษณนาม)','真':'จริง',
+'订':'จอง','预':'ล่วงหน้า','退':'คืน','密':'ลับ','寄':'ฝาก','存':'เก็บ','马':'ม้า','上':'บน/ขึ้น','到':'ถึง','叫':'เรียก','迷':'หลง','舒':'สบาย','阿':'(คำเรียก)','姨':'ป้า/น้า','半':'ครึ่ง',
+'斤':'จิน (ครึ่งกิโล)','拼':'คละ','现':'ตอนนี้','们':'(พวก)','家':'บ้าน/ร้าน','招':'ป้าย','牌':'ป้าย','哪':'ไหน','得':'(เชื่อมคำ)','最':'ที่สุด','特':'พิเศษ','味':'รส','道':'ทาง/รส','还':'ยัง/หรือ',
+'般':'แบบ','盘':'จาน','油':'น้ำมัน','盐':'เกลือ','酱':'ซอส','分':'แยก','开':'เปิด/แยก','装':'ใส่','料':'เครื่องปรุง','独':'เดี่ยว','淋':'ราด','去':'ไป','师':'ช่าง/ครู','傅':'(ช่าง)','杯':'แก้ว'};
+/* ตัดคำ: ยาวสุดก่อน ห้ามคืนทั้งประโยค (ต้องแตกเป็นส่วน) · พินอินเอาจากพยางค์ของประโยคตามตำแหน่งตัวอักษร */
+function glossParts(hanzi, pinyin){
+  const chars=[...String(hanzi)].filter(c=>/[一-鿿]/.test(c));
+  const whole=chars.join('');
+  const raw=String(pinyin||'').split(/[\s,，.。?？!！…]+/).filter(Boolean);
+  let syl=[], j=0;
+  chars.forEach((c,i)=>{                                // เสียง儿 (nǎr / zhèr) รวมอยู่ในพยางค์ก่อนหน้า
+    if(c==='儿' && i>0 && /r$/.test(syl[i-1]||'') && raw.length<chars.length) syl.push('');
+    else syl.push(raw[j++]||'');
+  });
+  if(j!==raw.length || syl.some((x,i)=>!x && chars[i]!=='儿')) syl=chars.map(c=>CHAR_PY[c]||'');   // นับไม่ตรง → ใช้พจนานุกรม
+  const out=[]; let i=0;
+  while(i<chars.length){
+    let hit=null;
+    for(let L=Math.min(5, chars.length-i); L>=2; L--){
+      const w=chars.slice(i,i+L).join('');
+      if(w===whole) continue;                            // ห้ามคืนทั้งคำ ต้องแตกเป็นส่วน
+      if(WORD_TH[w]){ hit={w:w, th:WORD_TH[w], L:L}; break; }
+    }
+    if(!hit){ const c=chars[i]; hit={w:c, th:CHAR_TH[c]||'', L:1}; }
+    out.push({w:hit.w, py:syl.slice(i,i+hit.L).filter(Boolean).join(' '), th:hit.th});
+    i+=hit.L;
+  }
+  return out;
+}
+function glossHTML(hanzi, pinyin){
+  if([...String(hanzi)].filter(c=>/[一-鿿]/.test(c)).length<2) return '';
+  const ps=glossParts(hanzi, pinyin);
+  return '<div class="gloss2">'+ps.filter(p=>p.py || p.w!=='儿').map(p=>'<span><b>'+esc(S.settings.pyFirst?p.py:p.w)+'</b> = '+esc(p.th||'—')+'</span>').join('')+'</div>';
+}
+/* ปุ่มเปิด/ปิด (จำค่าไว้) — ไม่ต้องแปลตลอดก็ได้ */
+function glossToggleHTML(hanzi, pinyin){
+  const g=glossHTML(hanzi, pinyin); if(!g) return '';
+  const open=!!S.settings.glossOpen;
+  return '<div class="glossbox'+(open?' on':'')+'"><button class="glossbtn" type="button">🔍 แปลทีละคำ</button>'+g+'</div>';
+}
+document.addEventListener('click', e=>{
+  const b=e.target.closest('.glossbtn'); if(!b) return;
+  e.preventDefault(); e.stopPropagation();
+  S.settings.glossOpen=!S.settings.glossOpen; save();
+  $$('.glossbox').forEach(x=>x.classList.toggle('on', !!S.settings.glossOpen));
+}, true);
 /* โครงเต็ม + คำนาม เรียงตามประโยคจริง: "zhè ge + … duō shao qián" · "yǒu … ma + cài dān" · "lái … + niú ròu miàn" */
 function treeStructHTML(F, nk){
   const fr = S.settings.pyFirst ? F.py : F.f;
@@ -7571,21 +7664,20 @@ function treeDueList(){
 function treeGate(){
   const due=treeDueList().length;
   if(due>30) return 'วันนี้ทบทวนก่อน ของเก่ายังไม่แน่น (ค้างทวน '+due+' ข้อ)';
-  const rt=treeReviewRate3();
-  if(rt!==null && rt<0.6) return 'ของเก่ายังไม่แน่น (ทวนผ่าน 3 วันล่าสุด '+Math.round(rt*100)+'%) — วันนี้คำใหม่ 2 คำ';
   return '';
 }
 function treeFree(k){ const it=TREE[k]; return !!it && it.kind==='chunk' && !!it.fid && treeLearned(it.fid); }
 function treeNewLeft(){ return Math.max(0, (S.settings.newPerDay||8) - treeDayRec().n); }
 /* เลือกคำที่จะเรียนรอบนี้ (สูงสุด 4 = 1 ก้อน): คำที่ค้างเรียนไม่จบก่อน (ไม่กินโควตา) แล้วสลับ ลำต้น : กิ่ง = 1 : 1 */
-function treePickChunk(n){
+/* force = กด "ไปเลเวลต่อไป": ไม่สนโควตา/ประตูกั้น */
+function treePickChunk(n, force){
   n=n||4;
   const out=[];
   const pending=Object.keys(S.tree||{}).filter(k=>TREE[k] && (S.tree[k].stage||0)<5).sort((a,b)=>(S.tree[a].first||0)-(S.tree[b].first||0));
   pending.forEach(k=>{ const it=TREE[k]; if(it.kind==='frame' && !treePartsReady(it.frame)) return; if(out.length<n) out.push(k); });   // ประโยคที่ค้าง: รอให้คำประกอบผ่านก่อน
   let quota=treeNewLeft();
-  if(treeDueList().length>30) quota=0;
-  else if(treeGate()) quota=Math.min(quota, 2);
+  if(force) quota=n;
+  else if(treeDueList().length>30) quota=0;
   const s1=TREE_STAGE1.filter(k=>TREE[k] && !treeRec(k));
   const br=[];
   TREE_FRAMES.forEach(F=>{
@@ -7695,27 +7787,54 @@ function treeStep(t, k, extra){
   s.where=it.where||'';
   return s;
 }
+/* เลเวล = ทุก 4 คำที่เริ่มเรียน (1 ก้อน) */
+const TREE_LV=4;
+function treeStarted(){ return Object.keys(S.tree||{}).filter(k=>TREE[k]).length; }
+function treeLevel(){ return Math.floor(treeStarted()/TREE_LV)+1; }
+function treeNextLevelHTML(){
+  const ks=treePickChunk(TREE_LV, true);
+  if(!ks.length) return '';
+  return '⏭ ไปเลเวล '+(treeLevel()+1)+' · คำใหม่ '+ks.length+' คำ<small style="font-weight:400;opacity:.8;display:block">'+esc(ks.map(k=>pyOf(k)).join(' · '))+'</small>';
+}
+/* คำเก่ามาผสม: คำที่เรียนผ่านแล้ว (ไม่ใช่วันนี้) ที่ไม่ได้ถูกหยิบมาทวนนานที่สุด / ยังไม่แน่นมาก่อน */
+function treeOldPick(n, exclude){
+  const td=today();
+  const ks=Object.keys(S.tree||{}).filter(k=>TREE[k] && treeLearned(k) && (exclude||[]).indexOf(k)<0 && S.tree[k].firstDay!==td);
+  ks.sort((a,b)=>((S.tree[a].oldAt||0)-(S.tree[b].oldAt||0)) || ((S.tree[a].box||0)-(S.tree[b].box||0)) || (Math.random()-0.5));
+  const out=[];
+  ks.forEach(k=>{ if(out.length>=n) return; const st=treeStep('quiz',k,{old:true}); if(st){ S.tree[k].oldAt=Date.now(); out.push(st); } });
+  return out;
+}
+/* คิวก้อนใหม่: ดู+นึก ของคำใหม่ แทรกคำเก่า 1 ข้อหลังคำใหม่แต่ละคำ (สูงสุด 3) */
+function treeChunkQueue(keys){
+  const old=treeOldPick(Math.min(3, keys.length), keys);
+  const q=[];
+  keys.forEach((k,i)=>{ q.push(treeStep('see',k)); q.push(treeStep('recall',k)); if(old[i]) q.push(old[i]); });
+  if(old.length) dlog('tree','ผสมคำเก่า: '+old.map(x=>x.k).join(' · '));
+  return q;
+}
 function treeInsert(pos, step){ if(!step) return; Q.splice(Math.min(Q.length, pos), 0, step); }
-async function startTreeLearn(label){
+async function startTreeLearn(label, force){
   if(HAS_SR && !manualMode && micPerm!=='granted'){
     const st=await ensureMic();
     if(st==='denied'){ openM('mMic'); return false; }
   }
-  return treeStartSync(label);
+  return treeStartSync(label, force);
 }
-function treeStartSync(label){
-  const keys=treePickChunk(4);
+function treeStartSync(label, force){
+  const keys=treePickChunk(4, force);
   if(!keys.length){
+    if(force){ toast('🌳 ไม่มีคำใหม่ที่เปิดแล้ว', 'ทวนให้ 🟢 ก่อน กิ่งใหม่จะเปิดเอง', 2600); return false; }
     const why=treeGate() || (treeNewLeft()<=0 ? 'ครบโควตาคำใหม่วันนี้แล้ว ('+(S.settings.newPerDay||8)+' คำ)' : 'ยังไม่มีคำให้เรียน');
     dlog('tree','ไม่มีคำใหม่: '+why+' → ฝึกคำที่เรียนแล้วให้คล่อง');
     return treeStartDrill(label, why);
   }
-  TL={keys:keys, loops:{}, rc:{}, done:{}, fail:{}, quiz:false, label:label||'', chunks:1};
-  const q=[]; keys.forEach(k=>{ q.push(treeStep('see',k)); q.push(treeStep('recall',k)); });
+  TL={keys:keys, loops:{}, rc:{}, done:{}, fail:{}, quiz:false, label:label||'', chunks:1, force:!!force};
+  const q=treeChunkQueue(keys);
   MODE='tree'; levelId='tree'; Q=q; qi=0; tries=0; sessUtter=0; sessStars=0; bestPer=[];
   playing=true; t0=Date.now();
   const d=today(); if(!S.stats.days.includes(d)) S.stats.days.push(d);
-  dlog('tree','เริ่มเรียนก้อนใหม่ ('+(label||'อิสระ')+'): '+keys.join(' · ')+' · โควตาเหลือ '+treeNewLeft());
+  dlog('tree','เริ่มเรียนก้อนใหม่ ('+(label||'อิสระ')+(force?' · ข้ามโควตา':'')+'): '+keys.join(' · ')+' · โควตาเหลือ '+treeNewLeft()+' · เลเวล '+treeLevel());
   requestWake(); show('scr-play'); renderMode();
   document.body.classList.toggle('hidethai', !S.settings.showThai);
   renderItem(true);
@@ -7748,22 +7867,22 @@ function treeStartDrill(label, why){
   MODE='tree'; levelId='tree'; Q=out; qi=0; tries=0; sessUtter=0; sessStars=0; bestPer=[];
   playing=true; t0=Date.now();
   dlog('tree','ฝึกให้คล่อง '+out.length+' ข้อ ('+(why||'')+')');
-  toast('🌳 ครบคำใหม่วันนี้แล้ว', 'ช่วงนี้ฝึกคำที่เรียนแล้วให้คล่อง', 2400);
+  toast('🌳 ครบคำใหม่วันนี้แล้ว', 'ช่วงนี้ฝึกคำเดิมให้คล่อง · อยากได้คำใหม่ กด ⏭ ไปเลเวลต่อไป', 2800);
   requestWake(); show('scr-play'); renderMode();
   document.body.classList.toggle('hidethai', !S.settings.showThai);
   renderItem(true);
   return true;
 }
 function treeNextChunk(){                          // ในโค้ช: เวลายังเหลือ → ก้อนถัดไป
-  const keys=treePickChunk(4);
+  const keys=treePickChunk(4, TL&&TL.force);
   if(!keys.length) return false;
   TL=Object.assign(TL||{}, {keys:keys, loops:{}, rc:{}, done:{}, fail:{}, quiz:false, chunks:((TL&&TL.chunks)||0)+1});
-  keys.forEach(k=>{ Q.push(treeStep('see',k)); Q.push(treeStep('recall',k)); });
+  treeChunkQueue(keys).forEach(x=>Q.push(x));
   dlog('tree','ก้อนที่ '+TL.chunks+': '+keys.join(' · '));
   renderItem(true);                                 // qi ชี้ที่ข้อแรกของก้อนใหม่อยู่แล้ว (เลยท้ายคิวเดิมมา 1)
   return true;
 }
-const TSTEP_LABEL={see:'ดู ฟัง แล้วพูดตาม', recall:'นึกเอง', use:'ใช้ในประโยค', quiz:'ด่านรวม', drill:'ฝึกให้คล่อง'};
+const TSTEP_LABEL={see:'ดู ฟัง แล้วพูดตาม', recall:'นึกเอง', use:'ใช้ในประโยค', quiz:'ด่านรวม', drill:'ฝึกให้คล่อง', old:'🔁 ทวนคำเก่า'};
 function renderTree(it){
   const w=TREE[it.k]; if(!w){ next(); return; }
   tries=0;
@@ -7776,7 +7895,7 @@ function renderTree(it){
   }
   const cat=TREE_CAT[w.cat]||{icon:'',name:''};
   const nRc=(TL&&TL.rc[it.k])||0;
-  $('#pKind').textContent='🌳 '+(w.cat==='frame'?'':cat.icon+' ')+cat.name+' · '+TSTEP_LABEL[it.drill?'drill':it.t]+
+  $('#pKind').textContent='🌳 '+(w.cat==='frame'?'':cat.icon+' ')+cat.name+' · '+TSTEP_LABEL[it.drill?'drill':it.old?'old':it.t]+
     (it.t==='see'?' ('+Math.min(2,it.pass)+'/2)':'')+(it.t==='recall'?' ('+(nRc+1)+'/3)':'')+(it.again?' · ทวนอีกรอบ':'');
   $('#playBar').style.width=(qi/Q.length*100)+'%';
   $('#playCount').textContent=(qi+1)+'/'+Q.length;
@@ -7790,7 +7909,7 @@ function renderTree(it){
     $('#pHan').innerHTML=bigWordHTML(it.hanzi, it.pinyin);
     $('#pPy').innerHTML=S.settings.pyFirst ? '' : pyHTML(it.pinyin);
     $('#pThai').textContent=it.thaiRead||'';
-    $('#pMean').innerHTML=esc(it.meaning||'')+
+    $('#pMean').innerHTML=esc(it.meaning||'')+glossToggleHTML(it.hanzi, it.pinyin)+
       (w.kind==='frame' ? '<div class="pairVs">🧩 <b>'+treeStructHTML(w.frame, it.u ? it.u.noun.key : w.frame.ex)+'</b></div>'+
         '<div class="pairVs">🌳 โครง '+esc(S.settings.pyFirst?w.frame.py:w.frame.f)+' = '+esc(w.frame.mean)+' · เติมคำอื่นได้อีก</div>' : '')+
       (w.kind==='chunk' ? '<div class="pairVs">🧩 ก้อนคำ — เดี๋ยวจะเอาไปต่อกับคำอื่นเป็นประโยค</div>' : '')+
@@ -7820,6 +7939,8 @@ function treeReveal(it, heardNorm, silent){
   $('#pHan').innerHTML=bigWordHTML(it.hanzi, it.pinyin, markedHTML(it.hanzi, heardNorm||''));
   $('#pPy').innerHTML=S.settings.pyFirst ? '' : pyHTML(it.pinyin);
   $('#pThai').textContent=it.thaiRead||'';
+  $$('#pMean .glossbox').forEach(x=>x.remove());
+  $('#pMean').insertAdjacentHTML('afterbegin', glossToggleHTML(it.hanzi, it.pinyin));
   if(!silent) speak(it.hanzi);                    // ตอบถูกแล้วไม่ต้องฟังซ้ำ (ประหยัด ~1 วิ/ข้อ)
 }
 function treeLog(it, st, r, extra){
@@ -7969,7 +8090,7 @@ function finishTree(){
     const sents=[];
     const pool=Object.keys(S.tree||{}).filter(k=>TREE[k] && treeLearned(k) && (TREE[k].kind==='noun' || TREE[k].kind==='frame'));
     pool.sort(()=>Math.random()-0.5).forEach(k=>{ if(sents.length<2){ const s=treeStep('quiz',k,{sent:true}); if(s && !sents.some(x=>x.hanzi===s.hanzi)) sents.push(s); } });
-    const all=qz.concat(sents).sort(()=>Math.random()-0.5);
+    const all=qz.concat(sents, treeOldPick(1, done)).sort(()=>Math.random()-0.5);
     if(done.length && all.length && !coachTimeUp()){
       all.forEach(s=>Q.push(s));
       dlog('tree','ด่านรวม '+all.length+' ข้อ');
@@ -7982,7 +8103,7 @@ function finishTree(){
   const ms=Date.now()-t0; S.stats.ms+=ms; save(true);
   const nDone=TL?Object.keys(TL.done).length:0;
   endPlay(); MODE='lesson';
-  toast('🌳 เรียนจบ '+nDone+' คำ', 'ประโยคที่พูดเองได้ตอนนี้ '+treeSentenceCount(), 2600);
+  toast('🌳 เรียนจบ '+nDone+' คำ · เลเวล '+treeLevel(), 'ประโยคที่พูดเองได้ '+treeSentenceCount()+' · ไปต่อ กด ⏭ ไปเลเวลต่อไป', 2800);
   openTree(true);
 }
 /* ---------- หน้าจอต้นไม้ ---------- */
@@ -7997,7 +8118,8 @@ function renderTreeScreen(){
   const all=Object.values(TREE);
   const g=all.filter(x=>treeGreen(x.key)).length, o=all.filter(x=>treeColor(x.key)==='o').length;
   $('#trCount').textContent=treeSentenceCount();
-  $('#trSub').textContent='🟢 จำได้ '+g+' · 🟠 กำลังจำ '+o+' · ⚪ ยังไม่เรียน '+(all.length-g-o)+' · จาก '+all.length+' คำ';
+  $('#trSub').textContent='เลเวล '+treeLevel()+' · 🟢 จำได้ '+g+' · 🟠 กำลังจำ '+o+' · ⚪ ยังไม่เรียน '+(all.length-g-o)+' · จาก '+all.length+' คำ';
+  const nl=treeNextLevelHTML(); $('#btnTreeNext2').hidden=!nl; $('#btnTreeNext2').innerHTML=nl;
   const gate=treeGate(), left=treeNewLeft();
   const nx=treeNextHint();
   $('#trToday').innerHTML = esc(gate ? '⛔ '+gate : 'คำใหม่วันนี้เหลือ '+left+'/'+(S.settings.newPerDay||8)+' · ถึงกำหนดทวน '+treeDueList().length+' ข้อ')+
@@ -8042,7 +8164,8 @@ function renderTreeCard(){
   if(!S.settings.focusTravel) return;
   const all=Object.values(TREE), g=all.filter(x=>treeGreen(x.key)).length, o=all.filter(x=>treeColor(x.key)==='o').length;
   $('#tcCount').textContent=treeSentenceCount();
-  $('#tcSub').textContent='🟢 '+g+' · 🟠 '+o+' · ⚪ '+(all.length-g-o)+' คำ';
+  $('#tcSub').textContent='เลเวล '+treeLevel()+' · 🟢 '+g+' · 🟠 '+o+' · ⚪ '+(all.length-g-o);
+  const nl=treeNextLevelHTML(); $('#btnTreeNext').hidden=!nl; $('#btnTreeNext').innerHTML=nl;
 }
 /* ---------- โค้ช "โฟกัสเที่ยว" 15 นาที: ทบทวน 5 · ต้นไม้ 7 · ฟัง 3 ---------- */
 function pronItems(n){
@@ -9207,6 +9330,7 @@ $$('#newChips .chip').forEach(c=>c.onclick=()=>{ S.settings.newPerDay=+c.dataset
 $('#btnTreeOpen').onclick=()=>openTree();
 $('#btnTreeGo').onclick=()=>coachStart(15);
 $('#btnTreeOnly').onclick=()=>startTreeLearn('อิสระ');   // นอกโค้ช: ขอไมค์ก่อนได้ (async)
+$('#btnTreeNext').onclick=$('#btnTreeNext2').onclick=$('#btnCoachLevel').onclick=()=>startTreeLearn('เลเวลต่อไป', true);
 $('#btnCoach15').onclick=()=>coachStart(15);
 let homeMoreOpen=false;
 $('#btnMore').onclick=()=>{ homeMoreOpen=!homeMoreOpen; renderFocusHome(); if(homeMoreOpen) $('#homeMore').scrollIntoView({behavior:'smooth', block:'start'}); };
