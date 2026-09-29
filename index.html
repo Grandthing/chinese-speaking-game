@@ -209,6 +209,7 @@ h2{font-size:1.15rem;margin:1.5rem 0 .5rem}
 .glossbox.on .gloss2{display:flex}
 .gloss2 span{border:1px solid var(--rule);background:var(--card);border-radius:.45rem;padding:.12rem .45rem;white-space:nowrap}
 .gloss2 b{color:var(--ink)}
+.gloss2 .gnew{border-color:var(--t3);background:#FBF1DC}
 .pairVs .zh{font-weight:700;color:var(--ink)}
 .pairVs .zh.vs{text-decoration:line-through;text-decoration-color:var(--bad)}
 .pairTip{margin-top:.5rem;font-size:.85rem;color:var(--t3);text-align:left;line-height:1.5}
@@ -3309,7 +3310,7 @@ const MILESTONES = [
 /* ============================================================
    2.5 บันทึกปัญหา (diagnostics) — ไว้ส่งให้ผู้พัฒนาดูเวลาไมค์มีปัญหา
    ============================================================ */
-const BUILD='2026-10-02e';                     // เปลี่ยนทุกครั้งที่แก้ไฟล์ จะได้รู้ว่า log มาจากรุ่นไหน
+const BUILD='2026-10-02f';                     // เปลี่ยนทุกครั้งที่แก้ไฟล์ จะได้รู้ว่า log มาจากรุ่นไหน
 const DIAG=[], STUCK={}, T0=Date.now();
 /* log ปัญหาเก็บลงเครื่องด้วย: iPhone ปิดแอปหรือรีเฟรชแล้ว log เก่ายังอยู่ ส่งย้อนหลังได้ */
 const DKEY='zhgame-diag', DIAG_MAX=2500;
@@ -6537,13 +6538,13 @@ function lisRender(){
   const it=lisItem(); if(!it){ lisFinish(); return; }
   lisReplays=0; lisDone=false; clearTimeout(lisTimer);
   const typed = it.kind==='num' && !!S.listen.typeMode;
-  $('#lisScene').textContent='👂 '+it.scene;
+  $('#lisScene').textContent='👂 '+it.scene+(it.real ? ' · ของจริง'+(it.nNew ? ' — มีคำใหม่ '+it.nNew+' คำ ฟังคำที่รู้แล้วเดาเอา' : '') : '');
   $('#lisQ').textContent=it.q;
   $('#lisRate').textContent='ความเร็ว '+S.listen.rate.toFixed(1)+'×';
   $('#lisBar').style.width=(lqi/Math.max(1,LQ.length)*100)+'%';
   $('#lisCount').textContent=lisOk+'/'+lisN;
   $('#lisType').classList.toggle('on', !!S.listen.typeMode);
-  $('#lisAns').hidden=true; $('#lisAns').innerHTML='';
+  $('#lisAns').hidden=true; $('#lisAns').innerHTML=''; $('#lisSkip').textContent='ข้าม ›';
   $('#lisInputWrap').hidden=!typed;
   $('#lisChoices').hidden=typed;
   if(typed){ $('#lisInput').value=''; }
@@ -6591,10 +6592,12 @@ function lisAnswer(choice){
     '<div class="stars" style="color:var(--'+(ok?'ok':'bad')+')">'+(ok?(assisted?'✓ ถูก (ฟังซ้ำ)':'✓ ถูก'):'✗ คำตอบคือ '+esc(it.ans))+'</div>'+
     (S.settings.pyFirst
       ? '<div class="py" style="font-size:1.4rem;font-weight:700">'+pyHTML(it.py)+'</div><div class="zh zhsmall">'+esc(it.zh)+'</div>'
-      : '<div class="zh">'+esc(it.zh)+'</div><div class="py">'+pyHTML(it.py)+'</div>')+'<div class="th">'+esc(it.th)+'</div>';
+      : '<div class="zh">'+esc(it.zh)+'</div><div class="py">'+pyHTML(it.py)+'</div>')+'<div class="th">'+esc(it.th)+'</div>'+
+    (it.real ? '<div class="glossbox on">'+glossHTML(it.zh, it.py, treeKnownFn())+'</div>' : '');
   $('#lisCount').textContent=lisOk+'/'+lisN;
   vib(ok?[30,40,30]:140);
-  if(ok && !assisted) lisTimer=setTimeout(lisNext, 700);
+  if(it.real){ $('#lisSkip').textContent='ถัดไป ›'; speak(it.zh, null, L.rate); }   // ของจริง: ให้อ่านคำแปลก่อน กดไปต่อเอง
+  else if(ok && !assisted) lisTimer=setTimeout(lisNext, 700);
   else speak(it.zh, ()=>{ lisTimer=setTimeout(lisNext, ok?700:1400); }, L.rate);
 }
 function lisNext(){
@@ -7598,6 +7601,14 @@ const CHAR_TH={'你':'คุณ','好':'ดี','谢':'ขอบคุณ','不'
 '订':'จอง','预':'ล่วงหน้า','退':'คืน','密':'ลับ','寄':'ฝาก','存':'เก็บ','马':'ม้า','上':'บน/ขึ้น','到':'ถึง','叫':'เรียก','迷':'หลง','舒':'สบาย','阿':'(คำเรียก)','姨':'ป้า/น้า','半':'ครึ่ง',
 '斤':'จิน (ครึ่งกิโล)','拼':'คละ','现':'ตอนนี้','们':'(พวก)','家':'บ้าน/ร้าน','招':'ป้าย','牌':'ป้าย','哪':'ไหน','得':'(เชื่อมคำ)','最':'ที่สุด','特':'พิเศษ','味':'รส','道':'ทาง/รส','还':'ยัง/หรือ',
 '般':'แบบ','盘':'จาน','油':'น้ำมัน','盐':'เกลือ','酱':'ซอส','分':'แยก','开':'เปิด/แยก','装':'ใส่','料':'เครื่องปรุง','独':'เดี่ยว','淋':'ราด','去':'ไป','师':'ช่าง/ครู','傅':'(ช่าง)','杯':'แก้ว'};
+/* คำในประโยคฟังของจริง (คนขาย/โรงแรม/ถามทาง) */
+Object.assign(WORD_TH,{'现金':'เงินสด','八折':'ลด 20%','打八折':'ลด 20%','尾号':'เลขท้าย','手机':'มือถือ','护照':'พาสปอร์ต','押金':'เงินมัดจำ','中午':'เที่ยง','早餐':'อาหารเช้า','电梯':'ลิฟต์',
+  '那边':'ทางนั้น','需要':'ต้องการ','叫醒':'ปลุก','服务':'บริการ','一直':'ตรงไป','然后':'แล้วก็','左转':'เลี้ยวซ้าย','左拐':'เลี้ยวซ้าย','右边':'ทางขวา','走路':'เดิน','分钟':'นาที','马路':'ถนน',
+  '出去':'ออกไป','往前':'ไปข้างหน้า','下午':'ตอนบ่าย','对面':'ฝั่งตรงข้าม','葱花':'ต้นหอมซอย','现烤':'ย่างสดๆ','小心':'ระวัง','中辣':'เผ็ดกลาง','特辣':'เผ็ดมาก','就行':'ก็ได้แล้ว',
+  '要不要':'เอาไหม','点菜':'สั่งอาหาร','房间':'ห้อง','号线':'สาย (รถไฟใต้ดิน)','还要':'เอาอีกไหม','别的':'อย่างอื่น','好吃':'อร่อย','多大':'ใหญ่แค่ไหน','拍照':'ถ่ายรูป','关门':'ปิด (ร้าน)'});
+Object.assign(CHAR_TH,{'请':'กรุณา/เชิญ','收':'รับ','金':'เงิน/ทอง','八':'แปด','折':'ส่วนลด','尾':'ท้าย','号':'เบอร์/เลข','护':'ปกป้อง','押':'มัดจำ','午':'เที่ยง','早':'เช้า','餐':'มื้ออาหาร',
+  '楼':'ชั้น (ตึก)','梯':'บันได','边':'ข้าง/ทาง','需':'ต้อง','醒':'ตื่น','直':'ตรง','然':'(แล้ว)','后':'หลัง','左':'ซ้าย','转':'เลี้ยว','右':'ขวา','钟':'(นาที/นาฬิกา)','过':'ข้าม/ผ่าน','坐':'นั่ง',
+  '线':'สาย','从':'จาก','四':'สี่','也':'ก็/ด้วย','往':'ไปทาง','您':'คุณ (สุภาพ)','拐':'เลี้ยว','都':'ทั้งหมด','称':'ชั่ง','样':'อย่าง','心':'ใจ','烫':'ร้อนลวก'});
 /* ตัดคำ: ยาวสุดก่อน ห้ามคืนทั้งประโยค (ต้องแตกเป็นส่วน) · พินอินเอาจากพยางค์ของประโยคตามตำแหน่งตัวอักษร */
 function glossParts(hanzi, pinyin){
   const chars=[...String(hanzi)].filter(c=>/[一-鿿]/.test(c));
@@ -7623,10 +7634,10 @@ function glossParts(hanzi, pinyin){
   }
   return out;
 }
-function glossHTML(hanzi, pinyin){
+function glossHTML(hanzi, pinyin, isNew){
   if([...String(hanzi)].filter(c=>/[一-鿿]/.test(c)).length<2) return '';
   const ps=glossParts(hanzi, pinyin);
-  return '<div class="gloss2">'+ps.filter(p=>p.py || p.w!=='儿').map(p=>'<span><b>'+esc(S.settings.pyFirst?p.py:p.w)+'</b> = '+esc(p.th||'—')+'</span>').join('')+'</div>';
+  return '<div class="gloss2">'+ps.filter(p=>p.py || p.w!=='儿').map(p=>'<span'+(isNew && isNew(p.w)?' class="gnew">🆕 ':'>')+'<b>'+esc(S.settings.pyFirst?p.py:p.w)+'</b> = '+esc(p.th||'—')+'</span>').join('')+'</div>';
 }
 /* ปุ่มเปิด/ปิด (จำค่าไว้) — ไม่ต้องแปลตลอดก็ได้ */
 function glossToggleHTML(hanzi, pinyin){
@@ -8285,6 +8296,14 @@ COACH_RUN.FL=blk=>{
   lisStart(q);
   return true;
 };
+/* ตัวอักษรที่รู้แล้ว (จากคำในต้นไม้ที่เรียนผ่าน) → ฟังก์ชันบอกว่าคำนี้ "ใหม่" ไหม */
+function treeKnownFn(){
+  const known=new Set();
+  Object.keys(S.tree||{}).forEach(k=>{ const it=TREE[k]; if(!it || !(treeLearned(k)||treeGreen(k))) return;
+    [...String(it.hanzi)+String(it.car?it.car.hanzi:'')].forEach(c=>known.add(c)); });
+  ['的','了','吗','呢','吧','啊','哈','呀'].forEach(c=>known.add(c));      // คำเสริมท้าย ไม่นับเป็นคำใหม่
+  return w=>[...String(w)].some(c=>/[一-鿿]/.test(c) && !known.has(c));
+}
 function treeListenQueue(n){
   const shortM=m=>String(m||'').split(/[(（/]/)[0].trim();
   const learned=Object.keys(S.tree||{}).filter(k=>TREE[k] && (treeLearned(k)||treeGreen(k)));
@@ -8315,9 +8334,11 @@ function treeListenQueue(n){
   if(learned.filter(treeGreen).length>=15){
     const SC=['ร้านแนะนำ','ตลาดสด','สตรีทฟู้ด','อุทยาน','ห้องน้ำ','ร้านอาหาร','จ่ายเงิน','ซื้อของ','ต่อราคา','DiDi','โรงแรม','ถามทาง'];
     const okIds=new Set((S.listen.hist||[]).slice(-80).filter(h=>h.ok && !h.as).map(h=>h.id));
-    LISTEN.filter(L=>SC.indexOf(L.scene)>=0).sort(()=>Math.random()-0.5)
-      .sort((a,b)=>((okIds.has(a.id)?1:0)-(okIds.has(b.id)?1:0)) || ((b.tree?1:0)-(a.tree?1:0)))
-      .slice(0,3).forEach(L=>q.push(lisSentItem(L)));
+    const isNew=treeKnownFn();
+    LISTEN.filter(L=>SC.indexOf(L.scene)>=0).map(L=>({L:L, nNew:glossParts(L.zh, L.py).filter(p=>isNew(p.w)).length}))
+      .filter(x=>x.nNew<=2).sort(()=>Math.random()-0.5)
+      .sort((a,b)=>(a.nNew-b.nNew) || ((okIds.has(a.L.id)?1:0)-(okIds.has(b.L.id)?1:0)) || ((b.L.tree?1:0)-(a.L.tree?1:0)))
+      .slice(0,3).forEach(x=>q.push(Object.assign(lisSentItem(x.L), {real:true, nNew:x.nNew})));
   }
   dlog('tree','ฟัง: คำ '+Math.min(8,words.length)+' · ประโยคจากคำที่รู้ '+Math.min(4,sents.length)+' · ของจริง '+(q.length-Math.min(8,words.length)-Math.min(4,sents.length)));
   return q.slice(0, n||14);
