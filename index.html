@@ -202,6 +202,7 @@ h2{font-size:1.15rem;margin:1.5rem 0 .5rem}
 .pybig.long{font-size:1.6rem}
 .zhsmall{font-size:1.05rem;opacity:.65}
 .pairVs{margin-top:.35rem;font-size:.9rem;color:var(--t3)}
+.heardpy{font-size:1.15rem;font-weight:600;line-height:1.4}
 .glossbox{margin-top:.45rem}
 .glossbtn{font:inherit;font-size:.85rem;background:none;border:1px solid var(--rule);color:var(--t1);border-radius:1rem;padding:.2rem .7rem;cursor:pointer}
 .glossbox.on .glossbtn{opacity:.6}
@@ -3314,7 +3315,7 @@ const MILESTONES = [
 /* ============================================================
    2.5 บันทึกปัญหา (diagnostics) — ไว้ส่งให้ผู้พัฒนาดูเวลาไมค์มีปัญหา
    ============================================================ */
-const BUILD='2026-10-04a';                     // เปลี่ยนทุกครั้งที่แก้ไฟล์ จะได้รู้ว่า log มาจากรุ่นไหน
+const BUILD='2026-10-04c';                     // เปลี่ยนทุกครั้งที่แก้ไฟล์ จะได้รู้ว่า log มาจากรุ่นไหน
 const DIAG=[], STUCK={}, T0=Date.now();
 /* log ปัญหาเก็บลงเครื่องด้วย: iPhone ปิดแอปหรือรีเฟรชแล้ว log เก่ายังอยู่ ส่งย้อนหลังได้ */
 const DKEY='zhgame-diag', DIAG_MAX=2500;
@@ -3741,7 +3742,10 @@ const ALIAS2={
   '惹':'热',
   '兵':'冰','病':'冰','并':'冰',
   '哲':'这','者':'这','浙':'这','折':'这',
-  '卖':'买','迈':'买','麦':'买','埋':'买'
+  '卖':'买','迈':'买','麦':'买','埋':'买',
+  '渣':'炸','闸':'炸','眨':'炸','乍':'炸','诈':'炸',
+  '庭':'听','停':'听','亭':'听','挺':'听','婷':'听','厅':'听',
+  '击':'鸡','机':'鸡','基':'鸡','积':'鸡','激':'鸡','几':'鸡','吉':'鸡','即':'鸡','急':'鸡'
 };
 /* ---- "ใกล้แล้ว" — พยัญชนะผิด ไม่ใช่แค่วรรณยุกต์ ให้ผ่านได้สูงสุด 2 ดาว พร้อมบอกวิธีแก้ ---- */
 const NEAR_CAP=75;
@@ -3874,6 +3878,14 @@ const NEAR={
   const FAN='fàn = "ฟ่าน" ลงท้าย -n เสียงตก — ไม่ใช่ fā';
   const PING='píng = "ผิง" ลงท้าย -ng (ขึ้นจมูก) — ไม่ใช่ pǐn';
   const XIE='xiè = ลิ้นแบน "เซี่ย" เสียงตก — ไม่ใช่ jiē / qiē';
+  const ZHA='zhá = ม้วนปลายลิ้นขึ้นแตะเพดาน แล้วพูด "จร๋า" เสียงขึ้น — ไม่ใช่ zǎ ที่ลิ้นแบน';
+  const JI='jī = "จี" ยิ้มกว้าง ปลายลิ้นแตะหลังฟันล่าง เสียงสูงยาว — ไม่ใช่ dī (ดี)';
+  const JIU='jiǔ = "จิ่ว" พยางค์เดียว รวบเร็วๆ — ไม่ใช่ diū หรือ "ดิ-อู่"';
+  const JIU2='jiù = "จิ้ว" จ ชัดๆ ปลายลิ้นแตะหลังฟันล่าง — ไม่ใช่ diū (ดิว)';
+  const XIANG='xiǎng ลงท้าย -ng ขึ้นจมูก "เสี่ยง" — ไม่ใช่ xiān (เซียน)';
+  const TU='tǔ = "ถู่" ต้องมีลมพ่นออก (ถ ไม่ใช่ ต/ก/ป)';
+  const BEI='bēi = "เปย" ลงท้ายเสียง เอย — ไม่ใช่ bāo (เปา)';
+  const REN='rén = ม้วนลิ้นขึ้นแบบ r อังกฤษ "เหริน" — ถ้าลิ้นแตะฟันจะเป็น lián / liǎn';
   const ADD={
     '搜':['厕',CE],'收':['厕',CE],'射':['厕',CE],'色':['厕',CE],'社':['厕',CE],'舍':['厕',CE],'涩':['厕',CE],'瑟':['厕',CE],'受':['厕',CE],'手':[['所',SUO],['厕',CE]],'拾':['所',SUO],'首':['所',SUO],
     '杰':[['这',ZHE],['谢',XIE]],'接':[['这',ZHE],['谢',XIE]],'截':[['这',ZHE],['谢',XIE]],'姐':[['这',ZHE],['谢',XIE]],'街':[['这',ZHE],['谢',XIE]],'节':[['这',ZHE],['谢',XIE]],
@@ -3883,7 +3895,17 @@ const NEAR={
     '诺':['肉',ROU],'落':['肉',ROU],'若':['肉',ROU],'弱':['肉',ROU],'漏':['肉',ROU],'路':['肉',ROU],'露':['肉',ROU],'楼':['肉',ROU],'老':['肉',ROU],
     '怒':['牛',NIU],'奴':['牛',NIU],'努':['牛',NIU],'女':['牛',NIU],
     '发':['饭',FAN],'法':['饭',FAN],
-    '品':['瓶',PING],'拼':['瓶',PING]
+    '品':['瓶',PING],'拼':['瓶',PING],
+    /* log 09-25…10-04: j → d · zh/ch/sh → ลิ้นแบน · -ng → -n · t ไม่มีลม · ei → ao */
+    '咋':['炸',ZHA],'扎':['炸',ZHA],'砸':['炸',ZHA],'杂':['炸',ZHA],
+    '滴':['鸡',JI],'低':['鸡',JI],'迪':['鸡',JI],'敌':['鸡',JI],'笛':['鸡',JI],'底':['鸡',JI],'弟':['鸡',JI],
+    '丢':[['酒',JIU],['就',JIU2]],'都':['就',JIU2],
+    '鲜':['想',XIANG],'先':['想',XIANG],'仙':['想',XIANG],'线':['想',XIANG],'掀':['想',XIANG],'闲':['想',XIANG],
+    '给':['这',ZHE],'加':['这',ZHE],
+    '书':['水',SHUI],'叔':['水',SHUI],'输':['水',SHUI],'熟':['水',SHUI],'鼠':['水',SHUI],'属':['水',SHUI],'舒':['水',SHUI],
+    '酷':['土',TU],'库':['土',TU],'苦':['土',TU],'裤':['土',TU],'哭':['土',TU],'孤':['土',TU],'姑':['土',TU],'古':['土',TU],'谷':['土',TU],'鼓':['土',TU],'扑':['土',TU],'铺':['土',TU],'普':['土',TU],
+    '包':['杯',BEI],'宝':['杯',BEI],'保':['杯',BEI],'报':['杯',BEI],'薄':['杯',BEI],
+    '脸':['人',REN],'连':['人',REN],'联':['人',REN],'怜':['人',REN],'凉':['人',REN]
   };
   Object.keys(ADD).forEach(c=>{
     const add=Array.isArray(ADD[c][0]) ? ADD[c] : [ADD[c]];
@@ -3893,7 +3915,7 @@ const NEAR={
 })();
 /* ตัวถอดเสียงชอบเดาเป็นคำยอดฮิตเวลาได้ยินพยางค์ซ้ำ — เก็บจาก log จริง */
 const PHRASE_FIX=[['哔哩哔哩','比'],['哔哩','比'],['哔哔','比'],['哔','比'],['所以','岁'],['苏伊','岁'],['随意','岁'],
-  ['捷克','这个'],['解克','这个'],['杰克','这个'],['已经','一斤'],['不要意思','不好意思']];          // เก็บเฉพาะที่ตัวถอดเสียงเดาเป็นชื่อเฉพาะ ไม่ใช่ออกเสียงผิด
+  ['捷克','这个'],['解克','这个'],['杰克','这个'],['已经','一斤'],['不要意思','不好意思'],['第五','酒'],['低五','酒'],['弟五','酒'],['迪五','酒'],['地五','酒']];          // เก็บเฉพาะที่ตัวถอดเสียงเดาเป็นชื่อเฉพาะ ไม่ใช่ออกเสียงผิด
 function phraseFix(h, t){
   let out=String(h||'');
   PHRASE_FIX.forEach(pair=>{
@@ -4062,10 +4084,18 @@ const CHAR_PY = {
   TALK.forEach(sc=>sc.turns.forEach(t=>{ add(t.ask,t.askPy); add(t.model,t.modelPy); }));
   pruneAlias();
 })();
+/* พินอินของตัวอักษรจีนที่ใช้บ่อย 6,763 ตัว (GB2312 · เสียงอ่านหลัก) — สำรองให้ "ได้ยินว่า" เป็นพินอินทุกตัว */
+const PYD_RAW='a:啊|ā:阿吖锕|āi:埃挨哎哀锿|ài:唉艾碍爱隘嗳嗌嫒瑷暧砹|ái:皑癌捱|ǎi:蔼矮霭|ān:鞍氨安谙庵桉鹌|ǎn:俺埯揞铵|àn:按暗岸胺案犴黯|āng:肮|áng:昂|àng:盎|āo:凹|áo:敖熬翱嚣嗷廒遨獒聱螯鳌鏖|ǎo:袄艹媪|ào:傲奥懊澳坳拗岙骜鏊|bā:芭捌扒叭笆八疤巴岜粑|ba:吧|bá:拔跋茇菝魃|bǎ:靶把钯|pá:耙爬琶杷筢|bà:坝霸罢爸灞鲅|bái:白|bǎi:柏百摆佰捭|bài:败拜稗呗|bān:斑班搬扳般颁瘢癍|bǎn:板版阪坂钣舨|bàn:扮拌伴瓣半办绊|bāng:邦帮梆浜|bǎng:榜膀绑|bàng:棒磅蚌镑傍谤蒡|bāo:苞胞包褒剥勹孢煲龅|báo:薄雹|bǎo:保堡饱宝葆鸨褓|bào:抱报暴豹鲍爆|bēi:杯碑悲卑陂鹎|běi:北|bèi:辈背贝钡倍狈备惫焙被孛邶蓓悖碚褙鐾鞴|bēn:奔贲锛|běn:苯本畚|bèn:笨坌|bēng:崩绷嘣|béng:甭|bèng:泵蹦迸甏|bī:逼|bí:鼻荸|bǐ:比鄙笔彼匕俾吡妣秕舭|bì:碧蓖蔽毕毙毖币庇痹闭敝弊必壁臂避陛荜萆薜哔狴庳愎滗濞弼婢嬖璧畀铋裨筚箅篦襞跸髀|pì:辟僻屁譬淠媲甓睥|biān:鞭边编煸砭蝙笾鳊|biǎn:贬扁匾碥窆褊|biàn:便变卞辨辩辫遍弁苄忭汴缏|biāo:标彪膘飑飙飚镖镳瘭髟|biǎo:表婊裱|biē:鳖憋|bié:别蹩|biě:瘪|bīn:彬斌濒滨宾傧豳缤玢槟镔|bìn:摈殡膑髌鬓|bīng:兵冰冫|bǐng:柄丙秉饼炳禀邴|bìng:病并摒|bō:玻菠播拨钵波饽趵|bó:博勃搏铂箔伯帛舶脖膊渤泊驳簿亳礴钹鹁踣|bǔ:捕卜哺补卟|bù:埠不布步部怖瓿钚|cā:擦|cāi:猜|cái:裁材才财|cǎi:睬踩采彩|cài:菜蔡|cān:餐参骖|cán:蚕残惭|cǎn:惨黪|càn:灿璨粲|cāng:苍舱仓沧|cáng:藏|cāo:操糙|cáo:槽曹嘈漕螬艚|cǎo:草|cè:厕策侧册测恻|céng:层曾|cèng:蹭|chā:插叉嚓馇杈锸|chá:茬茶查碴搽察猹槎檫|chà:岔差诧刹汊姹衩|chāi:拆钗|chái:柴豺侪|chān:搀掺觇|chán:蝉馋谗缠廛潺澶孱婵禅蟾躔|chǎn:铲产阐冁谄蒇骣|chàn:颤忏羼|chāng:昌猖伥菖阊娼鲳|chǎng:场厂敞惝昶氅|cháng:尝常长偿肠苌徜嫦|chàng:畅唱倡鬯怅|chāo:超抄钞怊焯|cháo:朝嘲潮巢晁|chǎo:吵炒|chē:车砗|chě:扯|chè:撤掣彻澈坼屮|chēn:郴抻嗔琛|chén:臣辰尘晨忱沉陈谌宸|chèn:趁衬谶榇龀|chēng:撑称柽樘瞠蛏|chéng:城橙成呈乘程惩澄诚承丞埕枨塍铖裎酲|chěng:逞骋|chèng:秤|chī:吃痴郗哧嗤媸眵鸱蚩螭笞魑|chí:持匙池迟弛驰墀茌篪踟|chǐ:耻齿侈尺褫豉|chì:赤翅斥炽傺叱啻彳饬敕瘛|chōng:充冲茺忡憧舂艟|chóng:虫崇|chǒng:宠|chōu:抽瘳|chóu:酬畴踌稠愁筹仇绸俦帱惆雠|chǒu:瞅丑|chòu:臭|chū:初出樗|chú:橱厨躇锄雏滁除刍蜍蹰|chǔ:楚础储杵楮褚|chù:矗搐触处畜亍怵憷绌黜|chuāi:揣搋|chuān:川穿巛氚|chuán:椽传船遄舡|chuǎn:喘舛|chuàn:串钏|chuāng:疮窗|zhuàng:幢撞壮状|chuáng:床|chuǎng:闯|chuàng:创怆|chuī:吹炊|chuí:捶锤垂陲棰槌|chūn:春椿蝽|chún:醇唇淳纯莼鹑|chǔn:蠢|chuō:戳踔|chuò:绰啜辶辍龊|cī:疵呲|cí:茨磁雌辞慈瓷词祠鹚糍|cǐ:此|cì:刺赐次|cōng:聪葱囱匆苁骢璁枞|cóng:从丛淙琮|còu:凑楱辏腠|cū:粗|cù:醋簇促蔟猝酢蹙蹴|cuān:蹿汆撺镩|cuàn:篡窜爨|cuī:摧崔催榱|cuì:脆瘁粹淬翠萃啐悴毳|cūn:村皴|cún:存|cùn:寸|cuō:磋撮搓蹉|cuò:措挫错厝锉|dā:搭耷哒嗒褡|dá:达答怛妲笪靼鞑|da:瘩|dǎ:打|dà:大|dāi:呆呔|dǎi:歹傣逮|dài:戴带殆代贷袋待怠埭甙岱迨骀绐玳黛|dān:耽担丹单郸儋殚眈瘅聃箪|dǎn:掸胆赕疸|dàn:旦氮但惮淡诞蛋萏啖澹|tán:弹坛檀痰潭谭谈郯昙锬镡|dāng:当铛裆|dǎng:挡党谠|dàng:荡档凼菪宕砀|dāo:刀刂叨忉氘|dǎo:捣蹈倒岛祷导|dào:到稻悼道盗纛|dé:德得锝|de:的|dēng:蹬灯登噔镫簦|děng:等戥|dèng:瞪凳邓嶝磴|dī:堤低滴氐羝|dí:迪敌笛狄涤嫡籴荻嘀觌镝|zhái:翟宅|dǐ:抵底诋邸坻柢砥骶|dì:地蒂第帝弟递缔谛娣棣碲睇|diān:颠掂滇巅癫|diǎn:碘点典踮|diàn:靛垫电佃甸店惦奠淀殿坫玷钿癜簟|diāo:碉叼雕凋刁貂鲷|diào:掉吊钓铞|tiáo:调条迢苕蜩笤龆鲦髫|diē:跌爹|dié:碟蝶迭谍叠垤堞揲喋牒瓞耋蹀鲽|dīng:丁盯叮钉仃玎疔耵酊|dǐng:顶鼎|dìng:锭定订啶腚碇|diū:丢铥|dōng:东冬咚岽氡鸫|dǒng:董懂|dòng:动栋侗恫冻洞垌峒胨胴硐|dōu:兜都蔸篼|dǒu:抖陡蚪|dòu:斗豆逗痘窦|dū:督嘟|dú:毒犊独读渎椟牍髑黩|dǔ:堵睹赌笃|dù:杜镀肚度渡妒芏蠹|duān:端|duǎn:短|duàn:锻段断缎椴煅簖|duī:堆|duì:兑队对怼憝碓|dūn:墩吨蹲敦礅镦|dùn:顿钝盾遁沌炖砘|tún:囤屯臀饨豚|duō:掇哆多咄裰|duó:夺铎踱|duò:垛跺舵剁惰堕沲|duǒ:躲朵哚缍|é:蛾峨鹅俄额讹娥莪锇|è:恶厄扼遏鄂饿噩谔垩苊萼呃愕阏轭腭锷鹗颚鳄|ēn:恩蒽|ér:而儿鸸鲕|ěr:耳尔饵洱迩珥铒|èr:二贰佴|fā:发|fá:罚筏伐乏阀垡|fǎ:法砝|fà:珐|fān:藩帆番翻蕃幡|fán:樊矾钒繁凡烦蘩燔蹯|fǎn:反返|fàn:范贩犯饭泛梵畈|fāng:坊芳方匚邡枋钫|fáng:肪房防妨鲂|fǎng:仿访纺舫|fàng:放|fēi:菲非啡飞妃绯扉蜚霏鲱|féi:肥淝腓|fěi:匪诽悱榧斐篚翡|fèi:吠肺废沸费芾狒镄痱|fēn:芬酚吩氛分纷|fén:坟焚汾棼鼢|fěn:粉|fèn:奋份忿愤粪偾瀵鲼|fēng:丰封枫蜂峰锋风疯烽酆葑沣砜|féng:逢冯|fèng:缝奉凤俸|fěng:讽唪|fó:佛|fǒu:否缶|fū:夫敷肤孵呋稃麸趺跗|fú:扶拂辐幅氟符伏俘服浮涪福袱弗匐凫郛芙苻茯菔幞怫艴孚绂绋桴祓砩黻罘蚨蜉蝠|fǔ:甫抚辅俯釜斧腑府腐阝拊呒滏黼|pú:脯仆莆葡菩蒲匍濮璞镤|fù:赴副覆赋复傅付阜父腹负富讣附妇缚咐驸赙馥蝮鲋鳆|gá:噶尜钆|gǎ:嘎尕|gāi:该陔垓赅|gǎi:改胲|gài:概钙盖溉丐戤|gān:干甘杆柑竿肝坩苷尴泔矸疳酐|gǎn:赶感秆敢擀澉橄|gàn:赣淦绀旰|gāng:冈刚钢缸肛纲罡|gǎng:岗港|gàng:杠戆筻|gāo:篙皋高膏羔糕睾槔|gǎo:搞稿藁缟槁杲|hào:镐耗号浩灏昊皓颢|gào:告诰郜锆|gē:哥歌搁戈鸽胳疙割咯圪袼|gé:革格阁隔鬲塥嗝搿膈镉骼|gě:葛哿舸|há:蛤|gè:铬个各硌虼|gěi:给|gēn:根跟|gēng:耕庚羹赓|gèng:更|gěng:埂耿梗哽绠鲠|gōng:工攻功恭龚躬公宫弓肱蚣觥|gòng:供贡共|gǒng:巩汞拱廾珙|gōu:钩勾沟佝缑篝鞲|gǒu:苟狗岣枸笱|gòu:垢构购够诟遘媾觏彀|gū:辜菇咕箍估沽孤姑菰轱毂鸪蛄酤觚|gǔ:鼓古蛊骨谷股嘏诂汩牯臌瞽罟钴|gù:故顾固雇崮梏牿锢痼鲴|guā:刮瓜呱栝胍鸹|guǎ:剐寡|guà:挂褂卦诖|guāi:乖|guǎi:拐|guài:怪|guān:棺关官冠观倌鳏|guǎn:管馆|guàn:罐惯灌贯掼涫盥鹳|guāng:光咣胱|guǎng:广犷|guàng:逛桄|guī:瑰规圭硅归龟闺妫皈鲑|guǐ:轨鬼诡癸匦庋宄晷簋|guì:桂柜跪贵刽刿桧|gǔn:辊滚丨衮绲磙鲧|gùn:棍|guō:锅郭埚呙崞猓聒蝈|guó:国馘掴帼虢|guǒ:果裹椁蜾|guò:过|hā:哈铪|hái:骸孩还|hǎi:海醢|hài:氦亥害骇|hān:酣憨顸蚶鼾|hán:邯韩含涵寒函邗晗焓|hǎn:喊罕|hàn:翰撼捍旱憾悍焊汗汉菡撖瀚颔|hāng:夯|háng:杭航绗颃|háo:壕嚎豪毫嗥濠蚝|hǎo:郝好|hē:呵喝诃嗬|hé:荷菏核禾和何合盒阂河涸劾阖纥曷盍颌翮|mò:貉末莫墨默沫漠寞陌茉蓦殁镆秣瘼耱貊貘|hè:赫褐鹤贺壑|hēi:嘿黑嗨|hén:痕|hěn:很狠|hèn:恨|hēng:哼亨|héng:横衡恒蘅珩桁|hōng:轰烘訇薨|hǒng:哄|hóng:虹鸿洪宏弘红黉荭蕻闳泓|hóu:喉侯猴瘊篌糇骺|hǒu:吼|hòu:厚候后堠後逅鲎|hū:呼乎忽唿惚滹轷烀虍|hú:瑚壶葫胡蝴狐糊湖弧囫猢槲觳煳鹄鹕醐斛鹘|hǔ:虎唬浒琥|hù:护互沪户冱岵怙戽扈祜瓠鹱笏|huā:花砉|huá:哗华猾滑骅铧|huà:画划化话桦|huái:槐徊怀淮踝|huài:坏|huān:欢獾|huán:环桓郇萑圜洹寰缳锾鬟|huǎn:缓|huàn:换患唤痪豢焕涣宦幻奂擐浣漶逭鲩|huāng:荒慌肓|huáng:黄磺蝗簧皇凰惶煌隍徨湟潢遑璜癀蟥篁鳇|huàng:晃|huǎng:幌恍谎|huī:灰挥辉徽恢诙咴隳珲晖虺麾|huí:蛔回茴洄|huǐ:毁悔|huì:慧卉惠晦贿秽会烩汇讳诲绘荟蕙喙浍彗缋恚蟪|hūn:荤昏婚阍|hún:魂浑馄|hùn:混诨溷|huō:豁劐攉锪耠|huó:活|huǒ:伙火夥灬钬|huò:获或惑霍货祸藿嚯镬蠖|jī:击圾基机畸稽积箕肌饥激讥鸡姬缉乩剞墼芨叽咭唧屐畿玑赍犄齑矶羁嵇笄跻|jì:迹绩蓟技冀季伎祭剂悸济寄寂计记既忌际妓继纪偈芰哜洎彐骥觊稷暨跽霁鲚鲫髻|jí:吉极棘辑籍集及急疾汲即嫉级亟佶蒺蕺岌嵴楫殛戢瘠笈|jǐ:挤几脊己掎戟虮麂|jiā:嘉枷佳家加伽葭浃迦珈镓痂笳袈跏|jiá:夹荚颊郏戛恝铗袷蛱|jiǎ:贾甲钾假岬胛瘕|jià:稼价架驾嫁|jiān:歼监坚尖笺间煎兼肩艰奸缄菅蒹搛湔缣戋犍鹣鲣鞯|jiǎn:茧检柬碱硷拣捡简俭剪减谫囝蹇謇枧戬睑锏裥笕翦趼|jiàn:荐鉴践贱见键箭件健舰剑饯渐溅涧建僭谏楗牮毽腱踺|kǎn:槛坎砍侃凵莰|jiāng:僵姜将浆江疆茳缰礓豇|jiǎng:蒋桨奖讲耩|jiàng:匠酱降洚绛犟糨|jiāo:蕉椒礁焦胶交郊浇骄娇僬艽茭姣鹪蛟跤鲛|jiáo:嚼|jiǎo:搅铰矫侥脚狡角饺缴绞剿佼挢徼敫皎|jiào:教酵轿较叫窖噍醮|jiē:揭接皆秸街阶喈嗟疖|jié:截劫节杰捷睫竭洁结讦诘卩拮婕孑桀碣颉羯鲒|jú:桔菊局橘|jiě:解姐|jiè:戒藉芥界借介疥诫届蚧骱|jīn:巾筋斤金今津襟钅衿矜|jǐn:紧锦仅谨卺堇馑廑瑾槿|jìn:进靳晋禁近烬浸尽劲荩噤妗缙赆觐|jīng:荆兢茎睛晶鲸京惊精粳经菁泾腈旌箐|jǐng:井警景颈刭儆阱憬肼|jìng:静境敬镜径痉靖竟竞净獍迳弪婧胫|jiǒng:炯窘迥炅|jiū:揪究纠啾阄鸠赳鬏|jiǔ:玖韭久灸九酒|jiù:厩救旧臼舅咎就疚僦柩桕鹫|jū:鞠拘狙疽居驹苴掬琚椐锔裾趄雎鞫|zuǐ:咀嘴|jǔ:矩举沮莒榘榉踽龃|jù:聚拒据巨具距踞锯俱句惧炬剧倨讵苣遽屦犋飓钜窭醵|juān:捐鹃娟涓蠲镌|juàn:倦眷卷绢鄄狷桊|juē:撅噘|jué:攫抉掘爵觉决诀绝厥劂谲矍蕨噱崛獗孓珏桷橛爝镢觖鳜|juè:倔|jūn:均菌钧军君皲麇|jùn:峻俊竣浚郡骏捃隽|kā:喀咖|kǎ:卡佧咔胩|kāi:开揩锎|kǎi:楷凯慨剀垲蒈恺铠锴|kān:刊堪勘戡龛|kàn:看阚瞰|kāng:康慷糠闶|káng:扛|kàng:抗亢炕伉钪|kǎo:考拷烤栲|kào:靠犒铐|kē:坷苛柯棵磕颗科珂轲瞌钶稞疴窠颏蚵蝌髁|ké:壳|hāi:咳|kě:可渴岢|kè:克刻客课嗑恪溘骒缂氪锞|kěn:肯啃垦恳|kēng:坑吭铿|kōng:空崆箜|kǒng:恐孔倥|kòng:控|kōu:抠芤眍|kǒu:口|kòu:扣寇蔻叩筘|kū:枯哭窟刳堀骷|kǔ:苦|kù:酷库裤喾绔|kuā:夸|kuǎ:垮侉|kuà:挎跨胯|kuài:块筷侩快郐哙狯脍|kuān:宽髋|kuǎn:款|kuāng:匡筐诓哐|kuáng:狂诳|kuàng:框矿眶旷况邝圹纩贶|kuī:亏盔岿窥悝|kuí:葵奎魁馗夔揆喹逵暌睽蝰|kuǐ:傀跬|kuì:馈愧溃匮蒉喟愦聩篑|kūn:坤昆琨锟醌鲲髡|kǔn:捆悃阃|kùn:困|kuò:括扩廓阔蛞|lā:垃拉喇啦邋|là:蜡腊辣剌瘌|lái:莱来崃徕涞铼|lài:赖濑赉睐癞籁|lán:蓝婪栏拦篮阑兰澜谰岚斓镧褴|lǎn:揽览懒缆漤榄罱|làn:烂滥|láng:琅榔狼廊郎阆锒稂螂|lǎng:朗|làng:浪莨蒗|lāo:捞|láo:劳牢崂铹痨醪|lǎo:老佬姥栳铑|lào:酪烙涝唠耢|lè:勒乐仂叻泐鳓|léi:雷镭羸嫘缧檑|lěi:蕾磊儡垒诔耒|lèi:累擂肋类泪酹|léng:棱楞塄|lěng:冷|lí:厘梨犁黎篱狸离漓璃蓠藜喱嫠骊缡罹鹂蜊蠡鲡黧|lǐ:理李里鲤礼俚澧逦娌锂醴鳢|lì:莉荔吏栗丽厉励砾历利傈例俐痢立粒沥隶力俪郦坜苈莅呖唳猁溧枥栎轹戾砺詈疠疬蛎笠篥粝雳|lī:哩|liǎ:俩|lián:联莲连镰廉怜涟帘奁濂臁裢蠊鲢|liǎn:敛脸蔹琏裣|liàn:链恋炼练潋楝殓|liáng:粮凉梁粱良量墚椋|liǎng:两魉|liàng:辆晾亮谅踉靓|liáo:撩聊僚疗燎寥辽潦嘹獠寮缭鹩|liǎo:了蓼|liào:撂镣廖料尥钌|liè:列裂烈劣猎冽埒捩洌趔躐鬣|lín:琳林磷霖临邻鳞淋啉嶙遴辚瞵粼麟|lǐn:凛廪懔檩|lìn:赁吝蔺膦躏|līn:拎|líng:玲菱零龄铃伶羚凌灵陵酃苓囹泠绫柃棂瓴聆蛉翎鲮|lǐng:岭领|lìng:另令呤|liū:溜熘|liú:琉榴硫馏留刘瘤流浏遛骝旒鎏|liǔ:柳绺锍|liù:六镏鹨|lóng:龙聋咙笼窿隆茏泷珑栊胧砻癃|lǒng:垄拢陇垅|lóu:楼娄蒌耧蝼髅|lǒu:搂篓嵝|lòu:漏陋镂瘘|lú:芦卢颅庐炉垆泸栌轳胪鸬舻鲈|lǔ:掳卤虏鲁橹镥|lù:麓碌露路赂鹿潞禄录陆戮渌漉逯璐辂辘鹭簏|lǘ:驴闾榈|lǚ:吕铝侣旅履屡缕偻捋膂稆褛|lǜ:虑氯律率滤绿|luán:峦挛孪滦脔娈栾鸾銮|luǎn:卵|luàn:乱|lüè:掠略锊|lūn:抡|lún:轮伦仑沦纶囵|lùn:论|luó:萝螺罗逻锣箩骡猡椤脶镙|luǒ:裸倮蠃瘰|luò:落洛骆络荦摞泺漯珞跞雒|mā:妈|má:麻|mǎ:玛码蚂马犸|mà:骂杩|ma:嘛吗蟆|mái:埋霾|mǎi:买荬|mài:麦卖迈脉劢唛|mán:瞒馒蛮鳗鞔|mǎn:满螨|màn:蔓曼慢漫谩墁幔缦熳镘|máng:芒茫盲氓忙邙硭|mǎng:莽漭蟒|māo:猫|máo:茅锚毛矛茆牦旄蝥蟊髦|mǎo:铆卯峁泖昴|mào:茂冒帽貌贸袤瑁耄懋瞀|me:么|méi:玫枚梅酶霉煤没眉媒莓嵋猸湄楣镅鹛|měi:镁每美浼|mèi:昧寐妹媚袂魅|mén:门扪钔|mēn:闷|men:们|méng:萌蒙檬盟甍瞢朦礞虻艨|měng:锰猛勐懵蜢蠓艋|mèng:梦孟|mī:眯咪|mí:醚靡糜迷谜弥蘼猕祢縻麋|mǐ:米芈弭脒敉|mì:秘觅泌蜜密幂冖谧嘧汨宓糸|mián:棉眠绵宀|miǎn:冕免勉娩缅沔渑湎腼眄黾|miàn:面|miáo:苗描瞄鹋|miǎo:藐秒渺邈缈杪淼眇|miào:庙妙|miè:蔑灭蠛篾|mín:民苠岷缗玟珉|mǐn:抿皿敏悯闽闵泯愍鳘|míng:明螟鸣铭名冥茗溟暝瞑|mìng:命|miù:谬缪|mō:摸|mó:摹蘑模膜磨摩魔谟馍嫫嬷麽|mǒ:抹|móu:谋侔眸蛑鍪|mù:牟墓暮幕募慕木目睦牧穆仫坶苜沐钼|mǒu:某|mǔ:拇牡亩姆母|ná:拿镎|nǎ:哪|nà:呐钠那娜纳捺肭衲|nǎi:氖乃奶艿|nài:耐奈鼐萘柰|nán:南男难喃楠|náng:囊馕|náo:挠呶猱硇铙蛲|nǎo:脑恼垴瑙|nào:闹淖|ne:呢|něi:馁|nèi:内|nèn:嫩恁|néng:能|nī:妮|ní:霓倪泥尼坭猊怩铌鲵|nǐ:拟你旎|nì:匿腻逆溺伲昵睨|niān:蔫拈|nián:年粘黏鲇鲶|niǎn:碾撵捻辗辇|niàn:念廿埝|niáng:娘|niàng:酿|niǎo:鸟茑嬲袅|niào:尿脲|niē:捏|niè:聂孽啮镊镍涅乜陧蘖嗫颞臬蹑|nín:您|níng:柠狞凝宁咛甯聍|nǐng:拧|nìng:泞佞|niú:牛|niǔ:扭钮纽狃忸|nóng:脓浓农侬哝|nòng:弄|nú:奴孥驽|nǔ:努弩胬|nù:怒|nǚ:女钕|nuǎn:暖|nüè:虐疟|nuó:挪傩|nuò:懦糯诺搦喏锘|ò:哦|ōu:欧鸥殴沤讴瓯|ǒu:藕呕偶耦|pā:啪趴葩|pà:帕怕|pāi:拍|pái:排牌徘俳|pài:湃派蒎哌|pān:攀潘|pán:盘磐丬爿蟠蹒|pàn:盼畔判叛泮袢襻|pāng:乓滂|páng:庞旁彷逄螃|pǎng:耪|pàng:胖|pāo:抛脬|páo:咆刨袍匏狍庖|pào:炮泡疱|pǎo:跑|pēi:呸胚醅|péi:培裴赔陪锫|pèi:配佩沛辔帔旆霈|pēn:喷|pén:盆湓|pēng:砰抨烹嘭怦|péng:澎彭蓬棚硼篷膨朋鹏堋蟛|pěng:捧|pèng:碰|pī:坯砒霹批披劈丕邳噼纰|pí:琵毗啤脾疲皮陴郫埤鼙芘枇罴铍蚍蜱貔|pǐ:匹痞仳圮擗庀癖疋|piān:篇偏犏翩|piàn:片骗|piāo:飘漂剽螵|piáo:瓢嫖|piào:票嘌骠|piě:撇丿苤|piē:瞥氕|pīn:拼拚姘|pín:频贫嫔颦|pǐn:品榀|pìn:聘牝|pīng:乒俜娉|píng:坪苹萍平凭瓶评屏枰鲆|pō:坡泼颇钋|pó:婆鄱皤|pò:破魄迫粕珀|pōu:剖|pū:扑噗攴攵|pù:铺曝瀑|pǔ:埔朴圃普浦谱溥氆镨蹼|qī:期欺栖戚妻七凄漆柒沏萋嘁桤欹蹊|qí:其棋奇歧畦崎脐齐旗祈祁骑丌亓圻芪荠萁蕲岐淇骐琪琦耆祺颀蛴蜞綦鳍麒|qǐ:起岂乞企启芑屺绮杞|qì:契砌器气迄弃汽泣讫葺汔槭憩碛|qiā:掐葜|qià:恰洽髂|qiān:牵扦钎铅千迁签仟谦佥阡芊岍悭骞搴褰愆|qián:乾黔钱钳前潜荨掮钤虔箝|qiǎn:遣浅谴缱肷|qiàn:堑嵌欠歉倩芡茜椠|qiāng:枪腔羌戕戗锖锵蜣|qiàng:呛炝跄|qiáng:墙蔷强嫱樯|qiǎng:抢镪襁羟|qiāo:橇锹敲悄劁缲硗跷|qiáo:桥瞧乔侨谯荞峤憔樵鞒|qiǎo:巧愀|qiào:鞘撬翘峭俏窍诮|qiè:切怯窃惬慊妾挈锲箧|qié:茄|qiě:且|qīn:钦侵亲衾|qín:秦琴勤芹擒禽芩嗪噙檎覃螓|qǐn:寝锓|qìn:沁揿吣|qīng:青轻氢倾卿清圊蜻鲭|qíng:擎晴氰情檠黥|qǐng:顷请苘謦|qìng:庆磬罄綮|qióng:琼穷邛茕穹蛩筇跫銎|qiū:秋丘邱湫楸蚯鳅|qiú:球求囚酋泅俅巯犰逑遒赇虬裘鼽|qū:趋区蛆躯屈驱诎岖祛蛐麴黢|qǔ:曲取娶龋|qú:渠劬蕖蘧衢璩氍朐磲鸲癯蠼瞿|qù:趣去阒觑|quān:圈悛|quán:颧权醛泉全痊拳诠荃辁铨蜷筌鬈|quǎn:犬犭绻畎|quàn:券劝|quē:缺炔阙|qué:瘸|què:却鹊榷确雀阕悫|qún:裙群|rán:然燃蚺髯|rǎn:冉染苒|ráng:瓤禳穰|rǎng:壤攘嚷|ràng:让|ráo:饶荛娆桡|rǎo:扰|rào:绕|rě:惹|rè:热|rén:壬仁人亻|rěn:忍荏稔|rèn:韧任认刃妊纫仞饪轫衽|rēng:扔|réng:仍|rì:日|róng:戎茸蓉荣融熔溶容绒嵘狨榕肜蝾|rǒng:冗|róu:揉柔糅蹂鞣|ròu:肉|rú:茹蠕儒孺如薷嚅濡铷襦颥|rǔ:辱乳汝|rù:入褥蓐洳溽缛|ruǎn:软阮朊|ruǐ:蕊|ruì:瑞锐芮枘睿蚋|rùn:闰润|ruò:若弱偌箬|sā:撒仨挲|sǎ:洒|sà:萨卅脎飒|sāi:腮鳃塞噻|sài:赛|sān:三叁毵|sǎn:伞馓|sàn:散|sāng:桑|sǎng:嗓搡磉颡|sàng:丧|sāo:搔骚缫鳋|sǎo:扫嫂|sè:瑟色涩啬铯穑|sēn:森|sēng:僧|shā:莎砂杀沙纱铩痧裟鲨|shǎ:傻|shá:啥|shà:煞厦唼歃霎|shāi:筛酾|shài:晒|shān:珊苫杉山删煽衫栅埏芟彡潸姗膻钐舢跚|shǎn:闪陕|shàn:擅赡膳善汕扇缮讪鄯嬗骟疝蟮鳝|shāng:墒伤商殇熵觞|shǎng:赏晌垧|shàng:上尚绱|shang:裳|shāo:梢捎稍烧蛸筲艄|sháo:芍勺韶杓|shǎo:少|shào:哨邵绍劭潲|shē:奢赊猞畲|shé:蛇舌佘|shè:舍赦摄射慑涉社设厍滠麝|shēn:砷申呻伸身深娠绅诜莘糁|shén:神什|shěn:沈审婶谂哂渖矧|shèn:甚肾慎渗葚椹胂蜃|shēng:声生甥牲升笙|shéng:绳|shěng:省眚|shèng:盛剩胜圣嵊晟|shī:师失狮施湿诗尸虱蓍鲺|shí:十石拾时食蚀实识埘饣炻鲥|shǐ:史矢使屎驶始豕|shì:式示士世柿事拭誓逝势是嗜噬适仕侍释饰氏市恃室视试谥莳弑轼贳礻铈螫舐筮|shōu:收|shǒu:手首守扌艏|shòu:寿授售受瘦兽狩绶|shū:蔬枢梳殊抒输叔舒淑疏书倏菽摅姝纾毹殳|shú:赎孰熟塾秫|shǔ:薯暑曙署蜀黍鼠属|shù:术述树束戍竖墅庶数漱恕沭澍腧|shuā:刷唰|shuǎ:耍|shuāi:摔衰|shuǎi:甩|shuài:帅蟀|shuān:栓拴闩|shuāng:霜双孀|shuǎng:爽|shuí:谁|shuǐ:水氵|shuì:睡税|shǔn:吮|shùn:瞬顺舜|shuō:说|shuò:硕朔烁蒴搠妁槊铄|sī:斯撕嘶思私司丝厮厶咝澌纟缌锶鸶蛳|sǐ:死|sì:肆寺嗣四伺似饲巳俟兕汜泗姒驷祀耜笥|sōng:松凇菘崧嵩忪淞|sǒng:耸怂悚竦|sòng:颂送宋讼诵|sōu:搜艘嗖馊溲飕锼螋|sǒu:擞叟薮嗾瞍|sòu:嗽|sū:苏酥稣|sú:俗|sù:素速粟僳塑溯宿诉肃夙谡蔌嗉愫涑簌觫|suān:酸狻|suàn:蒜算|suī:虽荽濉眭睢|suí:隋随绥|suǐ:髓|suì:碎岁穗遂隧祟谇邃燧|sūn:孙荪狲飧|sǔn:损笋榫隼|suō:蓑梭唆缩嗦嗍娑桫睃羧|suǒ:琐索锁所唢|tā:塌他它她溻遢铊趿|tǎ:塔獭鳎|tà:挞蹋踏闼榻沓|tāi:胎|tái:苔抬台邰薹炱跆鲐|tài:泰酞太态汰肽钛|tān:坍摊贪瘫滩|tǎn:坦毯袒忐钽|tàn:碳探叹炭|tāng:汤铴耥羰|táng:塘搪堂棠膛唐糖饧溏瑭镗螗螳醣|tǎng:倘躺淌傥帑|tàng:趟烫|tāo:掏涛滔绦韬焘饕|táo:萄桃逃淘陶鼗啕洮|tǎo:讨|tào:套|tè:特忒忑慝铽|téng:藤腾疼誊滕|tī:梯剔踢锑|tí:提题蹄啼绨缇鹈醍|tǐ:体|tì:替嚏惕涕剃屉倜悌逖裼|tiān:天添|tián:填田甜恬阗畋|tiǎn:舔腆忝殄|tiāo:挑佻祧|tiào:眺跳粜|tiē:贴帖萜|tiě:铁|tīng:厅听烃汀|tíng:廷停亭庭莛葶婷蜓霆|tǐng:挺艇梃町铤|tōng:通嗵|tóng:桐酮瞳同铜彤童佟僮仝茼潼砼|tǒng:桶捅筒统|tòng:痛恸|tōu:偷|tóu:投头亠骰|tòu:透|tū:凸秃突|tú:图徒途涂屠荼菟酴|tǔ:土吐钍|tù:兔堍|tuān:湍|tuán:团抟|tuī:推|tuí:颓|tuǐ:腿|tuì:蜕褪退煺|tūn:吞暾|tuō:拖托脱乇|tuó:鸵陀驮驼佗坨沱柁橐砣酡跎鼍|tuǒ:椭妥庹|tuò:拓唾柝箨|wā:挖哇蛙洼娲|wá:娃|wǎ:瓦佤|wà:袜腽|wāi:歪|wài:外|wān:豌弯湾剜蜿|wán:玩顽丸烷完芄纨|wǎn:碗挽晚皖惋宛婉莞菀绾琬脘畹|wàn:万腕|wāng:汪尢|wáng:王亡|wǎng:枉网往罔惘辋魍|wàng:旺望忘妄|wēi:威巍微危偎隈葳薇逶煨|wéi:韦违桅围唯惟潍维囗帏帷嵬闱沩涠|wèi:为未蔚味畏胃喂魏位渭谓尉慰卫猬軎|wěi:苇萎委伟伪尾纬诿隗猥洧娓玮韪炜痿艉鲔|wēn:瘟温|wén:蚊文闻纹阌雯|wěn:吻稳紊刎|wèn:问汶璺|wēng:嗡翁|wèng:瓮蕹|wō:挝蜗涡窝倭莴喔|wǒ:我|wò:斡卧握沃幄渥肟硪龌|wū:巫呜钨乌污诬屋邬圬於|wú:无芜梧吾吴毋唔浯蜈鼯|wǔ:武五捂午舞伍侮仵庑怃忤迕妩牾鹉|wù:坞戊雾晤物勿务悟误兀阢芴寤婺骛杌焐鹜痦鋈|xī:昔熙析西硒矽晰嘻吸锡牺稀息希悉膝夕惜熄烯溪汐犀僖兮菥奚唏浠淅嬉樨曦欷歙熹皙穸蜥螅蟋舾羲粞翕醯鼷|xí:檄袭席习媳隰觋|xǐ:喜洗葸蓰徙屣玺禧|xiǎn:铣显险冼藓猃燹蚬筅跣|xì:系隙戏细郄饩阋禊舄|xiā:瞎虾呷|xiá:匣霞辖暇峡侠狭狎遐瑕柙硖黠|xià:下夏吓罅|xiān:掀锨先仙鲜纤莶暹氙祆籼酰跹|xián:咸贤衔舷闲涎弦嫌娴鹇痫|xiàn:现献县腺馅羡宪陷限线苋岘霰|xiāng:相厢镶香箱襄湘乡芗葙骧缃|xiáng:翔祥详庠|xiǎng:想响享饷鲞飨|xiàng:项巷橡像向象蟓|xiāo:萧硝霄削销消宵哓潇逍骁绡枭枵箫魈|xiào:哮孝校肖啸笑效|xiáo:淆崤|xiǎo:晓小筱|xiē:楔些歇蝎|xié:鞋协挟携邪斜胁谐偕勰撷缬|xiě:写|xiè:械卸蟹懈泄泻谢屑亵燮薤獬廨渫瀣邂绁榭榍躞|xīn:薪芯锌欣辛新忻心馨忄昕歆鑫|xìn:信衅囟|xīng:星腥猩惺兴|xíng:刑型形邢行陉硎|xǐng:醒擤|xìng:幸杏性姓荇悻|xiōng:兄凶胸匈汹芎|xióng:雄熊|xiū:休修羞咻馐庥鸺貅髹|xiǔ:朽|xiù:嗅锈秀袖绣岫溴|xū:墟戌需虚嘘须吁圩顼盱胥|xú:徐|xǔ:许诩栩糈醑|xù:蓄酗叙旭序恤絮婿绪续勖洫溆煦|xuān:轩喧宣儇谖萱揎暄煊|xuán:悬旋玄漩璇痃|xuǎn:选癣|xuàn:眩绚泫渲楦炫碹铉镟|xuē:靴薛|xué:学穴泶踅|xuě:雪鳕|xuè:血谑|xūn:勋熏埙薰獯曛窨醺|xún:循旬询寻巡荀峋恂洵浔鲟|xùn:驯殉汛训讯逊迅巽蕈徇|yā:压押鸦鸭丫垭桠|ya:呀|yá:芽牙蚜崖衙涯伢岈琊睚|yǎ:雅哑痖|yà:亚讶轧揠迓娅氩砑|yān:焉阉烟淹鄢菸崦恹湮嫣胭腌|yàn:咽艳堰燕厌砚雁唁彦焰宴谚验赝谳滟晏焱酽餍|yán:盐严研蜒岩延言颜阎炎沿讠阽闫妍檐筵|yǎn:奄掩眼衍演厣剡俨偃兖郾琰罨魇鼹|yāng:殃央鸯秧泱鞅|yáng:杨扬佯疡羊洋阳徉炀蛘|yǎng:氧仰痒养|yàng:样漾怏烊恙|yāo:邀腰妖夭吆幺|yáo:瑶摇尧遥窑谣姚爻徭珧轺肴铫繇鳐|yǎo:咬舀杳窈|yào:药要耀钥崾曜鹞|yē:椰噎耶|yé:爷揶铘|yě:野冶也|yè:页掖业叶曳腋夜液靥谒邺晔烨|yī:一壹医揖铱依伊衣咿噫猗漪衤黟|yí:颐夷遗移仪胰疑沂宜姨彝诒圯荑咦嶷饴怡贻眙痍|yǐ:椅蚁倚已乙矣以苡迤旖钇舣酏|yì:艺抑易邑屹亿役臆逸肄疫亦裔意毅忆义益溢诣议谊译异翼翌绎刈劓仡佚佾埸懿薏弈奕挹弋呓峄怿悒驿缢殪轶熠镒镱瘗癔翊蜴羿翳|yīn:茵因殷音阴姻堙喑洇氤铟|yìn:荫印胤茚|yín:吟银淫寅鄞垠狺夤霪龈|yǐn:饮尹引隐廴吲瘾蚓|yīng:英樱婴鹰缨莺撄嘤膺瑛璎鹦罂|yìng:应硬映媵|yíng:莹萤营荧蝇迎赢盈嬴茔荥萦蓥滢潆瀛楹|yǐng:影颖郢瘿颍|yō:哟唷|yōng:拥佣臃痈庸雍壅墉慵邕镛鳙饔|yǒng:踊蛹咏泳涌永恿勇俑甬|yòng:用|yōu:幽优悠忧攸呦|yóu:尤由邮铀犹油游莜莸猷疣蚰蝣蝤鱿|yǒu:酉有友卣莠牖铕黝|yòu:右佑釉诱又幼侑囿宥柚蚴鼬|yū:迂淤纡瘀|yú:于盂榆虞愚舆余俞逾鱼愉渝渔隅娱禺谀萸揄嵛狳馀妤瑜觎腴欤窬蝓竽臾舁雩|yǔ:予雨与屿禹宇语羽伛俣圄圉庾瘐窳龉|yù:玉域芋郁遇喻峪御愈欲狱育誉浴寓裕预豫驭毓谕蓣饫阈鬻妪昱煜燠肀聿钰鹆鹬蜮|yuān:鸳渊冤眢鸢箢|yuán:元垣袁原援辕园员圆猿源缘塬芫沅橼爰螈鼋|yuǎn:远|yuàn:苑愿怨院垸掾媛瑗|yuē:曰约|yuè:越跃岳粤月悦阅龠瀹樾刖钺|yún:耘云郧匀芸纭昀筠|yǔn:陨允狁殒|yùn:运蕴酝韵孕郓恽愠韫熨|yūn:晕氲|zā:匝拶咂|zá:砸杂|zāi:栽哉灾甾|zǎi:宰载仔崽|zài:再在|zán:咱|zǎn:攒昝趱|zàn:暂赞瓒錾|zāng:赃脏臧|zàng:葬奘|zāo:遭糟|záo:凿|zǎo:藻枣早澡蚤|zào:躁噪造皂灶燥唣|zé:责择则泽赜啧帻迮笮箦舴|zéi:贼|zěn:怎|zēng:增憎缯罾|zèng:赠甑锃|zhā:扎喳渣揸哳楂齄|zhá:札铡闸|zhǎ:眨砟|zhà:榨乍炸诈柞吒咤痄蚱|zǎ:咋|zhāi:摘斋|zhǎi:窄|zhài:债寨砦瘵|zhān:瞻毡詹沾谵旃|zhǎn:盏斩崭展搌|zhàn:蘸栈占战站湛绽|zhāng:樟章彰漳张鄣獐嫜璋蟑|zhǎng:掌涨仉|zhàng:杖丈帐账仗胀瘴障幛嶂|zhāo:招昭钊|zhǎo:找沼|zhào:赵照罩兆肇召诏棹笊|zhē:遮蜇|zhé:折哲蛰辙谪摺辄磔|zhě:者锗褶赭|zhè:蔗这浙柘鹧|zhēn:珍斟真甄砧臻贞针侦帧蓁浈溱桢榛胗祯箴|zhěn:枕疹诊缜轸畛稹|zhèn:震振镇阵圳赈朕鸩|zhēng:蒸睁征狰争怔峥钲铮筝|zhèng:挣正政症郑证诤|zhěng:整拯|zhī:芝枝支吱蜘知肢脂汁之织只卮栀胝祗|zhí:职直植殖执值侄埴摭絷跖踯|zhǐ:址指止趾旨纸芷徵夂咫枳轵祉黹酯|zhì:志挚掷至致置帜峙制智秩稚质炙痔滞治窒陟郅帙忮彘骘栉桎轾贽膣雉鸷痣蛭踬豸觯|zhōng:中盅忠钟衷终锺螽舯|zhǒng:种肿冢踵|zhòng:重仲众|zhōu:舟周州洲诌粥啁|zhóu:轴妯碡|zhǒu:肘帚|zhòu:咒皱宙昼骤荮纣绉胄籀酎|zhū:珠株蛛朱猪诸诛侏邾茱洙潴槠橥铢|zhú:逐竹烛瘃竺舳躅|zhǔ:煮拄瞩嘱主丶渚麈|zhù:著柱助蛀贮铸筑住注祝驻伫苎杼炷疰箸翥|zhuā:抓|zhuǎ:爪|zhuài:拽|zhuān:专砖颛|zhuǎn:转|zhuàn:撰赚篆啭馔|zhuāng:桩庄装妆|zhuī:椎锥追骓隹|zhuì:赘坠缀惴缒|zhūn:谆肫窀|zhǔn:准|zhuō:捉拙桌倬涿|zhuó:卓琢茁酌啄灼浊诼擢浞濯禚斫镯|zhe:着|zī:兹咨资姿滋淄孜谘嵫孳缁辎赀锱粢趑觜訾龇鲻髭|zǐ:紫籽滓子茈姊梓秭耔笫|zì:自渍字恣眦|zōng:鬃棕踪宗综腙|zǒng:总偬|zòng:纵粽|zōu:邹诹陬鄹驺鲰|zǒu:走|zòu:奏揍|zū:租菹|zú:足卒族镞|zǔ:祖诅阻组俎|zuàn:钻攥|zuǎn:纂缵|zuì:醉最罪蕞|zūn:尊遵樽鳟|zuó:昨|zuǒ:左佐|zuò:做作坐座阼唑怍胙祚|gèn:亘茛艮|nāo:孬|zè:仄昃|pǒ:叵钷笸|kuǎi:蒯|jiōng:冂扃|chen:伧|tǔn:氽|póu:裒掊|hòng:讧|nè:讷疒|ēi:诶|piǎn:谝|zèn:谮|sào:埽臊瘙|piǎo:莩缥殍瞟|wěng:蓊|hāo:蒿薅嚆|xu:蓿|ruí:蕤|kuǎng:夼|gà:尬|tiàn:掭|èn:摁|lū:撸噜|zǔn:撙|nǎng:攮曩|liē:咧|yuě:哕|miē:咩|gén:哏|mōu:哞|miāo:喵|bo:啵|lāng:啷|yóng:喁|lou:喽|á:嗄|ǹg:嗯|diǎ:嗲|lē:嘞|zuō:嘬|ō:噢|cēng:噌|nāng:囔|nān:囡|cén:岑涔|wǎi:崴|cuó:嵯矬痤鹾|cú:徂殂|cǔn:忖|òu:怄|kài:忾|lèng:愣|hàng:沆|shuàn:涮|bū:逋晡钸|qūn:逡|tuàn:彖|kāo:尻|ē:屙婀|niū:妞|zǎng:驵|pián:骈胼蹁|cuǐ:璀|bò:檗擘簸|gā:旮|lá:旯砬|bāi:掰|mú:毪|lu:氇|cuǒ:脞|nǎn:腩蝻赧|chuài:膪踹|mèn:焖懑|nǜ:恧衄|chěn:碜|cǎ:礤|dǔn:盹趸|tuǎn:疃|tǒu:钭|chòng:铳|juǎn:锩|chǎ:镲|chài:瘥虿|tiǎo:窕|kèn:裉|chào:耖|nòu:耨|mān:颟|zān:簪糌|qiǔ:糗|mǐng:酩|bú:醭|bǒ:跛|juě:蹶|zuān:躜|biào:鳔|tiè:餮';
+let PYD=null;
+function pyd(c){
+  if(!PYD){ PYD={}; PYD_RAW.split('|').forEach(g=>{ const i=g.indexOf(':'), p=g.slice(0,i); for(const ch of g.slice(i+1)) PYD[ch]=p; }); }
+  return PYD[c] || PYD[T2S[c]] || '';
+}
+function pyChar(c){ return CHAR_PY[c] || CHAR_PY[T2S[c]] || pyd(c) || c; }
 function toPinyin(str){
   const out=[];
   for(const c of String(str)){
-    if(/[一-鿿]/.test(c)) out.push(CHAR_PY[c] || CHAR_PY[T2S[c]] || c);
+    if(/[一-鿿]/.test(c)) out.push(pyChar(c));
     else if(/[,，.。!！?？、]/.test(c)) out.push(',');
     else if(/\S/.test(c)) out.push(c);
   }
@@ -4078,6 +4108,11 @@ function toPinyin(str){
 const TONEMARK={'ā':1,'á':2,'ǎ':3,'à':4,'ē':1,'é':2,'ě':3,'è':4,'ī':1,'í':2,'ǐ':3,'ì':4,
   'ō':1,'ó':2,'ǒ':3,'ò':4,'ū':1,'ú':2,'ǔ':3,'ù':4,'ǖ':1,'ǘ':2,'ǚ':3,'ǜ':4,'ń':2,'ň':3,'ǹ':4,'m̄':1};
 function toneOf(syl){ for(const ch of syl){ if(TONEMARK[ch]) return TONEMARK[ch]; } return 0; }
+function heardBox(h){
+  if(!h) return '<div class="small muted">—</div>';
+  const py=S.settings.pyFirst ? pyText(h) : toPinyin(h);
+  return '<div class="txt py heardpy">'+pyHTML(py)+'</div><div class="small muted zh">'+esc(h)+'</div>';
+}
 function pyHTML(py){
   if(!py) return '';
   return py.split(/(\s+|,|，)/).map(tok=>{
@@ -4109,7 +4144,7 @@ function segment(sent){
       const w=s.substr(i,L);
       if(LEX[w]){ out.push(Object.assign({w:w}, LEX[w])); i+=L; hit=true; break; }
     }
-    if(!hit){ out.push({w:s[i], py:CHAR_PY[s[i]]||'', th:'', mean:'', lv:null, key:s[i]}); i++; }
+    if(!hit){ out.push({w:s[i], py:CHAR_PY[s[i]]||pyd(s[i])||'', th:'', mean:'', lv:null, key:s[i]}); i++; }
   }
   return out;
 }
@@ -4973,8 +5008,7 @@ function judge(alts){
   const heardPy = heard ? toPinyin(heard) : '';
   $('#heard').innerHTML =
     '<div class="lab">ได้ยินว่า</div>'+
-    '<div class="txt py">'+(heardPy?pyHTML(heardPy):'—')+'</div>'+
-    '<div class="small muted zh">'+(heard?esc(heard):'')+'</div>'+
+    heardBox(heard)+
     '<div class="stars" style="color:var(--'+(st>=3?'ok':st>=2?'warn':'bad')+')">'+starStr(st)+' <span class="small">'+score+'%</span></div>'+
     (hints&&hints.length ? '<div class="nearTip">ใกล้แล้ว — '+hints.map(esc).join('<br>')+'</div>' : '')+
     (prod&&hintUsed ? '<div class="nearTip">'+(S.settings.recallStrict ? 'ใช้ใบ้ขั้น '+hintN+' ข้อนี้จึงได้สูงสุด '+(hintN>=2?1:2)+' ดาว' : 'ใช้ตัวช่วยแล้ว ข้อนี้จึงได้สูงสุด 1 ดาว')+'</div>' : '')+
@@ -6885,7 +6919,7 @@ function judgeShadow(alts){
   save();
   dlog('coach','B1 '+it.hanzi+' @'+rt+' -> '+r.score+'% (ได้ยิน: '+(r.heard||'—')+')');
   $('#pHan').innerHTML='<span class="zh">'+markedHTML(it.hanzi, norm(r.heard,false))+'</span>';
-  $('#heard').innerHTML='<div class="lab">ได้ยินว่า</div><div class="small muted zh">'+esc(r.heard||'—')+'</div>'+
+  $('#heard').innerHTML='<div class="lab">ได้ยินว่า</div>'+heardBox(r.heard)+
     '<div class="stars" style="color:var(--'+(st>=3?'ok':st>=2?'warn':'bad')+')">'+starStr(st)+' <span class="small">'+r.score+'% @ '+rt.toFixed(1)+'×</span></div>'+
     (r.hints&&r.hints.length ? '<div class="nearTip">ใกล้แล้ว — '+r.hints.map(esc).join('<br>')+'</div>' : '');
   const done = shRounds>=SH_PLAN.max || (st>=2 && shStage>=SH_PLAN.rates.length-1);
@@ -7043,7 +7077,7 @@ function judgePair(alts){
   dlog('คู่เสียง', it.hanzi+' vs '+it.partner.hanzi+' -> '+r.score+'/'+rp.score+' '+(ok?'ชัด':mixed?'ปนเป็นคู่หลอก':'ไม่ชัด')+' (ได้ยิน: '+(r.heard||'—')+') ครั้งที่ '+(pTries+1));
   const F=PAIR_FAM[it.fam]||{tip:''};
   $('#pHan').innerHTML='<span class="zh">'+markedHTML(it.hanzi, norm(r.heard,false))+'</span>';
-  $('#heard').innerHTML='<div class="lab">ได้ยินว่า</div><div class="small muted zh">'+esc(r.heard||'—')+'</div>'+
+  $('#heard').innerHTML='<div class="lab">ได้ยินว่า</div>'+heardBox(r.heard)+
     (ok ? '<div class="stars" style="color:var(--ok)">'+starStr(st)+' <span class="small">ชัด ไม่ปนกับ '+esc(it.partner.hanzi)+'</span></div>'
         : '<div class="stars" style="color:var(--bad)">'+starStr(st)+' <span class="small">'+(mixed?'ออกมาเป็น '+esc(it.partner.hanzi)+' ('+esc(it.partner.meaning)+')':'ยังไม่ชัด')+'</span></div>'+
           '<div class="nearTip">👅 '+esc(F.tip)+'</div>');
@@ -7125,7 +7159,7 @@ const TREE_FRAMES=[
    zh:'{mw}{n}多少钱？', tp:'{mp} {p} duō shao qián', tt:'{mt} {t} ตัว เส่า เฉียน', tm:'{m}{mm}เท่าไหร่', ok:['{n}怎么卖？'], ex:'这个', st:1, where:'ร้านค้า/ตลาด',
    note:'ของชั่งกิโล ผลไม้ ของตลาด คนจีนมักถาม 这个怎么卖？'},
   {id:'F5', f:'＿在哪儿？', py:'… zài nǎr',       th:'… จ้าย หน่าร์',       mean:'…อยู่ที่ไหน',        tags:['place'],
-   zh:'{n}在哪儿？', tp:'{p} zài nǎr', tt:'{t} จ้าย หน่าร์', tm:'{m}อยู่ที่ไหน', ok:['{n}在哪里？','{n}怎么走？'], ex:'厕所', st:1, where:'ถามทาง',
+   zh:'{n}在哪儿？', tp:'{p} zài nǎr', tt:'{t} จ้าย หน่าร์', tm:'{m}อยู่ที่ไหน', ok:['{n}在哪里？','{n}怎么走？'], ex:'洗手间', st:1, where:'ถามทาง',
    note:'在哪里 ก็ได้ (คนใต้พูดบ่อย) · 怎么走？ = ไปทางไหน'},
   {id:'F9', f:'我想吃＿',  py:'wǒ xiǎng chī …', th:'หวอ เสี่ยง ชือ …',    mean:'อยากกิน…',          tags:['food','meat','any'],
    zh:'我想吃{n}', tp:'wǒ xiǎng chī {p}', tt:'หวอ เสี่ยง ชือ {t}', tm:'อยากกิน{m}', ok:['想吃{n}'], ex:'这个', st:1, where:'ร้านอาหาร'},
@@ -7220,7 +7254,7 @@ const TREE_NOUNS=[
   ['羽毛球','yǔ máo qiú','หยวี่ เหมา ฉิว','ลูกแบด','thing',{no:['F2']}],
   ['鞋','xié','เสีย','รองเท้า','thing',{no:['F1','F2','F3'], mw:['一双','yì shuāng','อี้ ซวาง',' คู่นึง'], car:['一双鞋','yì shuāng xié','อี้ ซวาง เสีย','รองเท้าหนึ่งคู่']}],
   // place
-  ['厕所','cè suǒ','เช่อ สั่ว','ห้องน้ำ','place',{no:['F13'], ok:['洗手间','卫生间'], note:'ออกเสียง: cè = "ทซ" + พ่นลม (แบบ ts ใน cats) ไม่ใช่ ซ/ช · 厕所 ใช้ทั่วไป · 洗手间/卫生间 สุภาพขึ้น ใช้ในโรงแรม/ห้าง'}],
+  ['洗手间','xǐ shǒu jiān','สี่ โส่ว เจียน','ห้องน้ำ','place',{no:['F13'], ok:['厕所','卫生间'], note:'洗手间 ใช้ได้ทุกที่ทั่วจีน (ร้านอาหาร ห้าง โรงแรม สถานี) และออกเสียงง่ายสำหรับคนไทย · คนจีนพูด 厕所 cè suǒ บ่อยเหมือนกัน — แค่ฟังให้ออกก็พอ'}],
   ['地铁站','dì tiě zhàn','ตี้ เถี่ย จ้าน','สถานีรถไฟใต้ดิน','place'],
   ['熊猫基地','xióng māo jī dì','สฺยง เมา จี ตี้','ศูนย์แพนด้า','place',{note:'ชื่อเต็ม 大熊猫基地 · คนขับรู้จักแค่ 熊猫基地'}],
   ['入口','rù kǒu','รู่ โข่ว','ทางเข้า','place',{no:['F6','F13']}],
@@ -7311,7 +7345,10 @@ const TREE_CAT={
 };
 // ลำดับขั้น 1: คำ/ก้อนก่อน ประโยค (โครง) จะเปิดเองเมื่อส่วนประกอบผ่านครบ
 // lái (来) = วิธีสั่งอาหารที่คนจีนใช้จริง → เรียนก่อน และมีของกิน/ดื่มให้ต่อหลายคำตั้งแต่ขั้นแรก
-const TREE_STAGE1=['你好','谢谢','这个','来一个','牛肉面','米饭','水','服务员','买单','我要','不要','多少钱','不好意思','厕所','在哪儿','奶茶','啤酒','好的','不用了，谢谢','我就看看','我想吃','听不懂','再说一遍','太贵了','便宜点','我是泰国人','我中文不好','我只会一点点','慢一点','等一下','老板','对','不对'];
+(()=>{ try{
+  if(S.tree && S.tree['厕所']){ delete S.tree['厕所']; if(S.pron) delete S.pron['厕所']; save(true); setTimeout(()=>dlog('tree','ย้ายคำหลักห้องน้ำ 厕所 → 洗手间 (เรียนใหม่)'),0); }
+}catch(e){} })();
+const TREE_STAGE1=['你好','谢谢','这个','来一个','牛肉面','米饭','水','服务员','买单','我要','不要','多少钱','不好意思','洗手间','在哪儿','奶茶','啤酒','好的','不用了，谢谢','我就看看','我想吃','听不懂','再说一遍','太贵了','便宜点','我是泰国人','我中文不好','我只会一点点','慢一点','等一下','老板','对','不对'];
 const TREE_BRANCH_ORDER=['food','drink','taste','meat','place','temp','spice','num','thing','money','action','any','special'];
 
 /* ---- ชุดเพิ่ม: ตลาดสด · อาหารเฉิงตู · ในร้าน · โรงแรม/DiDi/ฉุกเฉิน (ภาษาพูดจริง) ---- */
@@ -7369,7 +7406,7 @@ TREE_NOUNS.push(
 // ประโยคตามสถานการณ์ — เปิดพร้อมหมวดที่เกี่ยวข้อง (ตลาดสด ← ผลไม้ · ในร้าน ← อาหาร · เดินทาง ← สถานที่)
 const TREE_SIT=[
   // mkt
-  ['mkt','甜不甜？','tián bu tián','เถียน ปู้ เถียน','หวานไหม',{ok:['甜吗？'], where:'ตลาดสด'}],
+  ['mkt','甜不甜？','tián bu tián','เถียน ปุ เถียน','หวานไหม',{ok:['甜吗？'], where:'ตลาดสด'}],
   ['mkt','新鲜吗？','xīn xiān ma','ซิน เซียน มะ','สดไหม',{ok:['新不新鲜？'], where:'ตลาดสด'}],
   ['mkt','少一点','shǎo yì diǎn','เส่า อี้ เตี่ยน','เอาน้อยลงหน่อย',{ok:['少点'], note:'ตอนแม่ค้าชั่งแล้วเกิน', where:'ตลาดสด'}],
   ['mkt','多一点','duō yì diǎn','ตัว อี้ เตี่ยน','เพิ่มอีกหน่อย',{ok:['多点'], where:'ตลาดสด'}],
@@ -7562,7 +7599,7 @@ function pyText(str){
         const w=run.substr(i,L);
         if(PY_MAP[w]){ out.push(PY_MAP[w]); i+=L; hit=true; break; }
       }
-      if(!hit){ out.push(CHAR_PY[run[i]]||run[i]); i++; }
+      if(!hit){ out.push(pyChar(run[i])); i++; }
     }
     return out.join(' ');
   }).replace(/[，]/g,', ').replace(/[？]/g,'?').replace(/＿/g,'…');
@@ -7632,7 +7669,7 @@ function glossParts(hanzi, pinyin){
     if(c==='儿' && i>0 && /r$/.test(syl[i-1]||'') && raw.length<chars.length) syl.push('');
     else syl.push(raw[j++]||'');
   });
-  if(j!==raw.length || syl.some((x,i)=>!x && chars[i]!=='儿')) syl=chars.map(c=>CHAR_PY[c]||'');   // นับไม่ตรง → ใช้พจนานุกรม
+  if(j!==raw.length || syl.some((x,i)=>!x && chars[i]!=='儿')) syl=chars.map(c=>CHAR_PY[c]||pyd(c)||'');   // นับไม่ตรง → ใช้พจนานุกรม
   const out=[]; let i=0;
   while(i<chars.length){
     let hit=null;
@@ -7984,6 +8021,26 @@ function treeNextChunk(){                          // ในโค้ช: เว
   renderItem(true);                                 // qi ชี้ที่ข้อแรกของก้อนใหม่อยู่แล้ว (เลยท้ายคิวเดิมมา 1)
   return true;
 }
+/* เคล็ดออกเสียง — จากเสียงที่ระบบได้ยินเพี้ยนซ้ำๆ ใน log ของผู้ใช้ */
+const PRON_TIP={
+  '炸鸡':'zhá = ม้วนปลายลิ้นแตะเพดาน "จร๋า" เสียงขึ้น (ไม่ใช่ zǎ) · jī = "จี" ยิ้มกว้าง เสียงสูงยาว (ไม่ใช่ dī)',
+  '啤酒':'pí = "ผี" มีลมออก เสียงขึ้น · jiǔ = "จิ่ว" พยางค์เดียวรวบเร็ว ลงต่ำแล้วขึ้น (ไม่ใช่ "ดิ-อู่")',
+  '我就看看':'jiù = "จิ้ว" จ ชัดๆ ปลายลิ้นแตะหลังฟันล่าง (ไม่ใช่ "ดิ้ว") · kàn kan = "ค่าน คัน" มีลม',
+  '土豆':'tǔ = "ถู่" ต้องมีลมพ่นออก (ถ ไม่ใช่ ต) · dòu = "โต้ว" ไม่มีลม',
+  '两个人':'rén = ม้วนลิ้นขึ้นแบบ r อังกฤษ "เหริน" — ถ้าลิ้นแตะฟันระบบจะได้ยินเป็น liǎn (หน้า)',
+  '我想吃':'xiǎng ลงท้าย -ng ขึ้นจมูก "เสี่ยง" (ไม่ใช่ xiān) · chī = ม้วนลิ้น "ชือ" (ไม่ใช่ qī/qù)',
+  'F9':'xiǎng ลงท้าย -ng ขึ้นจมูก "เสี่ยง" (ไม่ใช่ xiān) · chī = ม้วนลิ้น "ชือ" (ไม่ใช่ qī/qù)',
+  '水':'shuǐ = ม้วนลิ้นแล้วพูด "ซ-เว่ย" ให้ได้ยินเสียง เว่ย ท้ายคำ (ไม่ใช่ shū "ซู")',
+  '这个':'zhè = ม้วนปลายลิ้นแตะเพดาน "เจ้อ" (ไม่ใช่ jiē "เจีย" ที่ลิ้นแบน)',
+  'F15':'zhè = ม้วนลิ้น "เจ้อ" · là = เสียง 4 ตกแรงๆ "ล่า!" (ไม่ใช่ lā เสียงราบ)',
+  '辣':'là = เสียง 4 ตกแรงๆ สั้นๆ "ล่า!" (ไม่ใช่ lā เสียงราบ)',
+  '奶茶':'nǎi = "หน่าย" ลงท้าย ไอ ชัดๆ · chá = ม้วนลิ้น "ฉา" เสียงขึ้น · แก้ว = bēi "เปย" (ไม่ใช่ bāo)',
+  '听不懂':'tīng = "ทิง" เสียงสูงราบ มีลม ลงท้าย -ng · bu เบาสั้น · dǒng = "ต่ง"',
+  '甜不甜？':'tián = "เถียน" มีลม เสียงขึ้น · bu ตรงกลางพูดเบาสั้นๆ',
+  '洗手间':'xǐ = "สี่" ยิ้มกว้าง · shǒu = ม้วนลิ้น "โส่ว" · jiān = "เจียน" — พูดต่อกันเป็นคำเดียว',
+  '不用了，谢谢':'bú yòng = "ปู๋ ย่ง" ลงท้าย -ng · le เบาๆ · xiè xie = "เซี่ย เซีย" ลิ้นแบน'
+};
+function pronTipHTML(k){ return PRON_TIP[k] ? '<div class="pairVs">🗣️ '+esc(PRON_TIP[k])+'</div>' : ''; }
 const TSTEP_LABEL={see:'ดู ฟัง แล้วพูดตาม', recall:'นึกเอง', use:'ใช้ในประโยค', quiz:'ด่านรวม', drill:'ฝึกให้คล่อง', old:'🔁 ทวนคำเก่า'};
 function renderTree(it){
   const w=TREE[it.k]; if(!w){ next(); return; }
@@ -8015,6 +8072,7 @@ function renderTree(it){
       (w.kind==='frame' ? '<div class="pairVs">🧩 <b>'+treeStructHTML(w.frame, it.u ? it.u.noun.key : w.frame.ex)+'</b></div>'+
         '<div class="pairVs">🌳 โครง '+esc(S.settings.pyFirst?w.frame.py:w.frame.f)+' = '+esc(w.frame.mean)+' · เติมคำอื่นได้อีก</div>' : '')+
       (w.kind==='chunk' ? '<div class="pairVs">🧩 ก้อนคำ — เดี๋ยวจะเอาไปต่อกับคำอื่นเป็นประโยค</div>' : '')+
+      pronTipHTML(it.k)+
       (it.where ? '<div class="pairVs">📍 '+esc(it.where)+'</div>' : '')+
       (it.note ? '<div class="pairVs">💬 '+esc(pyText(it.note))+'</div>' : '')+
       (w.car ? '<div class="pairVs">คำเดียวสั้นเกินให้ระบบฟัง — พูดเป็นวลี <b>'+esc(S.settings.pyFirst?w.car.pinyin:w.car.hanzi)+'</b></div>' : '')+noteHTML(Object.assign({}, it, {hanzi:w.key, store:'tree'}));
@@ -8056,10 +8114,10 @@ function judgeTree(alts){
   sessUtter++; sessStars+=st; S.stats.utter++; S.stats.stars+=st;
   bestPer[qi]=Math.max(bestPer[qi]||0, r.score);
   const rec=treeRec(it.k); if(rec) rec.tries=(rec.tries||0)+1;
-  dlog('tree', TSTEP_LABEL[it.t]+' '+it.k+' ('+it.hanzi+') -> '+r.score+'% (ได้ยิน: '+(r.heard||'—')+')');
+  dlog('tree', TSTEP_LABEL[it.t]+' '+it.k+' ('+it.hanzi+') -> '+r.score+'% (ได้ยิน: '+(r.heard||'—')+(r.heard?' = '+toPinyin(r.heard):'')+')');
   treeLog(it, st, r);
   save();
-  const heardHTML='<div class="lab">ได้ยินว่า</div><div class="small muted'+(S.settings.pyFirst?'':' zh')+'">'+esc(r.heard ? (S.settings.pyFirst?pyText(r.heard):r.heard) : '—')+'</div>'+
+  const heardHTML='<div class="lab">ได้ยินว่า</div>'+heardBox(r.heard)+
     '<div class="stars" style="color:var(--'+(st>=3?'ok':st>=2?'warn':'bad')+')">'+starStr(st)+' <span class="small">'+r.score+'%</span></div>'+
     (r.hints&&r.hints.length ? '<div class="nearTip">ใกล้แล้ว — '+r.hints.map(esc).join('<br>')+'</div>' : '')+
     (it.t==='see' ? (r.altHit ? treeNaturalHTML(it, r) : '') : '');
@@ -8074,6 +8132,7 @@ function judgeTree(alts){
       return;
     }
     it.tries++; vib(140); micState('');
+    if(PRON_TIP[it.k] && !(r.hints&&r.hints.length)) $('#heard').insertAdjacentHTML('beforeend', pronTipHTML(it.k));
     if(it.tries>=2) treeOfferSelf(it, 'see');
     if(it.tries>=4){ treePron(it.k); setTimeout(()=>{ if(playing && cur()===it) next(); }, 1600); return; }
     setTimeout(()=>{ if(playing && cur()===it) speak(it.hanzi, armMic, 0.8); }, 900);
@@ -8105,7 +8164,7 @@ function judgeTree(alts){
     return;
   }
   treeReveal(it, norm(r.heard,false));
-  $('#heard').innerHTML=heardHTML;
+  $('#heard').innerHTML=heardHTML+(r.hints&&r.hints.length ? '' : pronTipHTML(it.k));
   treeOfferSelf(it, 'recall');
 }
 /* ปุ่ม "✅ ฉันนึกออก แต่ระบบฟังไม่ออก" → เล่นเฉลย → "ตรงกับที่นึกไว้ไหม?" */
@@ -8330,8 +8389,8 @@ const LONG_LIS=[
    [['ฉันเอาอันเล็กหนึ่งอัน ไม่เอาอันใหญ่','dà de = อันใหญ่ · xiǎo de = อันเล็ก — ฟังว่าอันไหนอยู่หลัง yào และอันไหนอยู่หลัง bú yào']]],
  ['LL4','ตลาดสด','u','老板，这个多少钱一斤？','lǎo bǎn, zhè ge duō shao qián yì jīn','เถ้าแก่ อันนี้จินละเท่าไหร่',
    [['เถ้าแก่ อันนี้ทั้งหมดเท่าไหร่','yì jīn = ต่อจิน (ราคาชั่งน้ำหนัก) · yí gòng = ทั้งหมด'],['เถ้าแก่ อันนั้นจินละเท่าไหร่','zhè ge = อันนี้ · nà ge = อันนั้น']]],
- ['LL5','ถามทาง','u','不好意思，厕所在哪儿？','bù hǎo yì si, cè suǒ zài nǎr','ขอโทษนะ ห้องน้ำอยู่ที่ไหน',
-   [['ขอโทษนะ สถานีรถไฟใต้ดินอยู่ที่ไหน','cè suǒ = ห้องน้ำ · dì tiě zhàn = สถานีรถไฟใต้ดิน']]],
+ ['LL5','ถามทาง','u','不好意思，洗手间在哪儿？','bù hǎo yì si, xǐ shǒu jiān zài nǎr','ขอโทษนะ ห้องน้ำอยู่ที่ไหน',
+   [['ขอโทษนะ สถานีรถไฟใต้ดินอยู่ที่ไหน','xǐ shǒu jiān = ห้องน้ำ · dì tiě zhàn = สถานีรถไฟใต้ดิน']]],
  ['LL6','คุยเรื่องตัวเอง','u','我是泰国人，我中文不好。','wǒ shì Tài guó rén, wǒ Zhōng wén bù hǎo','ฉันเป็นคนไทย ภาษาจีนฉันยังไม่เก่ง',
    [['ฉันเป็นคนไทย ภาษาจีนฉันเก่งมาก','bù hǎo = ไม่ดี/ไม่เก่ง — มี bù นำหน้า = ปฏิเสธ']]],
  ['LL7','คุยเรื่องตัวเอง','u','听不懂，请再说一遍。','tīng bu dǒng, qǐng zài shuō yí biàn','ฟังไม่เข้าใจ ช่วยพูดอีกทีได้ไหม',
@@ -8415,11 +8474,11 @@ const LONG_LIS=[
  ['LL46','อุทยาน','s','下午五点关门，门票五十五。','xià wǔ wǔ diǎn guān mén, mén piào wǔ shí wǔ','ปิดห้าโมงเย็น ตั๋วใบละ 55 หยวน',
    [['ปิดห้าโมงเย็น ตั๋วใบละ 45 หยวน','wǔ shí wǔ = 55 · sì shí wǔ = 45']]],
  ['LL47','ถามทาง','u','不好意思，地铁站在哪儿？怎么走？','bù hǎo yì si, dì tiě zhàn zài nǎr? zěn me zǒu','ขอโทษนะ สถานีรถไฟใต้ดินอยู่ไหน ไปยังไง',
-   [['ขอโทษนะ ห้องน้ำอยู่ไหน ไปยังไง','dì tiě zhàn = สถานีรถไฟใต้ดิน · cè suǒ = ห้องน้ำ']]],
+   [['ขอโทษนะ ห้องน้ำอยู่ไหน ไปยังไง','dì tiě zhàn = สถานีรถไฟใต้ดิน · xǐ shǒu jiān = ห้องน้ำ']]],
  ['LL48','ถามทาง','s','一直走，然后左转，就在对面。','yì zhí zǒu, rán hòu zuǒ zhuǎn, jiù zài duì miàn','ตรงไป แล้วเลี้ยวซ้าย อยู่ฝั่งตรงข้ามเลย',
    [['ตรงไป แล้วเลี้ยวขวา อยู่ข้างๆ เลย','zuǒ = ซ้าย · yòu = ขวา · duì miàn = ฝั่งตรงข้าม']]],
  ['LL49','ห้องน้ำ','s','厕所在二楼，往前走就到。','cè suǒ zài èr lóu, wǎng qián zǒu jiù dào','ห้องน้ำอยู่ชั้น 2 เดินตรงไปก็ถึง',
-   [['ห้องน้ำอยู่ชั้น 1 เลี้ยวซ้ายก็ถึง','èr lóu = ชั้น 2 · wǎng qián zǒu = เดินตรงไป']]],
+   [['ห้องน้ำอยู่ชั้น 1 เลี้ยวซ้ายก็ถึง','cè suǒ = ห้องน้ำ (อีกคำหนึ่ง ได้ยินบ่อย) · èr lóu = ชั้น 2 · wǎng qián zǒu = เดินตรงไป']]],
  ['LL50','DiDi','u','师傅，去宽窄巷子。','shī fu, qù kuān zhǎi xiàng zi','พี่ครับ ไปตรอกกว้าง-ตรอกแคบ',
    [['พี่ครับ ไปถนนชุนซี','kuān zhǎi xiàng zi = ตรอกกว้าง-แคบ · chūn xī lù = ถนนชุนซี']]],
  ['LL51','DiDi','u','师傅，就在这停，谢谢。','shī fu, jiù zài zhè tíng, xiè xie','พี่ครับ จอดตรงนี้เลย ขอบคุณ',
@@ -8499,8 +8558,8 @@ const LONG_LIS=[
    [['ฉันอยากกินมันฝรั่ง มีแบบเผ็ดๆ ไหม','bú là de = แบบไม่เผ็ด (มี bú นำหน้า)']]],
  ['LL88','จ่ายเงิน','u','两瓶啤酒，一瓶水，一共多少钱？','liǎng píng pí jiǔ, yì píng shuǐ, yí gòng duō shao qián','เบียร์สองขวด น้ำเปล่าหนึ่งขวด ทั้งหมดเท่าไหร่',
    [['เบียร์หนึ่งขวด น้ำเปล่าสองขวด ทั้งหมดเท่าไหร่','ตัวเลขอยู่หน้าของ: liǎng píng pí jiǔ = เบียร์สองขวด']]],
- ['LL89','ถามทาง','u','你好，厕所在哪儿？这里有吗？','nǐ hǎo, cè suǒ zài nǎr? zhè lǐ yǒu ma','สวัสดี ห้องน้ำอยู่ไหน ที่นี่มีไหม',
-   [['สวัสดี ทางออกอยู่ไหน ที่นี่มีไหม','cè suǒ = ห้องน้ำ · chū kǒu = ทางออก']]],
+ ['LL89','ถามทาง','u','你好，洗手间在哪儿？这里有吗？','nǐ hǎo, xǐ shǒu jiān zài nǎr? zhè lǐ yǒu ma','สวัสดี ห้องน้ำอยู่ไหน ที่นี่มีไหม',
+   [['สวัสดี ทางออกอยู่ไหน ที่นี่มีไหม','xǐ shǒu jiān = ห้องน้ำ · chū kǒu = ทางออก']]],
  ['LL90','ซื้อของ','u','我要两个这个，一个那个。','wǒ yào liǎng ge zhè ge, yí ge nà ge','ฉันเอาอันนี้สองอัน อันนั้นหนึ่งอัน',
    [['ฉันเอาอันนี้หนึ่งอัน อันนั้นสองอัน','liǎng ge zhè ge = อันนี้ 2 · yí ge nà ge = อันนั้น 1']]],
  ['LL91','ร้านอาหาร','u','服务员，再来一碗牛肉面，好吃！','fú wù yuán, zài lái yì wǎn niú ròu miàn, hǎo chī','พนักงานครับ ขอบะหมี่เนื้ออีกชาม อร่อย!',
@@ -8745,7 +8804,7 @@ function judgeRepeat(it, alts){
   const r=scoreAll(it.hanzi, alts), st=starsOf(r.score);
   tries++; sessUtter++; S.stats.utter++;
   $('#prodAns').querySelector('.zh') && ($('#prodAns').querySelector('.zh').innerHTML=markedHTML(it.hanzi, norm(r.heard,false)));
-  $('#heard').innerHTML='<div class="lab">พูดตาม</div><div class="small muted zh">'+esc(r.heard||'—')+'</div>'+
+  $('#heard').innerHTML='<div class="lab">พูดตาม</div>'+heardBox(r.heard)+
     '<div class="stars" style="color:var(--'+(st>=2?'ok':'bad')+')">'+starStr(st)+' <span class="small">'+r.score+'%</span></div>';
   dlog('recall','พูดตามหลังนึกไม่ออก: '+it.hanzi+' → '+r.score+'%');
   save();
@@ -8832,7 +8891,7 @@ function judgeRetell(alts){
   save();
   dlog('recall','📕 บท '+RT.role+': '+it.hanzi+' -> '+score+'%'+(hintN?' (ใบ้ '+hintN+')':''));
   revealProd(it, norm(r0.heard,false));
-  $('#heard').innerHTML='<div class="lab">ได้ยินว่า</div><div class="small muted zh">'+esc(r0.heard||'—')+'</div>'+
+  $('#heard').innerHTML='<div class="lab">ได้ยินว่า</div>'+heardBox(r0.heard)+
     '<div class="stars" style="color:var(--'+(st>=3?'ok':st>=2?'warn':'bad')+')">'+starStr(st)+' <span class="small">'+score+'%</span></div>'+
     (r0.hints&&r0.hints.length ? '<div class="nearTip">ใกล้แล้ว — '+r0.hints.map(esc).join('<br>')+'</div>' : '');
   if(st>=2 || tries>=3){ vib(st>=2?[30,40,30]:140); micState(st>=2?'ok':''); setTimeout(()=>{ if(playing && MODE==='retell') next(); }, 1800); }
@@ -9062,7 +9121,7 @@ function judgePretest(alts){
   save();
   dlog('recall','🔮 '+it.hanzi+' -> '+r.score+'% (ได้ยิน: '+(r.heard||'—')+')');
   pretestReveal(it, norm(r.heard,false));
-  $('#heard').innerHTML='<div class="lab">คุณเดาว่า</div><div class="small muted zh">'+esc(r.heard||'—')+'</div>'+
+  $('#heard').innerHTML='<div class="lab">คุณเดาว่า</div>'+heardBox(r.heard)+
     '<div class="nearTip">'+(st>=2?'เดาถูกเลย! 👀':'ใกล้หรือไกลก็ไม่เป็นไร — สมองจำได้ว่าเคยลองนึกคำนี้แล้ว')+'</div>';
 }
 function finishPretest(){
@@ -9243,7 +9302,7 @@ function finishExam(){
       const q = it.exType==='listen' ? 'ฟัง: '+esc(it.hanzi) : it.exType==='talk' ? 'ถาม: '+esc(it.ask) : esc(shortMean(it.meaning));
       const a = it.exType==='listen' ? esc(it.ans) : esc(it.hanzi);
       return '<button class="frmiss" data-h="'+esc(it.exType==='talk'?it.ask:it.hanzi)+'"><span style="flex:none">'+(r.ok?'✅':'❌')+' '+icon(it.exType)+'</span>'+
-        '<span class="grow"><span class="small muted">'+q+'</span><br><b class="zh">'+a+'</b>'+(r.ok?'':' <span class="small muted">· คุณตอบ: '+esc(r.heard||'—')+'</span>')+'</span></button>';
+        '<span class="grow"><span class="small muted">'+q+'</span><br><b class="zh">'+a+'</b>'+(r.ok?'':' <span class="small muted">· คุณตอบ: '+esc(r.heard?toPinyin(r.heard):'—')+'</span>')+'</span></button>';
     }).join('')+'</div></div>'+
     '<button class="btn ghost" id="exHome" style="margin-top:.5rem">กลับหน้าแรก</button>';
   $('#exHome').onclick=()=>{ screenStack=['scr-home']; renderHome(); show('scr-home',false); };
