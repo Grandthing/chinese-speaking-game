@@ -3315,7 +3315,7 @@ const MILESTONES = [
 /* ============================================================
    2.5 บันทึกปัญหา (diagnostics) — ไว้ส่งให้ผู้พัฒนาดูเวลาไมค์มีปัญหา
    ============================================================ */
-const BUILD='2026-10-04d';                     // เปลี่ยนทุกครั้งที่แก้ไฟล์ จะได้รู้ว่า log มาจากรุ่นไหน
+const BUILD='2026-10-04e';                     // เปลี่ยนทุกครั้งที่แก้ไฟล์ จะได้รู้ว่า log มาจากรุ่นไหน
 const DIAG=[], STUCK={}, T0=Date.now();
 /* log ปัญหาเก็บลงเครื่องด้วย: iPhone ปิดแอปหรือรีเฟรชแล้ว log เก่ายังอยู่ ส่งย้อนหลังได้ */
 const DKEY='zhgame-diag', DIAG_MAX=2500;
@@ -3745,6 +3745,9 @@ const ALIAS2={
   '卖':'买','迈':'买','麦':'买','埋':'买',
   '渣':'炸','闸':'炸','眨':'炸','乍':'炸','诈':'炸',
   '庭':'听','停':'听','亭':'听','挺':'听','婷':'听','厅':'听',
+  '见':'间','剑':'间','健':'间','件':'间','建':'间','坚':'间','肩':'间','尖':'间','监':'间','兼':'间','煎':'间','简':'间','减':'间','检':'间',
+  '喜':'洗','系':'洗','细':'洗','戏':'洗','西':'洗','希':'洗','息':'洗','习':'洗','吸':'洗','稀':'洗',
+  '首':'手','守':'手','受':'手','收':'手','兽':'手','寿':'手','瘦':'手',
   '击':'鸡','机':'鸡','基':'鸡','积':'鸡','激':'鸡','几':'鸡','吉':'鸡','即':'鸡','急':'鸡'
 };
 /* ---- "ใกล้แล้ว" — พยัญชนะผิด ไม่ใช่แค่วรรณยุกต์ ให้ผ่านได้สูงสุด 2 ดาว พร้อมบอกวิธีแก้ ---- */
@@ -3885,6 +3888,9 @@ const NEAR={
   const XIANG='xiǎng ลงท้าย -ng ขึ้นจมูก "เสี่ยง" — ไม่ใช่ xiān (เซียน)';
   const TU='tǔ = "ถู่" ต้องมีลมพ่นออก (ถ ไม่ใช่ ต/ก/ป)';
   const BEI='bēi = "เปย" ลงท้ายเสียง เอย — ไม่ใช่ bāo (เปา)';
+  const XI='xǐ = "สี่" ยิ้มกว้าง ปลายลิ้นแตะหลังฟันล่าง ลมออกทางฟัน — ไม่ใช่ lǐ / jiě / qì';
+  const SHOU='shǒu = ม้วนลิ้นแล้วพูด "โส่ว" ปากห่อท้ายคำ — ไม่ใช่ suǒ / xiǎo';
+  const JIAN='jiān = "เจียน" เสียงสูงราบ ลงท้าย -n — ไม่ใช่ diǎn / xiàn';
   const REN='rén = ม้วนลิ้นขึ้นแบบ r อังกฤษ "เหริน" — ถ้าลิ้นแตะฟันจะเป็น lián / liǎn';
   const ADD={
     '搜':['厕',CE],'收':['厕',CE],'射':['厕',CE],'色':['厕',CE],'社':['厕',CE],'舍':['厕',CE],'涩':['厕',CE],'瑟':['厕',CE],'受':['厕',CE],'手':[['所',SUO],['厕',CE]],'拾':['所',SUO],'首':['所',SUO],
@@ -3905,7 +3911,11 @@ const NEAR={
     '书':['水',SHUI],'叔':['水',SHUI],'输':['水',SHUI],'熟':['水',SHUI],'鼠':['水',SHUI],'属':['水',SHUI],'舒':['水',SHUI],
     '酷':['土',TU],'库':['土',TU],'苦':['土',TU],'裤':['土',TU],'哭':['土',TU],'孤':['土',TU],'姑':['土',TU],'古':['土',TU],'谷':['土',TU],'鼓':['土',TU],'扑':['土',TU],'铺':['土',TU],'普':['土',TU],
     '包':['杯',BEI],'宝':['杯',BEI],'保':['杯',BEI],'报':['杯',BEI],'薄':['杯',BEI],
-    '脸':['人',REN],'连':['人',REN],'联':['人',REN],'怜':['人',REN],'凉':['人',REN]
+    '脸':['人',REN],'连':['人',REN],'联':['人',REN],'怜':['人',REN],'凉':['人',REN],
+    /* log 10-04: xǐ shǒu jiān → lǐ suǒ jiān · jiě suǒ diàn · qì sè qiǎn · xǐ shǒu xiàn */
+    '李':['洗',XI],'理':['洗',XI],'里':['洗',XI],'礼':['洗',XI],'解':['洗',XI],'姐':['洗',XI],'起':['洗',XI],'气':['洗',XI],
+    '所':['手',SHOU],'锁':['手',SHOU],'索':['手',SHOU],'晓':['手',SHOU],'小':['手',SHOU],'色':['手',SHOU],'射':['手',SHOU],
+    '店':['间',JIAN],'点':['间',JIAN],'线':['间',JIAN],'现':['间',JIAN],'江':['间',JIAN],'浅':['间',JIAN],'娟':['间',JIAN],'天':['间',JIAN]
   };
   Object.keys(ADD).forEach(c=>{
     const add=Array.isArray(ADD[c][0]) ? ADD[c] : [ADD[c]];
@@ -4945,7 +4955,9 @@ function judge(alts){
   if(prod && gaveUp) return judgeRepeat(it, alts);     // นึกไม่ออกแล้ว: รอบนี้คือพูดตาม ไม่นับคะแนน
   const r0 = (it.store==='tree' && typeof treeScore==='function') ? treeScore(it, alts) : scoreAll(it.hanzi, alts);   // เครื่องคิดคะแนนตัวเดียวกันทุกโหมด (ต้นไม้: รับแบบธรรมชาติอื่น/แบบหนังสือเรียน)
   const heard=r0.heard, target=r0.target, hints=r0.hints;
-  const rawScore=r0.score;                             // คะแนนจริงก่อนหักตัวช่วย
+  const nearOk = prod && it.store==='tree' && !!r0.nearFull;   // คำถูก แต่พยัญชนะเพี้ยน → นับว่านึกออก + จดไว้ฝึกออกเสียง
+  if(nearOk){ treePron(skeyOf(it)); dlog('tree','ทบทวน: นึกออกแต่เสียงเพี้ยน → นับผ่าน: '+skeyOf(it)); }
+  const rawScore = nearOk ? Math.max(90, r0.score) : r0.score;   // คะแนนจริงก่อนหักตัวช่วย
   let score=rawScore;
   if(prod && hintUsed){                                 // ใบ้ไล่ระดับ: ขั้น 1 = สูงสุด 2 ดาว · ขั้น 2–3 = 1 ดาว (ปิดโหมดนี้ = 1 ดาวแบบเดิม)
     score = S.settings.recallStrict ? Math.min(score, hintN>=2 ? 60 : 80) : Math.min(score, 50);
@@ -7254,7 +7266,7 @@ const TREE_NOUNS=[
   ['羽毛球','yǔ máo qiú','หยวี่ เหมา ฉิว','ลูกแบด','thing',{no:['F2']}],
   ['鞋','xié','เสีย','รองเท้า','thing',{no:['F1','F2','F3'], mw:['一双','yì shuāng','อี้ ซวาง',' คู่นึง'], car:['一双鞋','yì shuāng xié','อี้ ซวาง เสีย','รองเท้าหนึ่งคู่']}],
   // place
-  ['洗手间','xǐ shǒu jiān','สี่ โส่ว เจียน','ห้องน้ำ','place',{no:['F13'], ok:['厕所','卫生间'], note:'洗手间 ใช้ได้ทุกที่ทั่วจีน (ร้านอาหาร ห้าง โรงแรม สถานี) และออกเสียงง่ายสำหรับคนไทย · คนจีนพูด 厕所 cè suǒ บ่อยเหมือนกัน — แค่ฟังให้ออกก็พอ'}],
+  ['洗手间','xǐ shǒu jiān','สี่ โส่ว เจียน','ห้องน้ำ','place',{no:['F13'], car:['洗手间在哪儿？','xǐ shǒu jiān zài nǎr','สี่ โส่ว เจียน จ้าย หน่าร์','ห้องน้ำอยู่ไหน'], ok:['厕所','卫生间'], note:'洗手间 ใช้ได้ทุกที่ทั่วจีน (ร้านอาหาร ห้าง โรงแรม สถานี) และออกเสียงง่ายสำหรับคนไทย · คนจีนพูด 厕所 cè suǒ บ่อยเหมือนกัน — แค่ฟังให้ออกก็พอ'}],
   ['地铁站','dì tiě zhàn','ตี้ เถี่ย จ้าน','สถานีรถไฟใต้ดิน','place'],
   ['熊猫基地','xióng māo jī dì','สฺยง เมา จี ตี้','ศูนย์แพนด้า','place',{note:'ชื่อเต็ม 大熊猫基地 · คนขับรู้จักแค่ 熊猫基地'}],
   ['入口','rù kǒu','รู่ โข่ว','ทางเข้า','place',{no:['F6','F13']}],
@@ -8188,6 +8200,10 @@ function judgeTree(alts){
     '<div class="stars" style="color:var(--'+(st>=3?'ok':st>=2?'warn':'bad')+')">'+starStr(st)+' <span class="small">'+r.score+'%</span></div>'+
     (r.hints&&r.hints.length ? '<div class="nearTip">ใกล้แล้ว — '+r.hints.map(esc).join('<br>')+'</div>' : '')+
     (it.t==='see' ? (r.altHit ? treeNaturalHTML(it, r) : '') : '');
+  if(st<2 && !r.nearFull && !r.altHit && !it.drill && (it.t==='see' || it.t==='recall' || it.t==='use') && TL){
+    TL.miss=TL.miss||{}; TL.miss[it.k]=(TL.miss[it.k]||0)+1;
+    if(TL.miss[it.k]>=8){ treePark(it, heardHTML); return; }
+  }
   if(it.t==='see'){
     $('#pHan').innerHTML=bigWordHTML(it.hanzi, it.pinyin, markedHTML(it.hanzi, norm(r.heard,false)));
     $('#heard').innerHTML=heardHTML;
@@ -8268,6 +8284,19 @@ function treeOfferSelf(it, kind){
       save(); next();
     };
   };
+}
+/* พักคำที่ติดวนนาน: เอาข้อที่เหลือของคำนี้ออก · ไปฝึกออกเสียงตอนวอร์มอัพ · รอบหน้าเรียนใหม่ */
+function treePark(it, heardHTML){
+  const k=it.k;
+  TL.fail[k]=true;
+  for(let i=Q.length-1;i>qi;i--) if(Q[i].k===k) Q.splice(i,1);
+  const r=treeRec(k); if(r){ r.next=Date.now(); }
+  treePron(k); save();
+  dlog('tree','พักคำ '+k+' (พลาด '+TL.miss[k]+' ครั้งในรอบนี้) → ไปฝึกออกเสียงตอนวอร์มอัพ รอบหน้าเรียนใหม่');
+  treeReveal(it, '', true);
+  $('#heard').innerHTML=heardHTML+'<div class="nearTip">😮‍💨 พักคำนี้ไว้ก่อนนะ — ระบบฟังไม่ออกหลายครั้งแล้ว รอบหน้าจะกลับมาให้ฝึกออกเสียงใหม่'+(PRON_TIP[k]?'<br>🗣️ '+esc(PRON_TIP[k]):'')+'</div>';
+  micState(''); vib(140);
+  setTimeout(()=>{ if(playing && cur()===it) next(); }, 3200);
 }
 function treePron(k){ S.pron=S.pron||{}; S.pron[k]=(S.pron[k]||0)+1; }
 function treeSuccess(it){
