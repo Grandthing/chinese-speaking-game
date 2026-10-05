@@ -377,6 +377,7 @@ td.r,th.r{text-align:right}
     <div class="card treecard" id="treeCard" hidden>
       <div class="row"><b class="grow">🌳 ต้นไม้คำเที่ยว</b><span class="small muted" id="tcSub"></span></div>
       <div class="tccount"><span id="tcCount">0</span><span>🗣️ ประโยคที่พูดเองได้</span></div>
+      <div class="small" id="tcTrip" style="text-align:center;margin-top:.2rem;line-height:1.5"></div>
       <button class="btn" id="btnTreeOpen" style="margin-top:.5rem">🌳 ดูต้นไม้ · เรียนคำใหม่</button>
       <button class="btn ghost" id="btnTreeNext" style="margin-top:.45rem;white-space:normal;flex-direction:column" hidden></button>
       <button class="btn ghost" id="btnLongLis" style="margin-top:.45rem;white-space:normal;flex-direction:column" hidden></button>
@@ -3315,7 +3316,7 @@ const MILESTONES = [
 /* ============================================================
    2.5 บันทึกปัญหา (diagnostics) — ไว้ส่งให้ผู้พัฒนาดูเวลาไมค์มีปัญหา
    ============================================================ */
-const BUILD='2026-10-05a';                     // เปลี่ยนทุกครั้งที่แก้ไฟล์ จะได้รู้ว่า log มาจากรุ่นไหน
+const BUILD='2026-10-05b';                     // เปลี่ยนทุกครั้งที่แก้ไฟล์ จะได้รู้ว่า log มาจากรุ่นไหน
 const DIAG=[], STUCK={}, T0=Date.now();
 /* log ปัญหาเก็บลงเครื่องด้วย: iPhone ปิดแอปหรือรีเฟรชแล้ว log เก่ายังอยู่ ส่งย้อนหลังได้ */
 const DKEY='zhgame-diag', DIAG_MAX=2500;
@@ -3381,7 +3382,7 @@ function blank(){return{
   v:1,
   settings:{showThai:true, rate:0.8, autoListen:false, vibrate:true, sv:2,
              coachMin:25, coachStrict:true, coachGoal:2, recallStrict:true, pretest:true,
-             newPerDay:8, focusTravel:true, pyFirst:true, voiceMode:'mix'},
+             newPerDay:8, focusTravel:true, pyFirst:true, voiceMode:'mix', tripDate:'2026-11-15'},
   progress:{},   // levelId -> {best, stars, plays, done}
   words:{},      // hanzi -> {py,th,mean,lv,att,fails,d2:[],d3:[]}
   mistakes:{},   // hanzi -> count
@@ -8398,7 +8399,7 @@ function renderTreeScreen(){
   llButton($('#btnLongLis2'));
   const gate=treeGate(), left=treeNewLeft();
   const nx=treeNextHint();
-  $('#trToday').innerHTML = esc(gate ? '⛔ '+gate : 'คำใหม่วันนี้เหลือ '+left+'/'+(S.settings.newPerDay||8)+' · ถึงกำหนดทวน '+treeDueList().length+' ข้อ')+
+  $('#trToday').innerHTML = (tripLineHTML() ? '<div style="margin-bottom:.3rem">'+tripLineHTML()+'</div>' : '')+esc(gate ? '⛔ '+gate : 'คำใหม่วันนี้เหลือ '+left+'/'+(S.settings.newPerDay||8)+' · ถึงกำหนดทวน '+treeDueList().length+' ข้อ')+
     (nx.length ? '<div class="nearTip" style="text-align:left">🌱 ต่อไป<br>'+nx.map(esc).join('<br>')+'</div>' : '');
   // ลำต้น
   const s1=TREE_FRAMES.filter(F=>F.st===1).map(F=>TREE[F.id]);
@@ -8439,6 +8440,25 @@ function llButton(b){
   b.hidden=n<3;
   b.innerHTML='🎧 ฟังประโยคยาว · เลือกคำแปล<small style="font-weight:400;opacity:.8;display:block">ประโยคจากคำที่เรียนแล้ว '+n+' ประโยค · ถูก 1 หลอก 1</small>';
 }
+/* ✈️ นับถอยหลังถึงวันบิน: เรียนคำใหม่ให้ครบก่อนบิน 7 วัน (ช่วงสุดท้ายไว้ทวนให้เป็น 🟢 + ฝึกฟัง) */
+function tripPlan(){
+  const td=S.settings.tripDate||'2026-11-15';
+  const days=Math.ceil((new Date(td+'T00:00:00').getTime()-Date.now())/86400000);
+  if(!(days>0)) return null;
+  const total=Object.keys(TREE).length, left=Math.max(0, total-treeStarted());
+  const learnDays=Math.max(1, days-7);
+  const per=left ? Math.ceil(left/learnDays) : 0;
+  return {days:days, left:left, per:per, today:treeDayRec().n, finish:new Date(Date.now()+(left/Math.max(1,S.settings.newPerDay||8))*86400000)};
+}
+function tripLineHTML(){
+  const p=tripPlan(); if(!p) return '';
+  const d=x=>x.toLocaleDateString('th-TH',{day:'numeric',month:'short'});
+  if(!p.left) return '✈️ อีก <b>'+p.days+'</b> วันถึงเฉิงตู · เรียนครบทุกคำแล้ว — ทวนให้เป็น 🟢 + ฝึกฟังประโยคยาว';
+  const ok=p.per<=(S.settings.newPerDay||8);
+  return '✈️ อีก <b>'+p.days+'</b> วันถึงเฉิงตู · เหลือ '+p.left+' คำ<br>'+
+    '🎯 วันนี้: คำใหม่ <b>'+Math.min(p.today,p.per)+'/'+p.per+'</b>'+(p.today>=p.per?' ✅':'')+
+    ' · '+(ok ? 'ทันแผน (วันละ '+(S.settings.newPerDay||8)+' คำ ครบประมาณ '+d(p.finish)+')' : '⚠️ ต้องวันละ '+p.per+' คำ — กด ⏭ ไปเลเวลต่อไปเพิ่ม');
+}
 function renderTreeCard(){
   const el=$('#treeCard'); if(!el) return;
   el.hidden=!S.settings.focusTravel;
@@ -8446,6 +8466,7 @@ function renderTreeCard(){
   const all=Object.values(TREE), g=all.filter(x=>treeGreen(x.key)).length, o=all.filter(x=>treeColor(x.key)==='o').length;
   $('#tcCount').textContent=treeSentenceCount();
   $('#tcSub').textContent='เลเวล '+treeLevel()+' · 🟢 '+g+' · 🟠 '+o+' · ⚪ '+(all.length-g-o);
+  $('#tcTrip').innerHTML=tripLineHTML();
   const nl=treeNextLevelHTML(); $('#btnTreeNext').hidden=!nl; $('#btnTreeNext').innerHTML=nl;
   llButton($('#btnLongLis'));
 }
