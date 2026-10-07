@@ -3333,7 +3333,7 @@ const MILESTONES = [
 /* ============================================================
    2.5 บันทึกปัญหา (diagnostics) — ไว้ส่งให้ผู้พัฒนาดูเวลาไมค์มีปัญหา
    ============================================================ */
-const BUILD='2026-10-06c';                     // เปลี่ยนทุกครั้งที่แก้ไฟล์ จะได้รู้ว่า log มาจากรุ่นไหน
+const BUILD='2026-10-07a';                     // เปลี่ยนทุกครั้งที่แก้ไฟล์ จะได้รู้ว่า log มาจากรุ่นไหน
 const DIAG=[], STUCK={}, T0=Date.now();
 /* log ปัญหาเก็บลงเครื่องด้วย: iPhone ปิดแอปหรือรีเฟรชแล้ว log เก่ายังอยู่ ส่งย้อนหลังได้ */
 const DKEY='zhgame-diag', DIAG_MAX=2500;
@@ -5088,7 +5088,7 @@ function judge(alts){
       $('#heard').insertAdjacentHTML('beforeend','<div class="nearTip">จำเฉลยไว้ — ข้อนี้จะวนกลับมาถามอีกครั้งตอนท้าย</div>');
     }
     vib(st>=3?[30,40,30]:st>=2?30:140); micState(st>=2?'ok':'');
-    setTimeout(()=>{ if(playing) next(); }, st>=3 && !slow ? AUTO_NEXT_MS : 2400);
+    if(st<2) waitNext(); else setTimeout(()=>{ if(playing) next(); }, st>=3 && !slow ? AUTO_NEXT_MS : 2400);
     return;
   }
   if(slow){                                   // ถูกแล้ว แค่ช้า — ไปข้อต่อไป ไม่ต้องพูดซ้ำ
@@ -5105,8 +5105,7 @@ function judge(alts){
     vib(140); micState('');
     if(tries>=MAX_TRY){
       $('#btnSkip').style.visibility='visible';
-      $('#heard').insertAdjacentHTML('beforeend','<div class="small muted">พอก่อนได้ ข้อนี้จะกลับมาให้ทบทวนอีกครั้ง</div>');
-      setTimeout(()=>{ if(playing) next(); }, 2200);
+      waitNext('พอก่อนได้ ข้อนี้จะกลับมาให้ทบทวนอีกครั้ง');
       return;
     }
     if(tries>=2){
@@ -6642,7 +6641,7 @@ function lisRender(){
   $('#lisBar').style.width=(lqi/Math.max(1,LQ.length)*100)+'%';
   $('#lisCount').textContent=lisOk+'/'+lisN;
   $('#lisType').classList.toggle('on', !!S.listen.typeMode);
-  $('#lisAns').hidden=true; $('#lisAns').innerHTML=''; $('#lisSkip').textContent='ข้าม ›';
+  $('#lisAns').hidden=true; $('#lisAns').innerHTML=''; $('#lisSkip').textContent='ข้าม ›'; $('#lisSkip').className='btn ghost';
   $('#lisInputWrap').hidden=!typed;
   $('#lisChoices').hidden=typed;
   if(typed){ $('#lisInput').value=''; }
@@ -6704,9 +6703,13 @@ function lisAnswer(choice){
   $('#lisCount').textContent=lisOk+'/'+lisN;
   vib(ok?[30,40,30]:140);
   if(it.real){ $('#lisSkip').textContent='ถัดไป ›'; speak(it.zh, null, L.rate); }
-  else if((it.kind==='tone' || it.kind==='pair') && !ok) fdContrast(it, choice, ()=>{ lisTimer=setTimeout(lisNext, 1200); });
+  else if(!ok){                                      // ตอบผิด: ไม่ข้ามเอง ให้อ่านเฉลยจนพอใจแล้วกด "ถัดไป ›"
+    $('#lisSkip').textContent='ถัดไป ›'; $('#lisSkip').className='btn';
+    if(it.kind==='tone' || it.kind==='pair') fdContrast(it, choice, null);
+    else speak(it.zh, null, it.rate||L.rate);
+  }
   else if(['sandhi','lego','hand','sign','time','change','yesno'].indexOf(it.kind)>=0)
-    speak(it.zh, ()=>{ lisTimer=setTimeout(lisNext, ok ? 900 : (it.kind==='lego' ? 2800 : 1800)); }, it.rate||0.9);   // ของจริง: ให้อ่านคำแปลก่อน กดไปต่อเอง
+    speak(it.zh, ()=>{ lisTimer=setTimeout(lisNext, 900); }, it.rate||0.9);   // ของจริง: ให้อ่านคำแปลก่อน กดไปต่อเอง
   else if(ok && !assisted) lisTimer=setTimeout(lisNext, 700);
   else speak(it.zh, ()=>{ lisTimer=setTimeout(lisNext, ok?700:1400); }, L.rate);
 }
@@ -8396,7 +8399,7 @@ function judgeTree(alts){
     it.tries++; vib(140); micState('');
     if(PRON_TIP[it.k] && !(r.hints&&r.hints.length)) $('#heard').insertAdjacentHTML('beforeend', pronTipHTML(it.k));
     if(it.tries>=2) treeOfferSelf(it, 'see');
-    if(it.tries>=4){ treePron(it.k); setTimeout(()=>{ if(playing && cur()===it) next(); }, 1600); return; }
+    if(it.tries>=4){ treePron(it.k); waitNext(); return; }
     setTimeout(()=>{ if(playing && cur()===it) speak(it.hanzi, armMic, 0.8); }, 900);
     return;
   }
@@ -8405,7 +8408,8 @@ function judgeTree(alts){
     $('#heard').innerHTML=heardHTML+'<div class="nearTip">'+(st>=2?'พูดตามได้แล้ว 👍':'ไม่เป็นไร')+' — ข้อนี้จะวนกลับมาให้นึกใหม่อีกครั้ง</div>';
     micState(st>=2?'ok':''); vib(st>=2?30:140);
     treeFail(it); save();
-    setTimeout(()=>{ if(playing && cur()===it) next(); }, 1300);
+    if(st>=2) setTimeout(()=>{ if(playing && cur()===it) next(); }, 1300);
+    else waitNext();
     return;
   }
   // recall / use / quiz — ต้องได้ 3 ดาว (หรือพูดแบบหนังสือเรียนถูก = ผ่าน 2★ พร้อมบอกแบบธรรมชาติ)
@@ -8464,6 +8468,15 @@ function treeOfferSelf(it, kind){
     };
   };
 }
+/* ตอบผิด: ไม่ข้ามเอง — โชว์ปุ่ม "ถัดไป ›" ให้อ่านเฉลย/คำอ่านจนพอใจ (ผู้ใช้อ่านไม่ทัน) */
+function waitNext(note){
+  const it=cur();
+  const box=document.createElement('div');
+  box.className='nextbox';
+  box.innerHTML=(note?'<div class="small muted" style="margin:.35rem 0">'+note+'</div>':'')+'<button class="btn" type="button" style="margin-top:.45rem">ถัดไป ›</button>';
+  $('#heard').appendChild(box);
+  box.querySelector('button').onclick=()=>{ if(playing && cur()===it){ try{ abortRec(); }catch(e){} next(); } };
+}
 /* พักคำที่ติดวนนาน: เอาข้อที่เหลือของคำนี้ออก · ไปฝึกออกเสียงตอนวอร์มอัพ · รอบหน้าเรียนใหม่ */
 function treePark(it, heardHTML){
   const k=it.k;
@@ -8475,7 +8488,7 @@ function treePark(it, heardHTML){
   treeReveal(it, '', true);
   $('#heard').innerHTML=heardHTML+'<div class="nearTip">😮‍💨 พักคำนี้ไว้ก่อนนะ — ระบบฟังไม่ออกหลายครั้งแล้ว รอบหน้าจะกลับมาให้ฝึกออกเสียงใหม่'+(PRON_TIP[k]?'<br>🗣️ '+esc(PRON_TIP[k]):'')+'</div>';
   micState(''); vib(140);
-  setTimeout(()=>{ if(playing && cur()===it) next(); }, 3200);
+  waitNext();
 }
 function treePron(k){ S.pron=S.pron||{}; S.pron[k]=(S.pron[k]||0)+1; }
 function treeSuccess(it){
@@ -9004,6 +9017,7 @@ function fdContrast(it, choice, done){
   let other=null;
   if(it.kind==='tone'){ const got=FD_TONE_LBL.indexOf(choice); other=(it.set||[]).find(x=>toneNum(x[1])===got); }
   if(it.kind==='pair') other=it.other;
+  done=done||null;
   if(!other){ speak(it.zh, done, 0.8); return; }
   speak(it.zh, ()=>setTimeout(()=>speak(other[0], ()=>setTimeout(()=>speak(it.zh, done, 0.8), 350), 0.8), 350), 0.8);
 }
