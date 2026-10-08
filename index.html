@@ -203,6 +203,10 @@ h2{font-size:1.15rem;margin:1.5rem 0 .5rem}
 .zhsmall{font-size:1.05rem;opacity:.65}
 .pairVs{margin-top:.35rem;font-size:.9rem;color:var(--t3)}
 .fcm{display:flex;gap:.4rem .9rem;flex-wrap:wrap;justify-content:center;margin-top:.4rem}
+.v3setchips{display:flex;flex-wrap:wrap;gap:.3rem;justify-content:center;margin-top:.55rem}
+.v3chip{font:inherit;font-size:.82rem;min-width:2.5rem;padding:.3rem .35rem;border:1px solid var(--rule);border-radius:.5rem;background:var(--card);color:var(--ink);cursor:pointer}
+.v3chip.ok{border-color:var(--ok);color:var(--ok)}.v3chip.on{border-color:var(--t1);color:var(--t1);font-weight:700}.v3chip.lock{opacity:.45}
+.v3chips{display:flex;flex-wrap:wrap;gap:.35rem;justify-content:center;margin-top:.5rem}.v3chips span{border:1px solid var(--rule);border-radius:.5rem;padding:.2rem .5rem;font-weight:600}
 .fdchoices{display:grid;grid-template-columns:1fr 1fr;gap:.45rem}
 .fdc{font:inherit;font-size:1.1rem;font-weight:600;padding:.7rem .4rem;border:1px solid var(--rule);border-radius:.7rem;background:var(--card);color:var(--ink);cursor:pointer;min-height:3rem}
 .fdc.ok{background:#E8F0E4;border-color:var(--ok);color:var(--ok)}.fdc.bad{background:#F8E3E0;border-color:var(--bad);color:var(--bad)}
@@ -398,6 +402,12 @@ td.r,th.r{text-align:right}
       <div class="fcm small" id="fcMetrics"></div>
       <button class="btn ghost" id="btnFoundGo" style="margin-top:.45rem">▶ ฝึกตัวเลข 10 ข้อ</button>
       <button class="btn ghost sm" id="btnFoundPlace" style="margin-top:.4rem;width:100%">📝 วัดระดับ</button>
+    </div>
+    <div class="card treecard" id="v3Card" hidden>
+      <div class="row"><b class="grow">📚 ท่องศัพท์ 300 คำ</b><span class="small muted" id="v3Sub"></span></div>
+      <div class="small muted" style="margin-top:.15rem">ชุดละ 20 คำ: ท่องคำ 1–10 → 11–20 → สอบแต่งประโยค 10 ข้อ (ผ่าน 8 ข้อ ปลดล็อกชุดถัดไป)</div>
+      <button class="btn" id="btnV3Go" style="margin-top:.55rem;white-space:normal;flex-direction:column"></button>
+      <div class="v3setchips" id="v3Chips"></div>
     </div>
     <div class="card treecard" id="rpCard" hidden>
       <b>🎭 ซ้อมสถานการณ์จริง</b>
@@ -3360,7 +3370,7 @@ const MILESTONES = [
 /* ============================================================
    2.5 บันทึกปัญหา (diagnostics) — ไว้ส่งให้ผู้พัฒนาดูเวลาไมค์มีปัญหา
    ============================================================ */
-const BUILD='2026-10-08b';                     // เปลี่ยนทุกครั้งที่แก้ไฟล์ จะได้รู้ว่า log มาจากรุ่นไหน
+const BUILD='2026-10-08c';                     // เปลี่ยนทุกครั้งที่แก้ไฟล์ จะได้รู้ว่า log มาจากรุ่นไหน
 const DIAG=[], STUCK={}, T0=Date.now();
 /* log ปัญหาเก็บลงเครื่องด้วย: iPhone ปิดแอปหรือรีเฟรชแล้ว log เก่ายังอยู่ ส่งย้อนหลังได้ */
 const DKEY='zhgame-diag', DIAG_MAX=2500;
@@ -4822,7 +4832,7 @@ function instantJudge(extra){
   emptyStreak=0;
   judgeFn()(all);
 }
-function judgeFn(){ return MODE==='talk' ? judgeTalk : MODE==='shadow' ? judgeShadow : MODE==='pair' ? judgePair : MODE==='tree' ? judgeTree : MODE==='fdnum' ? judgeFdNum : MODE==='retell' ? judgeRetell
+function judgeFn(){ return MODE==='talk' ? judgeTalk : MODE==='shadow' ? judgeShadow : MODE==='pair' ? judgePair : MODE==='tree' ? judgeTree : MODE==='fdnum' ? judgeFdNum : MODE==='v300' ? judgeV300 : MODE==='retell' ? judgeRetell
   : MODE==='pretest' ? judgePretest : MODE==='exam' ? judgeExam : judge; }
 let lastStopAt=0;
 function scheduleStop(){
@@ -4940,6 +4950,7 @@ function renderItem(autoPlay){
   if(MODE==='pair'){ renderPair(it); return; }
   if(MODE==='tree'){ renderTree(it); return; }
   if(MODE==='fdnum'){ renderFdNum(it); return; }
+  if(MODE==='v300'){ renderV300(it); return; }
   if(MODE==='retell'){ renderRetell(it); return; }
   if(MODE==='pretest'){ renderPretest(it); return; }
   if(MODE==='exam'){ renderExam(it); return; }
@@ -5183,6 +5194,7 @@ function checkMilestone(){
 function next(){ qi++; if(qi>=Q.length || coachTimeUp()) finishRun(); else renderItem(true); }
 function finishRun(){
   if(MODE==='fdnum') return fdNumFinish();
+  if(MODE==='v300') return v3Finish();
   if(MODE==='shadow') return finishShadow();
   if(MODE==='pair') return finishPair();
   if(MODE==='tree') return finishTree();
@@ -7967,6 +7979,17 @@ Object.assign(CHAR_TH,{'炒':'ผัด','条':'(ลักษณนาม เส
 Object.assign(WORD_TH,{'车费':'ค่ารถ','发车':'รถออก','登机':'ขึ้นเครื่อง','登机口':'ประตูขึ้นเครื่อง','尾号':'เลขท้าย','座位':'ที่นั่ง','小时':'ชั่วโมง','分钟':'นาที','一刻':'15 นาที','大巴':'รถบัส',
   '投币':'หยอดเหรียญ','或者':'หรือ','告诉':'บอก','晕车':'เมารถ','下面':'ข้างล่าง','托运':'โหลด (กระเป๋า)','旅途愉快':'เดินทางโดยสวัสดิภาพ','需要':'ต้องการ','帮忙':'ช่วย','直接':'ตรงไปเลย',
   '左右':'ประมาณ','早上':'ตอนเช้า','上车':'ขึ้นรถ','号线':'สาย','车厢':'ตู้','收你':'รับเงินคุณ','找你':'ทอนให้คุณ','找我':'ทอนให้ฉัน','现金':'เงินสด','火车东站':'สถานีรถไฟตะวันออก','质量':'คุณภาพ'});
+Object.assign(WORD_TH,{'一起':'ด้วยกัน','全部':'ทั้งหมด','见':'เจอ','时候':'ตอน/เวลา','什么时候':'เมื่อไหร่','已经':'แล้ว','迟到':'มาสาย','喜欢':'ชอบ','成都':'เฉิงตู','重庆':'ฉงชิ่ง','滴滴':'DiDi',
+  '公交车':'รถเมล์','红绿灯':'ไฟแดง','旁边':'ข้างๆ','后备箱':'ท้ายรถ','鸭肉':'เนื้อเป็ด','忌口':'อาหารที่ไม่กิน','衣服':'เสื้อผ้า','纪念品':'ของที่ระลึก','遥控器':'รีโมต','牙刷':'แปรงสีฟัน',
+  '吹风机':'ไดร์เป่าผม','抽烟':'สูบบุหรี่','救命':'ช่วยด้วย','报警':'แจ้งตำรวจ','第一':'ที่หนึ่ง','更多':'มากกว่า','昨天':'เมื่อวาน','每天':'ทุกวัน','星期':'สัปดาห์','周末':'สุดสัปดาห์',
+  '刚才':'เมื่อกี้','出租车':'แท็กซี่','网约车':'รถเรียกผ่านแอป','飞机':'เครื่องบิน','航班':'เที่ยวบิน','航站楼':'อาคารผู้โดยสาร','进站':'เข้าสถานี','出站':'ออกสถานี','站台':'ชานชาลา','安检':'จุดตรวจ',
+  '身份证':'บัตรประชาชน','地图':'แผนที่','餐厅':'ร้านอาหาร','海鲜':'อาหารทะเล','蔬菜':'ผัก','叉子':'ส้อม','收款码':'QR รับเงิน','找零':'เงินทอน','钥匙':'กุญแจ','禁烟':'ห้ามสูบบุหรี่',
+  '丢失':'ทำหาย','严禁':'ห้ามเด็ดขาด','小心':'ระวัง','地滑':'พื้นลื่น','再见':'ลาก่อน','温水':'น้ำอุ่น','冰块':'ก้อนน้ำแข็ง','麻辣':'หม่าล่า','招牌菜':'เมนูเด็ด','点菜':'สั่งอาหาร'});
+Object.assign(CHAR_TH,{'起':'ขึ้น/เริ่ม','部':'ส่วน','见':'เจอ','候':'(ตอน)','已':'แล้ว','经':'ผ่าน','迟':'สาย','他':'เขา','她':'เธอ','喜':'ชอบ','欢':'ยินดี','成':'สำเร็จ/เฉิง','重':'(ฉง)','庆':'(ชิ่ง)',
+  '滴':'(ตี)','公':'สาธารณะ','交':'จราจร','近':'ใกล้','绿':'เขียว','灯':'ไฟ','旁':'ข้าง','备':'สำรอง','箱':'กล่อง','和':'และ','鸭':'เป็ด','渴':'กระหายน้ำ','忌':'งด','衣':'เสื้อ','纪':'บันทึก',
+  '念':'ระลึก','品':'สินค้า','遥':'ไกล','控':'ควบคุม','器':'เครื่อง','牙':'ฟัน','吹':'เป่า','风':'ลม','抽':'สูบ','烟':'บุหรี่','救':'ช่วย','命':'ชีวิต','报':'แจ้ง','警':'ตำรวจ','第':'ที่ (ลำดับ)',
+  '更':'ยิ่ง','昨':'เมื่อวาน','每':'ทุก','星':'ดาว','期':'ช่วง','周':'สัปดาห์','末':'ปลาย','刚':'เพิ่ง','才':'จึง/เพิ่ง','租':'เช่า','约':'นัด','飞':'บิน','航':'การบิน','进':'เข้า','台':'แท่น',
+  '安':'ปลอดภัย','身':'ตัว','证':'บัตร','图':'แผนที่/รูป','厅':'ห้องโถง','海':'ทะเล','蔬':'ผัก','叉':'ส้อม','款':'เงิน','钥':'กุญแจ','匙':'(ช้อน/กุญแจ)','禁':'ห้าม','失':'หาย','严':'เข้มงวด','滑':'ลื่น'});
 Object.assign(WORD_TH,{'休息':'พัก','出发':'ออกเดินทาง','开始':'เริ่ม','大概':'ประมาณ','不客气':'ไม่เป็นไร'});
 Object.assign(CHAR_TH,{'休':'พัก','息':'พัก','发':'ออก/ส่ง','住':'พัก (อาศัย)','始':'เริ่ม','概':'(ประมาณ)','客':'แขก','祝':'อวยพร'});
 Object.assign(CHAR_TH,{'幺':'หนึ่ง (อ่านแบบเบอร์โทร/ห้อง)','零':'ศูนย์','一':'หนึ่ง','二':'สอง','三':'สาม','四':'สี่','五':'ห้า','六':'หก','七':'เจ็ด','八':'แปด','九':'เก้า','十':'สิบ','百':'ร้อย','千':'พัน','万':'หมื่น',
@@ -9578,6 +9601,399 @@ function fdNumFinish(){
   toast('🔢 ตัวเลขจบรอบ', '👂 ฟังถูก '+(m.num===null?'—':m.num+'%')+' · 🗣️ พูดผ่าน '+(m.say===null?'—':m.say+'%'), 2800);
   screenStack=['scr-home']; renderHome(); show('scr-home',false);
 }
+/* ประโยคทดสอบท้ายชุด (15 ชุด × 10) — ใช้คำของชุดนั้นเป็นหลัก + คำที่เรียนในต้นไม้แล้ว · [จีน, พินอิน, ไทย] */
+const V300_SENT=[
+ /* 1 ตัวเลข */ [
+  ['一共多少钱？','yí gòng duō shao qián','ทั้งหมดเท่าไหร่'],
+  ['这个三十块。','zhè ge sān shí kuài','อันนี้ 30 หยวน'],
+  ['我要两个。','wǒ yào liǎng ge','ฉันเอาสองอัน'],
+  ['你要几个？','nǐ yào jǐ ge','คุณเอากี่อัน'],
+  ['一百五十块。','yì bǎi wǔ shí kuài','150 หยวน'],
+  ['一百零五块。','yì bǎi líng wǔ kuài','105 หยวน'],
+  ['两千块太贵了。','liǎng qiān kuài tài guì le','2,000 หยวน แพงไป'],
+  ['三块五毛。','sān kuài wǔ máo','3 หยวน 5 เหมา (3.50 หยวน)'],
+  ['来十个。','lái shí ge','ขอ 10 อัน'],
+  ['一万块。','yí wàn kuài','10,000 หยวน']],
+ /* 2 ลักษณนาม ปริมาณ วัน */ [
+  ['来一杯奶茶。','lái yì bēi nǎi chá','ขอชานม 1 แก้ว'],
+  ['我要两瓶水。','wǒ yào liǎng píng shuǐ','ฉันเอาน้ำ 2 ขวด'],
+  ['来一碗米饭。','lái yì wǎn mǐ fàn','ขอข้าวสวย 1 ชาม'],
+  ['来一份饺子。','lái yí fèn jiǎo zi','ขอเกี๊ยว 1 ที่'],
+  ['我想买一双鞋。','wǒ xiǎng mǎi yì shuāng xié','ฉันอยากซื้อรองเท้า 1 คู่'],
+  ['我们一起吃。','wǒ men yì qǐ chī','เรากินด้วยกัน'],
+  ['够了，谢谢。','gòu le, xiè xie','พอแล้ว ขอบคุณ'],
+  ['一点点就够了。','yì diǎn diǎn jiù gòu le','นิดเดียวก็พอ'],
+  ['全部多少钱？','quán bù duō shao qián','ทั้งหมดเท่าไหร่'],
+  ['明天早上见。','míng tiān zǎo shang jiàn','พรุ่งนี้เช้าเจอกัน']],
+ /* 3 เวลา */ [
+  ['现在几点？','xiàn zài jǐ diǎn','ตอนนี้กี่โมง'],
+  ['下午三点半。','xià wǔ sān diǎn bàn','บ่ายสามโมงครึ่ง'],
+  ['晚上七点见。','wǎn shang qī diǎn jiàn','เจอกันหนึ่งทุ่ม'],
+  ['要等几分钟？','yào děng jǐ fēn zhōng','ต้องรอกี่นาที'],
+  ['两个小时。','liǎng ge xiǎo shí','สองชั่วโมง'],
+  ['什么时候开门？','shén me shí hou kāi mén','เปิดเมื่อไหร่'],
+  ['我马上到。','wǒ mǎ shàng dào','เดี๋ยวถึงแล้ว'],
+  ['等一下，我已经付了。','děng yí xià, wǒ yǐ jīng fù le','รอเดี๋ยว ฉันจ่ายแล้ว'],
+  ['不好意思，我迟到了。','bù hǎo yì si, wǒ chí dào le','ขอโทษ ฉันมาสาย'],
+  ['中午十二点退房。','zhōng wǔ shí èr diǎn tuì fáng','เช็กเอาต์เที่ยงตรง']],
+ /* 4 สรรพนาม กริยาหลัก */ [
+  ['我要这个，不要那个。','wǒ yào zhè ge, bú yào nà ge','ฉันเอาอันนี้ ไม่เอาอันนั้น'],
+  ['洗手间在哪里？','xǐ shǒu jiān zài nǎ lǐ','ห้องน้ำอยู่ที่ไหน'],
+  ['我想去那里。','wǒ xiǎng qù nà lǐ','ฉันอยากไปที่นั่น'],
+  ['有没有水？','yǒu méi yǒu shuǐ','มีน้ำไหม'],
+  ['没有了。','méi yǒu le','หมดแล้ว'],
+  ['我们是泰国人。','wǒ men shì Tài guó rén','พวกเราเป็นคนไทย'],
+  ['这里是火车站吗？','zhè lǐ shì huǒ chē zhàn ma','ที่นี่คือสถานีรถไฟใช่ไหม'],
+  ['不是，这里是地铁站。','bú shì, zhè lǐ shì dì tiě zhàn','ไม่ใช่ ที่นี่คือสถานีรถไฟใต้ดิน'],
+  ['您好，我在这里。','nín hǎo, wǒ zài zhè lǐ','สวัสดีครับ ฉันอยู่ตรงนี้'],
+  ['他来了吗？','tā lái le ma','เขามาหรือยัง']],
+ /* 5 กริยา */ [
+  ['可以刷卡吗？','kě yǐ shuā kǎ ma','รูดบัตรได้ไหม'],
+  ['不行，只收现金。','bù xíng, zhǐ shōu xiàn jīn','ไม่ได้ รับแต่เงินสด'],
+  ['我会说一点点。','wǒ huì shuō yì diǎn diǎn','ฉันพูดได้นิดหน่อย'],
+  ['这个怎么卖？','zhè ge zěn me mài','อันนี้ขายยังไง'],
+  ['我想吃火锅，也想喝啤酒。','wǒ xiǎng chī huǒ guō, yě xiǎng hē pí jiǔ','อยากกินหม้อไฟ แล้วก็อยากดื่มเบียร์'],
+  ['可以看一下吗？','kě yǐ kàn yí xià ma','ขอดูหน่อยได้ไหม'],
+  ['请再说一遍，我听不懂。','qǐng zài shuō yí biàn, wǒ tīng bu dǒng','ช่วยพูดอีกที ฉันฟังไม่เข้าใจ'],
+  ['给我一个袋子。','gěi wǒ yí ge dài zi','ขอถุงใบนึง'],
+  ['你知道洗手间在哪里吗？','nǐ zhī dào xǐ shǒu jiān zài nǎ lǐ ma','คุณรู้ไหมว่าห้องน้ำอยู่ไหน'],
+  ['我很喜欢成都。','wǒ hěn xǐ huan Chéng dū','ฉันชอบเฉิงตูมาก']],
+ /* 6 การเดินทาง 1 */ [
+  ['坐地铁去机场。','zuò dì tiě qù jī chǎng','นั่งรถไฟใต้ดินไปสนามบิน'],
+  ['地铁站怎么走？','dì tiě zhàn zěn me zǒu','สถานีรถไฟใต้ดินไปทางไหน'],
+  ['师傅，去火车站。','shī fu, qù huǒ chē zhàn','พี่ ไปสถานีรถไฟ'],
+  ['我要买票。','wǒ yào mǎi piào','ฉันจะซื้อตั๋ว'],
+  ['我想坐高铁去重庆。','wǒ xiǎng zuò gāo tiě qù Chóng qìng','ฉันอยากนั่งรถไฟความเร็วสูงไปฉงชิ่ง'],
+  ['我叫了一个滴滴。','wǒ jiào le yí ge Dī dī','ฉันเรียก DiDi แล้ว'],
+  ['坐公交车去宽窄巷子。','zuò gōng jiāo chē qù kuān zhǎi xiàng zi','นั่งรถเมล์ไปตรอกกว้าง-แคบ'],
+  ['请在这里停一下。','qǐng zài zhè lǐ tíng yí xià','ช่วยจอดตรงนี้หน่อย'],
+  ['检票口在哪里？','jiǎn piào kǒu zài nǎ lǐ','ประตูตรวจตั๋วอยู่ไหน'],
+  ['请开一下门。','qǐng kāi yí xià mén','ช่วยเปิดประตูหน่อย']],
+ /* 7 ทิศทาง */ [
+  ['出口在哪里？','chū kǒu zài nǎ lǐ','ทางออกอยู่ไหน'],
+  ['在哪里换乘二号线？','zài nǎ lǐ huàn chéng èr hào xiàn','เปลี่ยนไปสาย 2 ที่ไหน'],
+  ['走路远吗？','zǒu lù yuǎn ma','เดินไปไกลไหม'],
+  ['很近，直走就到。','hěn jìn, zhí zǒu jiù dào','ใกล้มาก เดินตรงไปก็ถึง'],
+  ['在红绿灯左拐。','zài hóng lǜ dēng zuǒ guǎi','เลี้ยวซ้ายตรงไฟแดง'],
+  ['到路口右拐。','dào lù kǒu yòu guǎi','ถึงทางแยกแล้วเลี้ยวขวา'],
+  ['就在对面。','jiù zài duì miàn','อยู่ฝั่งตรงข้ามเลย'],
+  ['在前面还是后面？','zài qián miàn hái shi hòu miàn','อยู่ข้างหน้าหรือข้างหลัง'],
+  ['就在旁边。','jiù zài páng biān','อยู่ข้างๆ เลย'],
+  ['从三号出口出站。','cóng sān hào chū kǒu chū zhàn','ออกจากสถานีทางออก 3']],
+ /* 8 รถ สนามบิน ร้านอาหาร */ [
+  ['到了吗？','dào le ma','ถึงหรือยัง'],
+  ['师傅，这里停。','shī fu, zhè lǐ tíng','พี่ จอดตรงนี้'],
+  ['行李放后备箱。','xíng li fàng hòu bèi xiāng','กระเป๋าวางท้ายรถ'],
+  ['请出示护照。','qǐng chū shì hù zhào','กรุณาแสดงพาสปอร์ต'],
+  ['登机口在哪里？','dēng jī kǒu zài nǎ lǐ','ประตูขึ้นเครื่องอยู่ไหน'],
+  ['服务员，有菜单吗？','fú wù yuán, yǒu cài dān ma','พนักงานครับ มีเมนูไหม'],
+  ['你们的招牌菜是什么？','nǐ men de zhāo pái cài shì shén me','เมนูเด็ดของร้านคืออะไร'],
+  ['我们点菜。','wǒ men diǎn cài','เราจะสั่งอาหาร'],
+  ['买单，这个打包。','mǎi dān, zhè ge dǎ bāo','เช็กบิล อันนี้ห่อกลับ'],
+  ['来一杯温水。','lái yì bēi wēn shuǐ','ขอน้ำอุ่น 1 แก้ว']],
+ /* 9 เครื่องดื่ม อาหาร */ [
+  ['来一瓶冰可乐。','lái yì píng bīng kě lè','ขอโค้กเย็น 1 ขวด'],
+  ['啤酒要冰的。','pí jiǔ yào bīng de','เบียร์เอาแบบเย็น'],
+  ['奶茶不要冰块。','nǎi chá bú yào bīng kuài','ชานมไม่ใส่น้ำแข็ง'],
+  ['来一份牛肉炒饭。','lái yí fèn niú ròu chǎo fàn','ขอข้าวผัดเนื้อ 1 ที่'],
+  ['我要一碗面条。','wǒ yào yì wǎn miàn tiáo','ฉันเอาบะหมี่ 1 ชาม'],
+  ['有没有虾和鱼？','yǒu méi yǒu xiā hé yú','มีกุ้งกับปลาไหม'],
+  ['我不吃猪肉和羊肉。','wǒ bù chī zhū ròu hé yáng ròu','ฉันไม่กินหมูกับเนื้อแกะ'],
+  ['这个汤是什么肉？','zhè ge tāng shì shén me ròu','ซุปนี้เนื้ออะไร'],
+  ['来十个包子，十个饺子。','lái shí ge bāo zi, shí ge jiǎo zi','ขอซาลาเปา 10 ลูก เกี๊ยว 10 ตัว'],
+  ['鸡肉还是鸭肉？','jī ròu hái shi yā ròu','ไก่หรือเป็ด']],
+ /* 10 รสชาติ อุปกรณ์ */ [
+  ['不要辣，也不要香菜。','bú yào là, yě bú yào xiāng cài','ไม่เอาเผ็ด แล้วก็ไม่ใส่ผักชี'],
+  ['微辣就可以。','wēi là jiù kě yǐ','เผ็ดน้อยก็พอ'],
+  ['我不能吃特辣。','wǒ bù néng chī tè là','ฉันกินเผ็ดมากไม่ได้'],
+  ['这个是麻辣的吗？','zhè ge shì má là de ma','อันนี้รสหม่าล่าไหม'],
+  ['有点咸，有点酸。','yǒu diǎn xián, yǒu diǎn suān','เค็มนิดๆ เปรี้ยวนิดๆ'],
+  ['奶茶少糖，去冰。','nǎi chá shǎo táng, qù bīng','ชานมหวานน้อย ไม่ใส่น้ำแข็ง'],
+  ['请给我一双筷子。','qǐng gěi wǒ yì shuāng kuài zi','ขอตะเกียบ 1 คู่'],
+  ['有勺子和纸巾吗？','yǒu sháo zi hé zhǐ jīn ma','มีช้อนกับทิชชูไหม'],
+  ['再来一个盘子。','zài lái yí ge pán zi','ขอจานเพิ่มอีกใบ'],
+  ['很好吃，很甜。','hěn hǎo chī, hěn tián','อร่อยมาก หวานมาก']],
+ /* 11 กินอิ่ม จ่ายเงิน */ [
+  ['这个奶茶很好喝。','zhè ge nǎi chá hěn hǎo hē','ชานมนี้อร่อยมาก'],
+  ['我吃饱了。','wǒ chī bǎo le','ฉันอิ่มแล้ว'],
+  ['我饿了，也渴了。','wǒ è le, yě kě le','ฉันหิวแล้ว แล้วก็กระหายน้ำด้วย'],
+  ['我有忌口，不吃牛肉。','wǒ yǒu jì kǒu, bù chī niú ròu','ฉันมีอาหารที่ไม่กิน ไม่กินเนื้อวัว'],
+  ['这个多少钱？太贵了！','zhè ge duō shao qián? tài guì le','อันนี้เท่าไหร่ แพงไป!'],
+  ['便宜点吧。','pián yi diǎn ba','ลดหน่อยสิ'],
+  ['可以打折吗？','kě yǐ dǎ zhé ma','ลดราคาได้ไหม'],
+  ['可以用支付宝吗？','kě yǐ yòng Zhī fù bǎo ma','ใช้ Alipay ได้ไหม'],
+  ['我扫你还是你扫我？','wǒ sǎo nǐ hái shi nǐ sǎo wǒ','ฉันสแกนคุณ หรือคุณสแกนฉัน'],
+  ['我没有现金，可以扫码吗？','wǒ méi yǒu xiàn jīn, kě yǐ sǎo mǎ ma','ฉันไม่มีเงินสด สแกนจ่ายได้ไหม']],
+ /* 12 ซื้อของ */ [
+  ['找你二十块。','zhǎo nǐ èr shí kuài','ทอนให้ 20 หยวน'],
+  ['要小票吗？','yào xiǎo piào ma','เอาสลิปไหม'],
+  ['不要袋子，谢谢。','bú yào dài zi, xiè xie','ไม่เอาถุง ขอบคุณ'],
+  ['可以试一下吗？','kě yǐ shì yí xià ma','ขอลองหน่อยได้ไหม'],
+  ['有大号吗？','yǒu dà hào ma','มีไซซ์ L ไหม'],
+  ['有黑色的吗？','yǒu hēi sè de ma','มีสีดำไหม'],
+  ['我想买白色的衣服。','wǒ xiǎng mǎi bái sè de yī fu','ฉันอยากซื้อเสื้อสีขาว'],
+  ['这个坏了，换一个。','zhè ge huài le, huàn yí ge','อันนี้เสีย ขอเปลี่ยนอันใหม่'],
+  ['有新的吗？','yǒu xīn de ma','มีของใหม่ไหม'],
+  ['超市在哪里？','chāo shì zài nǎ lǐ','ซูเปอร์มาร์เก็ตอยู่ไหน']],
+ /* 13 ห้าง โรงแรม */ [
+  ['商场几点关门？','shāng chǎng jǐ diǎn guān mén','ห้างปิดกี่โมง'],
+  ['有什么纪念品？','yǒu shén me jì niàn pǐn','มีของที่ระลึกอะไรบ้าง'],
+  ['这是成都的特产吗？','zhè shì Chéng dū de tè chǎn ma','นี่คือของขึ้นชื่อของเฉิงตูไหม'],
+  ['这个免费吗？','zhè ge miǎn fèi ma','อันนี้ฟรีไหม'],
+  ['押金多少钱？','yā jīn duō shao qián','เงินมัดจำเท่าไหร่'],
+  ['我预订了房间。','wǒ yù dìng le fáng jiān','ฉันจองห้องไว้'],
+  ['几点可以入住？','jǐ diǎn kě yǐ rù zhù','เช็กอินได้กี่โมง'],
+  ['明天几点退房？','míng tiān jǐ diǎn tuì fáng','พรุ่งนี้เช็กเอาต์กี่โมง'],
+  ['无线网密码是多少？','wú xiàn wǎng mì mǎ shì duō shao','รหัสไวไฟคืออะไร'],
+  ['电梯在哪里？我住八楼。','diàn tī zài nǎ lǐ? wǒ zhù bā lóu','ลิฟต์อยู่ไหน ฉันพักชั้น 8']],
+ /* 14 ปัญหาในห้อง มารยาท */ [
+  ['空调坏了。','kōng tiáo huài le','แอร์เสีย'],
+  ['遥控器在哪里？','yáo kòng qì zài nǎ lǐ','รีโมตอยู่ไหน'],
+  ['热水不热。','rè shuǐ bú rè','น้ำร้อนไม่ร้อน'],
+  ['能多给一条毛巾吗？','néng duō gěi yì tiáo máo jīn ma','ขอผ้าเช็ดตัวเพิ่มอีกผืนได้ไหม'],
+  ['有牙刷和吹风机吗？','yǒu yá shuā hé chuī fēng jī ma','มีแปรงสีฟันกับไดร์เป่าผมไหม'],
+  ['请打扫一下房间。','qǐng dǎ sǎo yí xià fáng jiān','ช่วยทำความสะอาดห้องหน่อย'],
+  ['这里可以抽烟吗？','zhè lǐ kě yǐ chōu yān ma','ที่นี่สูบบุหรี่ได้ไหม'],
+  ['早餐几点开始？','zǎo cān jǐ diǎn kāi shǐ','อาหารเช้าเริ่มกี่โมง'],
+  ['对不起，我听不懂。','duì bu qǐ, wǒ tīng bu dǒng','ขอโทษ ฉันฟังไม่เข้าใจ'],
+  ['请问，洗手间在哪里？','qǐng wèn, xǐ shǒu jiān zài nǎ lǐ','ขอถามหน่อย ห้องน้ำอยู่ไหน']],
+ /* 15 เอาตัวรอด ฉุกเฉิน */ [
+  ['我中文不好，请说慢一点。','wǒ Zhōng wén bù hǎo, qǐng shuō màn yì diǎn','ภาษาจีนฉันไม่เก่ง ช่วยพูดช้าๆ หน่อย'],
+  ['救命！帮帮我！','jiù mìng! bāng bang wǒ','ช่วยด้วย! ช่วยฉันที!'],
+  ['请帮我报警。','qǐng bāng wǒ bào jǐng','ช่วยแจ้งตำรวจให้หน่อย'],
+  ['医院在哪里？','yī yuàn zài nǎ lǐ','โรงพยาบาลอยู่ไหน'],
+  ['我不舒服，我要看医生。','wǒ bù shū fu, wǒ yào kàn yī shēng','ฉันไม่สบาย ฉันต้องไปหาหมอ'],
+  ['药店有感冒药吗？','yào diàn yǒu gǎn mào yào ma','ร้านขายยามียาแก้หวัดไหม'],
+  ['我头疼，有止痛药吗？','wǒ tóu téng, yǒu zhǐ tòng yào ma','ฉันปวดหัว มียาแก้ปวดไหม'],
+  ['我肚子疼。','wǒ dù zi téng','ฉันปวดท้อง'],
+  ['我的护照丢了。','wǒ de hù zhào diū le','พาสปอร์ตฉันหาย'],
+  ['谢谢，再见！','xiè xie, zài jiàn','ขอบคุณ ลาก่อน!']]
+];
+/* ============================================================
+   📚 ท่องศัพท์ 300 คำ (คู่มือ) — 15 ชุด × 20 คำ
+   ชุดหนึ่ง = ท่องคำ 1–10 → ท่องคำ 11–20 → 📝 สอบแต่งประโยค 10 ข้อ (ผ่าน 8/10 → ปลดล็อกชุดถัดไป)
+   ท่องคำ: ทีละ 5 คำ ดู+ฟัง+พูดตาม → นึกเองจากความหมายไทย (คำ "ดูออก/ฟังออก" ใช้เลือกคำตอบ ไม่ต้องพูด)
+   MODE 'v300' บนหน้าเล่นปกติ · ผิดไม่ข้ามเอง
+   ============================================================ */
+const V3_PASS=8;
+function v3Word(r){
+  const pick=(x)=>String(x).split(/\s*\/\s*/)[0].replace(/\s*\(.*?\)/g,'').trim();
+  const forms=String(r[1]).split(/\s*\/\s*/).map(x=>x.replace(/\s*\(.*?\)/g,'').replace(/[A-Za-z0-9]/g,'').trim()).filter(Boolean);
+  const zh=forms[0]||pick(r[1]);
+  return {n:r[0], zh:zh, alt:forms.slice(1), py:v3SplitPy(zh, pick(r[2])), th:pick(r[3]), mean:r[4], use:r[6]};
+}
+/* พินอินในคู่มือเขียนติดกัน (yíxià) → แยกพยางค์ตามตัวอักษร (yí xià) ให้สีวรรณยุกต์/แปลทีละคำตรง */
+function v3SplitPy(zh, py){
+  const chars=[...zh].filter(c=>/[一-鿿]/.test(c));
+  const raw=String(py).replace(/\s+/g,'').replace(/-/g,'');
+  if(chars.length<2) return String(py);
+  const base=x=>x.normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase();
+  let out=[], i=0;
+  for(const c of chars){
+    const want=base(pyChar(c)||''); if(!want) return String(py);
+    const seg=raw.slice(i, i+want.length);
+    if(base(seg)!==want){ const alt=raw.slice(i, i+want.length+1); if(base(alt).replace('r','')===want){ out.push(alt); i+=alt.length; continue; } return String(py); }
+    out.push(seg); i+=want.length;
+  }
+  return i===raw.length ? out.join(' ') : String(py);
+}
+function v3S(){ S.v300=Object.assign({cur:1, sets:{}, words:{}}, S.v300||{}); return S.v300; }
+function v3Set(n){ const v=v3S(); return v.sets[n]||(v.sets[n]={part:0, pass:false, best:0, tries:0}); }
+function v3Words(n, part){ const all=VOCAB300.slice((n-1)*20, n*20).map(v3Word); return part===0 ? all.slice(0,10) : part===1 ? all.slice(10,20) : all; }
+function v3Queue(words){
+  const q=[];
+  for(let i=0;i<words.length;i+=5){
+    const ch=words.slice(i,i+5);
+    ch.forEach(w=>q.push({kind:'v300', t:'learn', w:w}));
+    shuf(ch).forEach(w=>q.push({kind:'v300', t:'recall', w:w}));
+  }
+  return q;
+}
+let V3=null;
+function v3Start(n, mode){
+  const st=v3Set(n);
+  const part = mode==='test' ? 2 : mode==='words' ? (st.part>=2 ? 0 : st.part) : st.part;
+  let q;
+  if(part===2) q=shuf(V300_SENT[n-1]).map((s,i)=>({kind:'v300', t:'sent', s:s}));
+  else q=v3Queue(v3Words(n, part));
+  V3={n:n, part:part, ok:0, total:part===2?q.length:0, requeued:{}};
+  MODE='v300'; levelId='v300:'+n; Q=q; qi=0; tries=0; sessUtter=0; sessStars=0; bestPer=[];
+  playing=true; t0=Date.now();
+  const d=today(); if(!S.stats.days.includes(d)) S.stats.days.push(d);
+  dlog('v300','ชุด '+n+' · '+(part===2?'สอบแต่งประโยค':'ท่องคำ '+(part*10+1)+'–'+(part*10+10))+' · '+q.length+' ข้อ');
+  requestWake(); show('scr-play'); renderMode();
+  renderItem(true);
+}
+function v3Choices(w){
+  const pool=VOCAB300.map(v3Word).filter(x=>x.n!==w.n && x.mean!==w.mean);
+  const near=pool.filter(x=>Math.abs(x.n-w.n)<=12);
+  return shuf([w.mean].concat(shuf(near.length>=3?near:pool).slice(0,3).map(x=>x.mean)));
+}
+function renderV300(it){
+  tries=0; it.phase='go'; hideAllBoxes();
+  const w=it.w, lab=V3.part===2 ? '📝 สอบแต่งประโยค' : '📚 ชุด '+V3.n+' · คำ '+(V3.part*10+1)+'–'+(V3.part*10+10);
+  $('#playBar').style.width=(qi/Q.length*100)+'%'; $('#playCount').textContent=(qi+1)+'/'+Q.length;
+  $('#heard').innerHTML=''; micState('');
+  $('#btnSkip').style.visibility='visible'; $('#btnSelfPass').style.visibility='hidden';
+  $('#pPy').innerHTML=''; $('#pThai').textContent='';
+  if(it.t==='sent'){
+    const s=it.s;
+    $('#pKind').textContent=lab+' · ชุด '+V3.n+' · พูดเป็นภาษาจีน';
+    $('#pHan').className='han'; $('#pHan').innerHTML='<span style="font-size:1.5rem;line-height:1.4">'+esc(s[2])+'</span>';
+    const chips=shuf(glossParts(s[0], s[1]).map(p=>p.py)).filter(Boolean);
+    $('#pMean').innerHTML='<div class="small muted">พูดประโยคนี้เป็นภาษาจีน</div><button class="btn ghost sm v3hint" style="margin-top:.5rem">💡 ดูคำที่ใช้ (สลับลำดับ)</button><div class="v3chips" hidden>'+chips.map(c=>'<span>'+esc(c)+'</span>').join('')+'</div>';
+    return;
+  }
+  const single=[...w.zh].filter(c=>/[一-鿿]/.test(c)).length===1 && canonNum(w.zh)===null;
+  const sayTip = single ? '<div class="tip3">คำพยางค์เดียว — พูดติดกัน 3 ครั้ง: <b>'+esc(w.py+' '+w.py+' '+w.py)+'</b></div>' : '';
+  const useLab = w.use==='read' ? '👀 ดูป้ายออกพอ (ไม่ต้องพูด)' : w.use==='hear' ? '👂 ฟังออกพอ (ไม่ต้องพูด)' : '';
+  if(it.t==='learn'){
+    $('#pKind').textContent=lab+' · ดู ฟัง แล้วพูดตาม';
+    $('#pHan').className='han'+(S.settings.pyFirst?'':' zh');
+    $('#pHan').innerHTML = w.use==='read' ? '<span class="fdSign zh">'+esc(w.zh)+'</span><div class="py" style="font-size:1.2rem">'+esc(w.py)+'</div>' : bigWordHTML(w.zh, w.py);
+    $('#pThai').textContent=w.th||'';
+    $('#pMean').innerHTML=esc(w.mean)+(useLab?'<div class="pairVs">'+useLab+'</div>':'')+glossToggleHTML(w.zh, w.py)+
+      (w.use==='say' ? sayTip : '<button class="btn v3ok" style="margin-top:.6rem">จำแล้ว ›</button>');
+    speak(w.zh, w.use==='say' ? armMic : null, 0.85);
+    return;
+  }
+  // recall
+  if(w.use!=='say'){
+    $('#pKind').textContent=lab+' · '+(w.use==='read'?'ป้ายนี้แปลว่าอะไร':'ได้ยินคำว่าอะไร');
+    $('#pHan').className='han'; $('#pHan').innerHTML = w.use==='read' ? '<span class="fdSign zh">'+esc(w.zh)+'</span>' : '<span style="font-size:1.3rem">🔊 ฟังแล้วเลือก</span>';
+    it.choices=v3Choices(w);
+    $('#pMean').innerHTML='<div class="fdchoices">'+it.choices.map(c=>'<button class="fdc v3c" data-c="'+esc(c)+'">'+esc(c)+'</button>').join('')+'</div>';
+    if(w.use==='hear') speak(w.zh, null, 0.85);
+    return;
+  }
+  $('#pKind').textContent=lab+' · นึกเอง แล้วพูด';
+  $('#pHan').className='han'; $('#pHan').innerHTML='<span style="font-size:1.6rem;line-height:1.35">'+esc(w.mean)+'</span>';
+  $('#pMean').innerHTML='<div class="small muted">พูดเป็นภาษาจีน'+(single?' (พยางค์เดียว พูดติดกัน 3 ครั้ง)':'')+'</div><button class="btn ghost sm v3hint1" style="margin-top:.5rem">💡 ใบ้ตัวแรก</button>';
+}
+function v3Reveal(it, heard){
+  const w=it.w;
+  if(it.t==='sent'){
+    $('#pHan').className='han'; $('#pHan').innerHTML=bigWordHTML(it.s[0], it.s[1], markedHTML(it.s[0], norm(heard||'',false)));
+    $('#pMean').innerHTML=esc(it.s[2])+'<div class="glossbox on">'+glossHTML(it.s[0], it.s[1])+'</div>';
+    speak(it.s[0], null, 0.85); return;
+  }
+  $('#pHan').className='han'+(S.settings.pyFirst?'':' zh'); $('#pHan').innerHTML=bigWordHTML(w.zh, w.py, markedHTML(w.zh, norm(heard||'',false)));
+  $('#pThai').textContent=w.th||'';
+  $('#pMean').innerHTML=esc(w.mean)+glossToggleHTML(w.zh, w.py);
+  speak(w.zh, null, 0.85);
+}
+function v3Rec(it, ok){
+  const v=v3S();
+  if(it.w){ const r=v.words[it.w.n]||(v.words[it.w.n]={ok:0, miss:0}); if(ok) r.ok++; else r.miss++; }
+  S.log.push({t:'v300', set:V3.n, step:it.t, id:it.w?it.w.n:it.s[0], ok:ok, ts:Date.now()});
+  if(S.log.length>2000) S.log=S.log.slice(-1500);
+}
+function v3Requeue(it){
+  const key=it.t+':'+(it.w?it.w.n:it.s[0]);
+  if(it.t!=='recall' || V3.requeued[key]) return;
+  V3.requeued[key]=true; Q.push({kind:'v300', t:'recall', w:it.w, again:true});
+}
+function v3Pass(it, alts){
+  if(it.t==='sent'){ const r=scoreAll(it.s[0], alts); return {ok:r.score>=80 || !!r.nearFull, r:r}; }
+  const w=it.w; let best=scoreAll(w.zh, alts);
+  w.alt.forEach(a=>{ const x=scoreAll(a, alts); if(x.score>best.score) best=x; });
+  return {ok:best.score>=(it.t==='learn'?70:80) || !!best.nearFull, r:best};
+}
+function judgeV300(alts){
+  const it=cur(); if(!it || it.phase!=='go') return;
+  if(it.w && it.w.use!=='say') return;
+  const {ok, r}=v3Pass(it, alts), heard=r.heard||'', st=ok?3:starsOf(r.score);
+  tries++; sessUtter++; S.stats.utter++; sessStars+=st; S.stats.stars+=st;
+  dlog('v300',it.t+' '+(it.w?it.w.zh:it.s[0])+' → '+r.score+'% '+(ok?'ผ่าน':'ไม่ผ่าน')+' (ได้ยิน: '+(heard||'—')+(heard?' = '+toPinyin(heard):'')+')');
+  const hb='<div class="lab">ได้ยินว่า</div>'+heardBox(heard)+'<div class="stars" style="color:var(--'+(ok?'ok':st>=2?'warn':'bad')+')">'+starStr(st)+' <span class="small">'+r.score+'%</span></div>'+
+    (r.hints&&r.hints.length ? '<div class="nearTip">ใกล้แล้ว — '+r.hints.map(esc).join('<br>')+'</div>' : '');
+  if(ok){
+    it.phase='done'; micState('ok'); vib([30,40,30]);
+    if(it.t==='sent' && tries<=2) V3.ok++;
+    if(it.t!=='learn') v3Rec(it, true);
+    $('#heard').innerHTML=hb;
+    if(it.t!=='learn') v3Reveal(it, heard);
+    setTimeout(()=>{ if(playing && cur()===it) next(); }, it.t==='learn' ? 600 : 1300);
+    save(); return;
+  }
+  micState(''); vib(140);
+  $('#heard').innerHTML=hb;
+  if(it.t==='learn'){
+    if(tries>=2){ $('#btnSelfPass').style.visibility='visible'; $('#btnSelfPass').textContent='✅ พูดถูกแล้ว แต่ระบบฟังไม่ออก'; }
+    if(tries>=3){ waitNext(); return; }
+    setTimeout(()=>{ if(playing && cur()===it) speak(it.w.zh, armMic, 0.8); }, 700);
+    return;
+  }
+  if(tries<2){ $('#heard').insertAdjacentHTML('beforeend','<div class="nearTip">ยังไม่ใช่ — นึกอีกครั้ง แล้วพูดใหม่</div>'); return; }
+  it.phase='shown'; v3Rec(it, false); v3Requeue(it); save();
+  v3Reveal(it, heard);
+  $('#btnSelfPass').style.visibility='visible'; $('#btnSelfPass').textContent='✅ นึกออก แต่ระบบฟังไม่ออก';
+  waitNext(it.t==='recall' ? 'จำเฉลยไว้ — คำนี้จะวนกลับมาถามอีกครั้งตอนท้าย' : 'ฟังเฉลยแล้วพูดตามในใจ');
+}
+function v3SelfPass(){
+  const it=cur(); if(!it || MODE!=='v300') return false;
+  if(it.t==='sent' && it.phase==='go' && tries<=2) V3.ok++;
+  if(it.phase==='shown' && it.t==='sent'){ V3.ok++; }
+  if(it.phase==='shown' && it.t==='recall'){ Q=Q.filter((x,i)=>i<=qi || !(x.again && x.w && x.w.n===it.w.n)); }
+  dlog('v300','ผ่านเอง (ระบบฟังไม่ออก): '+(it.w?it.w.zh:it.s[0]));
+  if(it.w) S.pron=S.pron||{};
+  it.phase='done'; $('#btnSelfPass').style.visibility='hidden'; next(); return true;
+}
+document.addEventListener('click', e=>{
+  if(MODE!=='v300') return;
+  const it=cur(); if(!it) return;
+  if(e.target.closest('#pMean .v3ok')){ it.phase='done'; next(); return; }
+  if(e.target.closest('#pMean .v3hint')){ const c=document.querySelector('#pMean .v3chips'); if(c) c.hidden=false; return; }
+  if(e.target.closest('#pMean .v3hint1')){ e.target.closest('.v3hint1').textContent='💡 '+String(it.w.py).split(/\s+/)[0].slice(0,2)+'…'; return; }
+  const b=e.target.closest('#pMean .v3c'); if(!b || it.phase!=='go') return;
+  const ok=b.dataset.c===it.w.mean;
+  $$('#pMean .v3c').forEach(x=>{ x.disabled=true; if(x.dataset.c===it.w.mean) x.classList.add('ok'); else if(x===b) x.classList.add('bad'); });
+  v3Rec(it, ok); it.phase=ok?'done':'shown'; vib(ok?[30,40,30]:140);
+  dlog('v300','เลือก '+it.w.zh+' → '+(ok?'ถูก':'ผิด (ตอบ '+b.dataset.c+')'));
+  $('#pPy').innerHTML='<div class="py" style="font-size:1.2rem">'+esc(it.w.py)+'</div>';
+  speak(it.w.zh, null, 0.85);
+  if(ok) setTimeout(()=>{ if(playing && cur()===it) next(); }, 1200);
+  else { v3Requeue(it); waitNext('คำนี้จะวนกลับมาถามอีกครั้งตอนท้าย'); }
+  save();
+});
+function v3Finish(){
+  const n=V3.n, part=V3.part, st=v3Set(n), v=v3S();
+  const ms=Date.now()-t0; S.stats.ms+=ms;
+  endPlay(); MODE='lesson';
+  if(part<2){
+    st.part=Math.max(st.part, part+1);
+    dlog('v300','ชุด '+n+' ท่องคำ '+(part*10+1)+'–'+(part*10+10)+' จบ');
+    toast('📚 ท่องคำ '+(part*10+1)+'–'+(part*10+10)+' จบแล้ว', part===0 ? 'ต่อไป: คำ 11–20' : 'ต่อไป: 📝 สอบแต่งประโยค 10 ข้อ', 2800);
+  }else{
+    const score=V3.ok; st.tries++; st.best=Math.max(st.best, score);
+    dlog('v300','ชุด '+n+' สอบแต่งประโยค '+score+'/10');
+    if(score>=V3_PASS){
+      st.pass=true; st.d=today();
+      if(v.cur===n && n<15) v.cur=n+1;
+      toast('🎉 ผ่านชุด '+n+' ('+score+'/10)', n<15 ? 'ปลดล็อกชุดที่ '+(n+1)+' แล้ว' : 'ครบ 300 คำแล้ว!', 3500);
+    }else toast('📝 ได้ '+score+'/10 (ต้อง '+V3_PASS+')', 'ทวนคำในชุดนี้อีกรอบแล้วสอบใหม่ — กดปุ่มในการ์ด 📚', 3500);
+  }
+  save(true);
+  screenStack=['scr-home']; renderHome(); show('scr-home',false);
+}
+function renderV3Card(){
+  const el=$('#v3Card'); if(!el) return;
+  el.hidden=!S.settings.focusTravel; if(el.hidden) return;
+  const v=v3S(), n=Math.min(15, v.cur), st=v3Set(n);
+  const passed=Object.keys(v.sets).filter(k=>v.sets[k].pass).length;
+  $('#v3Sub').textContent='ผ่าน '+passed+'/15 ชุด · '+(passed*20)+'/300 คำ';
+  const words=v3Words(n,2);
+  const lab = st.part===0 ? '▶ ชุด '+n+' · ท่องคำ 1–10' : st.part===1 ? '▶ ชุด '+n+' · ท่องคำ 11–20' : '📝 ชุด '+n+' · สอบแต่งประโยค 10 ข้อ';
+  $('#btnV3Go').innerHTML=lab+'<small style="font-weight:400;opacity:.8;display:block">'+esc(words.slice(0,6).map(w=>w.py).join(' · '))+' …</small>';
+  $('#v3Chips').innerHTML=Array.from({length:15},(_,i)=>{ const k=i+1, s=v.sets[k]||{}; const cls=s.pass?'ok':k===n?'on':k<n?'':'lock';
+    return '<button class="v3chip '+cls+'" data-set="'+k+'"'+(k>n?' disabled':'')+'>'+(s.pass?'✅':k===n?'▶':k<n?'':'🔒')+k+'</button>'; }).join('');
+}
+document.addEventListener('click', e=>{
+  const c=e.target.closest('.v3chip'); if(!c || c.disabled) return;
+  const k=+c.dataset.set, s=v3Set(k);
+  if(s.pass){ if(confirm('ชุด '+k+' ผ่านแล้ว\n\nตกลง = สอบแต่งประโยคอีกรอบ · ยกเลิก = ท่องคำ 20 คำทวน')) v3Start(k,'test'); else { s.part=0; v3Start(k,'words'); } }
+  else v3Start(k);
+});
 /* ---------- โค้ช "โฟกัสเที่ยว" 15 นาที: ทบทวน 4 · ต้นไม้ 6 · เสาเข็ม 3 · ฟัง 2 ---------- */
 function pronItems(n){
   const ks=Object.keys(S.pron||{}).filter(k=>S.pron[k]>0).sort((a,b)=>S.pron[b]-S.pron[a]);
@@ -10829,6 +11245,7 @@ $('#btnSelfPass') && null;
 $('#btnSelfPass').onclick=()=>{                 // ระบบฟังไม่ออกเอง ไม่ควรทำให้ผู้ใช้ติดอยู่กับที่
   if(MODE==='pretest'){ abortRec(); finishPretest(); return; }       // ลองก่อนเรียน: ข้ามไปเรียนเลย
   if(MODE==='fdnum'){ abortRec(); fdNumSelfPass(); return; }
+  if(MODE==='v300'){ abortRec(); v3SelfPass(); return; }
   const it=cur(); if(!it||!playing) return;
   abortRec();
   if(MODE==='prod'||MODE==='pattern'){          // T2: นึกออกแต่ระบบฟังไม่ออก → ฟังเฉลย → ตรงกับที่นึกไว้ไหม
@@ -11061,6 +11478,7 @@ $('#btnTreeOnly').onclick=()=>startTreeLearn('อิสระ');   // นอก�
 $('#btnLongLis').onclick=$('#btnLongLis2').onclick=()=>llStart();
 $('#btnFoundGo').onclick=()=>foundStart(14);
 $('#btnBook').onclick=()=>openBook();
+$('#btnV3Go').onclick=()=>v3Start(Math.min(15, v3S().cur));
 $('#bookQ').oninput=()=>renderBook();
 $('#bookNumGo').onclick=()=>bookNum();
 $('#bookNum').addEventListener('keydown', e=>{ if(e.key==='Enter') bookNum(); });
@@ -11080,6 +11498,7 @@ function renderFocusHome(){
   $('#btnCoach25').className = f ? 'btn ghost' : 'btn';
   $('#btnCoach25').textContent = f ? 'โหมดเต็ม 25 นาที' : '▶ เริ่ม 25 นาที';
   renderFoundCard();
+  renderV3Card();
   rpCard();
   renderTreeCard();
 }
