@@ -203,6 +203,12 @@ h2{font-size:1.15rem;margin:1.5rem 0 .5rem}
 .zhsmall{font-size:1.05rem;opacity:.65}
 .pairVs{margin-top:.35rem;font-size:.9rem;color:var(--t3)}
 .fcm{display:flex;gap:.4rem .9rem;flex-wrap:wrap;justify-content:center;margin-top:.4rem}
+.rplist{display:grid;grid-template-columns:1fr 1fr;gap:.45rem;margin-top:.55rem}
+.rpbtn{display:flex;flex-direction:column;align-items:flex-start;gap:.1rem;text-align:left;font:inherit;padding:.55rem .65rem;border:1px solid var(--rule);border-radius:.7rem;background:var(--card);color:var(--ink);cursor:pointer}
+.rpbtn span{font-size:1.3rem}.rpbtn b{font-size:.9rem;line-height:1.3}.rpbtn i{font-style:normal;font-size:.75rem;color:var(--muted)}
+.bkh{font-weight:700;margin:.9rem 0 .35rem}
+.bkrow{display:grid;grid-template-columns:1fr auto;grid-template-areas:"py play" "th play" "zh play";width:100%;text-align:left;font:inherit;padding:.55rem .7rem;margin-bottom:.35rem;border:1px solid var(--rule);border-radius:.7rem;background:var(--card);color:var(--ink);cursor:pointer}
+.bkpy{grid-area:py;font-size:1.1rem;font-weight:700}.bkth{grid-area:th;font-size:.9rem;color:var(--muted)}.bkzh{grid-area:zh;font-size:.85rem;color:var(--muted)}.bkplay{grid-area:play;align-self:center;font-size:1.3rem;padding-left:.5rem}
 .fdSign{font-size:3rem;font-weight:700;letter-spacing:.12em;line-height:1.2}
 .fdHand{font-size:1.25rem;line-height:1.5}
 .lischoices.legoMode{display:block}
@@ -389,6 +395,12 @@ td.r,th.r{text-align:right}
       <button class="btn ghost" id="btnFoundGo" style="margin-top:.45rem">▶ ฝึกเสาเข็มอย่างเดียว (3 นาที)</button>
       <button class="btn ghost sm" id="btnFoundPlace" style="margin-top:.4rem;width:100%">📝 วัดระดับ</button>
     </div>
+    <div class="card treecard" id="rpCard" hidden>
+      <b>🎭 ซ้อมสถานการณ์จริง</b>
+      <div class="small muted" style="margin-top:.15rem">คนขายพูด → คุณตอบด้วยเสียง · ราคา/เวลา/จำนวนสุ่มใหม่ทุกครั้ง · วันละ 1–2 ฉาก</div>
+      <div class="rplist" id="rpList"></div>
+      <button class="btn ghost" id="btnBook" style="margin-top:.5rem;white-space:normal;flex-direction:column">📇 สมุดพกเฉิงตู<small style="font-weight:400;opacity:.8">ใช้ตอนอยู่ที่จีน: แตะประโยคให้คนจีนฟัง · พิมพ์ราคาแล้วฟังว่าพูดยังไง</small></button>
+    </div>
     <div class="card treecard" id="treeCard" hidden>
       <div class="row"><b class="grow">🌳 ต้นไม้คำเที่ยว</b><span class="small muted" id="tcSub"></span></div>
       <div class="tccount"><span id="tcCount">0</span><span>🗣️ ประโยคที่พูดเองได้</span></div>
@@ -492,6 +504,17 @@ td.r,th.r{text-align:right}
   </section>
 
   <!-- ==================== TONE DRILL ==================== -->
+  <section id="scr-book" class="screen">
+    <div class="topbar"><button class="iconbtn" data-back>←</button><b class="grow">📇 สมุดพกเฉิงตู</b></div>
+    <div class="card">
+      <div class="row"><b class="grow">🔢 พิมพ์ราคา → ฟังว่าพูดยังไง</b></div>
+      <div class="row" style="margin-top:.45rem;gap:.5rem"><input id="bookNum" inputmode="numeric" placeholder="เช่น 35" style="flex:1;font:inherit;font-size:1.2rem;padding:.45rem .6rem;border:1px solid var(--rule);border-radius:.6rem;background:var(--card);color:var(--ink)"><button class="btn" id="bookNumGo" style="width:auto;padding:.5rem 1rem">🔊 ฟัง</button></div>
+      <div id="bookNumOut" style="text-align:center;margin-top:.5rem"></div>
+    </div>
+    <input id="bookQ" placeholder="🔍 ค้นหา เช่น ห้องน้ำ / shuǐ / หวาน" style="width:100%;box-sizing:border-box;font:inherit;padding:.55rem .7rem;border:1px solid var(--rule);border-radius:.6rem;background:var(--card);color:var(--ink);margin:.2rem 0 .6rem">
+    <p class="sub">แตะแถวไหน แอปพูดประโยคนั้นให้คนจีนฟัง (คำที่เรียนแล้วอยู่บนสุดของแต่ละหมวด)</p>
+    <div id="bookBody"></div>
+  </section>
   <section id="scr-tree" class="screen">
     <div class="topbar"><button class="iconbtn" data-back>←</button><b class="grow">🌳 ต้นไม้คำเที่ยว</b></div>
     <div class="card treecard">
@@ -3333,7 +3356,7 @@ const MILESTONES = [
 /* ============================================================
    2.5 บันทึกปัญหา (diagnostics) — ไว้ส่งให้ผู้พัฒนาดูเวลาไมค์มีปัญหา
    ============================================================ */
-const BUILD='2026-10-07b';                     // เปลี่ยนทุกครั้งที่แก้ไฟล์ จะได้รู้ว่า log มาจากรุ่นไหน
+const BUILD='2026-10-08a';                     // เปลี่ยนทุกครั้งที่แก้ไฟล์ จะได้รู้ว่า log มาจากรุ่นไหน
 const DIAG=[], STUCK={}, T0=Date.now();
 /* log ปัญหาเก็บลงเครื่องด้วย: iPhone ปิดแอปหรือรีเฟรชแล้ว log เก่ายังอยู่ ส่งย้อนหลังได้ */
 const DKEY='zhgame-diag', DIAG_MAX=2500;
@@ -5237,16 +5260,20 @@ function materializeScenario(sc){
   grab(sc.vars); (sc.turns||[]).forEach(t=>grab(t.vars));
   const vals={};
   for(const k in pools){ const a=pools[k]; if(a && a.length) vals[k]=a[Math.floor(Math.random()*a.length)]; }
-  const sub=(str, mode)=>String(str==null?'':str).replace(/\{(\w+)\}/g, (m,k)=>{
+  if(typeof sc.calc==='function') Object.assign(vals, sc.calc(vals));          // ค่าที่คิดจากค่าอื่น (ยอดรวม = ราคา × จำนวน)
+  const sub=(str, mode0)=>String(str==null?'':str).replace(/\{(\w+)(?:\.(zh|py|th))?\}/g, (m,k,f)=>{
     const v=vals[k]; if(v===undefined) return m;
-    if(typeof v==='number') return mode==='zh' ? priceToHan(v) : mode==='py' ? priceToPy(v) : String(v);
+    const mode=f||mode0;
+    if(typeof v==='number') return mode==='zh' ? priceToHan(v) : mode==='py' ? (v===1 ? '§YI§' : priceToPy(v)) : String(v);
     return mode==='zh' ? v.zh : mode==='py' ? v.py : v.th;
   });
+  // เลข 1 ในพินอิน: เปลี่ยนเสียงตามพยางค์ถัดไป (yí ก่อนเสียง 4 · yì ก่อนเสียง 1/2/3 · ท้ายประโยค yī)
+  const yi=py=>String(py).replace(/§YI§(?=\s+(\S+))/g,(m,nx)=>(/[àèìòùǜ]/.test(nx)||/^ge/.test(nx))?'yí':'yì').replace(/§YI§/g,'yī');
   const turns=(sc.turns||[]).map(t=>{
     if(!Object.keys(vals).length) return t;
     return Object.assign({}, t, {
-      ask:sub(t.ask,'zh'), askPy:sub(t.askPy,'py'), askMean:sub(t.askMean,'th'), hint:sub(t.hint,'th'),
-      model:sub(t.model,'zh'), modelPy:sub(t.modelPy,'py'), modelTh:sub(t.modelTh,'th'),
+      ask:sub(t.ask,'zh'), askPy:yi(sub(t.askPy,'py')), askMean:sub(t.askMean,'th'), hint:sub(t.hint,'th'),
+      model:sub(t.model,'zh'), modelPy:yi(sub(t.modelPy,'py')), modelTh:sub(t.modelTh,'th'),
       accept:(t.accept||[]).map(a=>sub(a,'zh'))
     });
   });
@@ -5257,7 +5284,7 @@ async function startTalk(id){
     const st=await ensureMic();
     if(st==='denied'){ openM('mMic'); return; }
   }
-  const base = (id && typeof id==='object') ? id : TALK.find(x=>x.id===id);
+  const base = (id && typeof id==='object') ? id : (TALK.find(x=>x.id===id) || (typeof RP_SCENES!=='undefined' ? RP_SCENES.find(x=>x.id===id) : null));
   if(!base) return;
   TSC = base._mat ? base : materializeScenario(base);   // สุ่มค่าตัวแปรใหม่ทุกครั้งที่เริ่ม
   MODE='talk'; ti=0; tTries=0; sessUtter=0; sessStars=0; bestPer=[]; levelId='talk:'+TSC.id;
@@ -5275,8 +5302,8 @@ function renderTurn(){
   $('#talkbox').classList.add('veil');
   $('#prompt').hidden=true;
   $('#gloss').hidden=true; $('#pNote').hidden=true; $('#reviewBar').hidden=true;
-  $('#tAsk').textContent=t.ask;
-  $('#tAskPy').innerHTML=pyHTML(t.askPy);
+  if(S.settings.pyFirst){ $('#tAsk').classList.remove('zh'); $('#tAsk').innerHTML=pyHTML(t.askPy); $('#tAskPy').innerHTML='<span class="zh small muted">'+esc(t.ask)+'</span>'; }
+  else { $('#tAsk').classList.add('zh'); $('#tAsk').textContent=t.ask; $('#tAskPy').innerHTML=pyHTML(t.askPy); }
   $('#tAskMean').textContent='“'+t.askMean+'”';
   $('#tHint').innerHTML='<b>ตอบว่า:</b> '+esc(t.hint);
   $('#tModel').hidden=true;
@@ -5294,14 +5321,24 @@ function showModel(){
   tRevealed=true;
   $('#tModel').hidden=false;
   $('#tModel').innerHTML='<div class="small muted">ตัวอย่างคำตอบ — พูดตามนี้ได้เลย</div>'+
-    '<div class="zh">'+esc(t.model)+'</div><div class="py">'+pyHTML(t.modelPy)+'</div><div class="th">'+esc(t.modelTh)+'</div>';
+    (S.settings.pyFirst ? '<div class="py" style="font-size:1.3rem;font-weight:700">'+pyHTML(t.modelPy)+'</div><div class="zh small muted">'+esc(t.model)+'</div>'
+      : '<div class="zh">'+esc(t.model)+'</div><div class="py">'+pyHTML(t.modelPy)+'</div>')+'<div class="th">'+esc(t.modelTh)+'</div>';
 }
 function judgeTalk(alts){
   const t=talkTurn(); if(!t) return;
   const best=(alts&&alts[0])||'';
   let hit=null, score=0, nearHit=false, tips=[];
+  const vv=(TSC&&TSC._vals)||{};
+  if(t.numAccept && vv[t.numAccept]!==undefined){             // พูดตัวเลขตรงค่า = ถูก (25 · 二十五 · 两 ก็ได้)
+    const want=+vv[t.numAccept];
+    if((alts||[]).some(a=>numsIn(a, want).indexOf(want)>=0)){ hit=String(want); score=95; }
+  }
+  if(t.timeAccept && vv[t.timeAccept]){                       // เวลา: 9:30 = 九点半 = 九点三十分
+    const w=vv[t.timeAccept].th.split(':').map(Number); const wh=w[0]%12, wm=w[1];
+    if((alts||[]).some(a=>timesIn(a).some(x=>x[0]===wh && x[1]===wm))){ hit=vv[t.timeAccept].th; score=95; }
+  }
   (alts||[]).forEach(a=>{
-    t.accept.forEach(acc=>{
+    (t.accept||[]).forEach(acc=>{
       const na=norm(acc,false);
       if(!na) return;
       // ใช้สายประมวลผลชุดเดียวกับเครื่องให้คะแนน ไม่งั้นตอบถูกเรื่องแต่จับไม่ได้
@@ -5335,7 +5372,8 @@ function judgeTalk(alts){
     '<div class="stars" style="color:var(--'+(st>=3?'ok':st>=2?'warn':'bad')+')">'+
       (st>=2?'✓ ตอบเป็นเรื่องแล้ว ':'✗ ยังไม่ตรงคำถาม ')+starStr(st)+'</div>'+
     (nearHit&&tips.length ? '<div class="nearTip">ตอบถูกเรื่องแล้ว แต่เสียงยังเพี้ยน — '+esc(tips[0])+'</div>' : '')+
-    (!hit&&t.hint ? '<div class="nearTip">คำตอบนี้ต้องมีคำว่า <b class="zh">'+esc(t.accept.slice(0,3).join(' / '))+'</b></div>' : '');
+    (!hit&&(t.numAccept||t.timeAccept) ? '<div class="nearTip">ต้องพูด'+(t.timeAccept?'เวลา':'ตัวเลข')+'ที่ได้ยินให้ตรง — ฟังเฉลยแล้วลองใหม่</div>' :
+     !hit&&t.hint&&(t.accept||[]).length ? '<div class="nearTip">คำตอบนี้ต้องมีคำว่า <b>'+esc((t.accept||[]).slice(0,3).map(x=>toPinyin(x)).join(' / '))+'</b></div>' : '');
 
   if(st>=2){
     vib([30,40,30]); micState('ok');
@@ -5344,7 +5382,13 @@ function judgeTalk(alts){
     vib(140); micState('');
     $('#btnSelfPass').style.visibility='visible';
     if(!tRevealed) showModel();
-    if(tTries>=MAX_TRY){ setTimeout(()=>{ if(playing&&MODE==='talk') nextTurn(); }, 2500); return; }
+    if(tTries>=MAX_TRY){
+      const box=document.createElement('div'); box.className='nextbox';
+      box.innerHTML='<button class="btn" type="button" style="margin-top:.45rem">ถัดไป ›</button>';
+      $('#heard').appendChild(box); const tt=t;
+      box.querySelector('button').onclick=()=>{ if(playing && MODE==='talk' && talkTurn()===tt){ try{ abortRec(); }catch(e){} nextTurn(); } };
+      return;
+    }
     setTimeout(()=>{ if(!playing) return; speak(talkTurn().model, ()=>{ if(S.settings.autoListen) armMic(); }); }, 700);
   }
 }
@@ -8814,8 +8858,7 @@ function fdDaysLeft(){
 }
 function fdTopic(){
   const d=fdDaysLeft();
-  if(d>33) return 'sound';
-  if(d>28) return 'number';
+  if(d>28) return 'number';                      // ผู้ใช้ขอ: ตัวเลขก่อน (ฐานเสียงฝึกไปแล้ว 3 วัน + อยู่ในทวนรวม)
   if(d>24) return 'lego';
   if(d>14) return 'scene';
   if(d>9)  return 'react';
@@ -9059,6 +9102,162 @@ function renderFoundCard(){
   $('#fcToday').innerHTML='วันนี้: '+T.icon+' '+esc(T.name)+(run!==t ? ' <span class="small muted">('+FD_TOPICS[t].icon+' ผ่านแล้ว → ฝึกจุดที่ยังอ่อน)</span>' : '')+(passed?'<div class="small muted">ผ่านแล้ว: '+passed+'</div>':'');
   $('#fcMetrics').innerHTML='<span>🎯 แยกเสียง <b>'+fmt(m.sound)+'</b></span><span>⚡ ใน 3 วิ <b>'+fmt(m.fast)+'</b></span><span>👂 ตัวเลข <b>'+fmt(m.num)+'</b></span>';
   if($('#btnFoundPlace')) $('#btnFoundPlace').textContent = f.placement ? '📝 วัดระดับอีกครั้ง' : '📝 วัดระดับ (20 ข้อ · ข้ามหัวข้อที่เก่งแล้ว)';
+}
+/* ============================================================
+   🎭 ซ้อมสถานการณ์จริง — คนขาย/พนักงานพูด (เสียง) → เราตอบ (ไมค์) · ตัวเลขสุ่มใหม่ทุกครั้ง
+   ใช้เอนจิ้นตอบโต้เดิม (startTalk) · numAccept = ต้องพูดเลขให้ตรงค่า (เทียบเป็นตัวเลข ไม่สนว่าระบบถอดเป็น 25 หรือ 二十五)
+   ============================================================ */
+const rng=(a,b,step)=>{ const o=[]; for(let x=a;x<=b;x+=(step||1)) o.push(x); return o; };
+function timeObj(h,m){
+  const zh=(h===2?'两':numToHan(h))+'点'+(m===30?'半':m===15?'一刻':m===0?'':numToHan(m)+'分');
+  const py=FD_HOUR_PY[h]+' diǎn'+(m===30?' bàn':m===15?' yí kè':m===0?'':' '+priceToPy(m)+' fēn');
+  return {zh:zh, py:py, th:h+':'+String(m).padStart(2,'0')};
+}
+const RP_FRUIT=[{zh:'苹果',py:'píng guǒ',th:'แอปเปิ้ล'},{zh:'橘子',py:'jú zi',th:'ส้ม'},{zh:'葡萄',py:'pú tao',th:'องุ่น'},{zh:'荔枝',py:'lì zhī',th:'ลิ้นจี่'},{zh:'芒果',py:'máng guǒ',th:'มะม่วง'},{zh:'草莓',py:'cǎo méi',th:'สตรอว์เบอร์รี'}];
+const RP_DISH=[{zh:'牛肉面',py:'niú ròu miàn',th:'บะหมี่เนื้อ'},{zh:'担担面',py:'dàn dàn miàn',th:'บะหมี่ตันตัน'},{zh:'抄手',py:'chāo shǒu',th:'เกี๊ยวน้ำ'},{zh:'米饭',py:'mǐ fàn',th:'ข้าวสวย'}];
+const RP_SCENES=[
+  { id:'rp1', icon:'🧺', title:'ตลาดสด: ซื้อผลไม้ราคาต่อจิน', desc:'ถามราคา · ทวนราคา · บอกกี่จิน · ทวนยอด · จ่าย',
+    vars:{F:RP_FRUIT, P:[6,8,10,12,15,18], Q:[1,2,3]}, calc:v=>({T:v.P*v.Q}),
+    turns:[
+      {ask:'你好，要点什么？', askPy:'nǐ hǎo, yào diǎn shén me', askMean:'สวัสดี เอาอะไรดี', hint:'ถามราคา{F.th}ต่อจิน: {F.py} duō shao qián yì jīn?', accept:['多少钱'], model:'{F}多少钱一斤？', modelPy:'{F} duō shao qián yì jīn', modelTh:'{F} จินละเท่าไหร่'},
+      {ask:'{P}块一斤，很甜。', askPy:'{P} kuài yì jīn, hěn tián', askMean:'จินละกี่หยวน? (ฟังตัวเลข)', hint:'ทวนราคาที่ได้ยิน: … kuài yì jīn?', numAccept:'P', model:'{P}块一斤？', modelPy:'{P} kuài yì jīn', modelTh:'จินละ {P} หยวน?'},
+      {ask:'对，要几斤？', askPy:'duì, yào jǐ jīn', askMean:'ใช่ เอากี่จิน', hint:'บอกว่าเอา {Q} จิน: lái … jīn', numAccept:'Q', model:'来{Q}斤。', modelPy:'lái {Q} jīn', modelTh:'เอา {Q} จิน'},
+      {ask:'一共{T}块。', askPy:'yí gòng {T} kuài', askMean:'ทั้งหมดกี่หยวน? (ฟังตัวเลข)', hint:'ทวนยอดเงิน แล้วถามว่าสแกนได้ไหม', numAccept:'T', model:'{T}块，可以扫码吗？', modelPy:'{T} kuài, kě yǐ sǎo mǎ ma', modelTh:'{T} หยวน สแกนได้ไหม'},
+      {ask:'可以，扫这个。', askPy:'kě yǐ, sǎo zhè ge', askMean:'ได้ สแกนอันนี้', hint:'สแกนแล้วบอกว่าจ่ายแล้ว: fù hǎo le', accept:['付好了','付了','好了'], model:'付好了，谢谢。', modelPy:'fù hǎo le, xiè xie', modelTh:'จ่ายแล้วนะ ขอบคุณ'}
+    ]},
+  { id:'rp2', icon:'🍜', title:'ร้านอาหาร: นั่ง สั่ง เช็กบิล', desc:'บอกจำนวนคน · สั่ง · เผ็ด · น้ำ · เช็กบิล · ทวนยอด',
+    vars:{N:[2,3,4], D:RP_DISH, T:[36,48,56,62,75,88]},
+    turns:[
+      {ask:'你好，几位？', askPy:'nǐ hǎo, jǐ wèi', askMean:'สวัสดี มากี่ท่าน', hint:'บอกว่ามา {N} คน: … ge rén', numAccept:'N', model:'{N}个人。', modelPy:'{N} ge rén', modelTh:'{N} คน'},
+      {ask:'这边请，吃点什么？', askPy:'zhè biān qǐng, chī diǎn shén me', askMean:'เชิญทางนี้ จะกินอะไรดี', hint:'สั่ง{D.th} 1 ชาม: lái yì wǎn {D.py}', accept:['{D}'], model:'来一碗{D}。', modelPy:'lái yì wǎn {D}', modelTh:'ขอ{D} 1 ชาม'},
+      {ask:'要辣的吗？', askPy:'yào là de ma', askMean:'เอาเผ็ดไหม', hint:'เอาเผ็ดน้อย (wēi là) หรือไม่เผ็ด (bú yào là)', accept:['微辣','不要辣','不辣','少放辣','中辣'], model:'微辣。', modelPy:'wēi là', modelTh:'เผ็ดน้อย'},
+      {ask:'喝点什么？', askPy:'hē diǎn shén me', askMean:'ดื่มอะไรดี', hint:'ขอน้ำเปล่า 1 ขวด: lái yì píng shuǐ (หรือเบียร์ pí jiǔ)', accept:['水','啤酒','可乐','茶','不用'], model:'来一瓶水。', modelPy:'lái yì píng shuǐ', modelTh:'ขอน้ำ 1 ขวด'},
+      {ask:'还要别的吗？', askPy:'hái yào bié de ma', askMean:'เอาอย่างอื่นอีกไหม', hint:'บอกว่าพอแล้ว แล้วขอเช็กบิล: bú yòng le, mǎi dān', accept:['买单','结账','不用了','够了'], model:'不用了，买单。', modelPy:'bú yòng le, mǎi dān', modelTh:'ไม่แล้ว เช็กบิล'},
+      {ask:'一共{T}块。', askPy:'yí gòng {T} kuài', askMean:'ทั้งหมดกี่หยวน? (ฟังตัวเลข)', hint:'ทวนยอด แล้วบอกว่าจะสแกน: … kuài, wǒ sǎo nǐ ba', numAccept:'T', model:'{T}块，我扫你吧。', modelPy:'{T} kuài, wǒ sǎo nǐ ba', modelTh:'{T} หยวน ฉันสแกนนะ'}
+    ]},
+  { id:'rp3', icon:'🧋', title:'ร้านชานม: ขนาด หวาน น้ำแข็ง เบอร์คิว', desc:'สั่ง · แก้ว · หวานกี่ % · น้ำแข็ง · ทวนราคา · จำเบอร์คิว',
+    vars:{K:[{zh:'大杯',py:'dà bēi',th:'แก้วใหญ่'},{zh:'中杯',py:'zhōng bēi',th:'แก้วกลาง'}],
+      S:[{zh:'半糖',py:'bàn táng',th:'หวาน 50%'},{zh:'三分糖',py:'sān fēn táng',th:'หวาน 30%'},{zh:'七分糖',py:'qī fēn táng',th:'หวาน 70%'},{zh:'无糖',py:'wú táng',th:'ไม่ใส่น้ำตาล'}],
+      I:[{zh:'少冰',py:'shǎo bīng',th:'น้ำแข็งน้อย'},{zh:'去冰',py:'qù bīng',th:'ไม่ใส่น้ำแข็ง'},{zh:'常温',py:'cháng wēn',th:'อุณหภูมิห้อง'}],
+      P:[12,15,16,18,22], Q:rng(13,58)},
+    turns:[
+      {ask:'你好，喝点什么？', askPy:'nǐ hǎo, hē diǎn shén me', askMean:'สวัสดี ดื่มอะไรดี', hint:'สั่งชานมไข่มุก 1 แก้ว: lái yì bēi zhēn zhū nǎi chá', accept:['奶茶','珍珠'], model:'来一杯珍珠奶茶。', modelPy:'lái yì bēi zhēn zhū nǎi chá', modelTh:'ขอชานมไข่มุก 1 แก้ว'},
+      {ask:'大杯还是中杯？', askPy:'dà bēi hái shi zhōng bēi', askMean:'แก้วใหญ่หรือแก้วกลาง', hint:'เอา{K.th}: {K.py}', accept:['{K}'], model:'{K}。', modelPy:'{K}', modelTh:'{K}'},
+      {ask:'几分糖？', askPy:'jǐ fēn táng', askMean:'หวานกี่ส่วน', hint:'{S.th}: {S.py}', accept:['{S}'], model:'{S}。', modelPy:'{S}', modelTh:'{S}'},
+      {ask:'冰的还是热的？', askPy:'bīng de hái shi rè de', askMean:'เย็นหรือร้อน', hint:'{I.th}: {I.py}', accept:['{I}'], model:'{I}。', modelPy:'{I}', modelTh:'{I}'},
+      {ask:'一共{P}块，扫这里。', askPy:'yí gòng {P} kuài, sǎo zhè lǐ', askMean:'ทั้งหมดกี่หยวน? (ฟังตัวเลข)', hint:'ทวนราคา แล้วบอกว่าจ่ายแล้ว: … kuài, fù hǎo le', numAccept:'P', model:'{P}块，付好了。', modelPy:'{P} kuài, fù hǎo le', modelTh:'{P} หยวน จ่ายแล้ว'},
+      {ask:'你是{Q}号，好了叫你。', askPy:'nǐ shì {Q} hào, hǎo le jiào nǐ', askMean:'คุณเบอร์อะไร? (ฟังตัวเลข)', hint:'ทวนเบอร์คิวของตัวเอง: … hào', numAccept:'Q', model:'{Q}号，谢谢。', modelPy:'{Q} hào, xiè xie', modelTh:'เบอร์ {Q} ขอบคุณ'}
+    ]},
+  { id:'rp4', icon:'🚖', title:'DiDi: ที่หมาย เวลา ค่ารถ', desc:'ยืนยันตัว · บอกที่หมาย · ทวนเวลา · จอด · ทวนค่ารถ',
+    vars:{L:[{zh:'宽窄巷子',py:'kuān zhǎi xiàng zi',th:'ตรอกกว้าง-แคบ'},{zh:'春熙路',py:'chūn xī lù',th:'ถนนชุนซี'},{zh:'熊猫基地',py:'xióng māo jī dì',th:'ศูนย์แพนด้า'},{zh:'锦里',py:'jǐn lǐ',th:'จิ่นหลี่'},{zh:'机场',py:'jī chǎng',th:'สนามบิน'}],
+      M:[10,15,20,25,30,40], P:rng(21,68)},
+    turns:[
+      {ask:'你好，是你叫的车吗？', askPy:'nǐ hǎo, shì nǐ jiào de chē ma', askMean:'สวัสดี คุณเรียกรถใช่ไหม', hint:'ตอบว่าใช่: duì / shì de', accept:['对','是','是的'], model:'对，是我。', modelPy:'duì, shì wǒ', modelTh:'ใช่ ฉันเอง'},
+      {ask:'去哪里？', askPy:'qù nǎ lǐ', askMean:'ไปไหน', hint:'บอกว่าไป{L.th}: qù {L.py}', accept:['{L}'], model:'去{L}。', modelPy:'qù {L}', modelTh:'ไป{L}'},
+      {ask:'大概{M}分钟。', askPy:'dà gài {M} fēn zhōng', askMean:'ใช้เวลากี่นาที? (ฟังตัวเลข)', hint:'ทวนเวลา แล้วตอบตกลง: … fēn zhōng? hǎo de', numAccept:'M', model:'{M}分钟？好的。', modelPy:'{M} fēn zhōng? hǎo de', modelTh:'{M} นาที? โอเค'},
+      {ask:'到了，在这停吗？', askPy:'dào le, zài zhè tíng ma', askMean:'ถึงแล้ว จอดตรงนี้ไหม', hint:'ตอบว่าจอดตรงนี้เลย ขอบคุณ: jiù zài zhè tíng, xiè xie shī fu', accept:['停','对','好'], model:'就在这停，谢谢师傅。', modelPy:'jiù zài zhè tíng, xiè xie shī fu', modelTh:'จอดตรงนี้เลย ขอบคุณพี่'},
+      {ask:'一共{P}块。', askPy:'yí gòng {P} kuài', askMean:'ค่ารถกี่หยวน? (ฟังตัวเลข)', hint:'ทวนค่ารถ: … kuài', numAccept:'P', model:'{P}块，好的。', modelPy:'{P} kuài, hǎo de', modelTh:'{P} หยวน โอเค'}
+    ]},
+  { id:'rp5', icon:'🚄', title:'รถไฟความเร็วสูง: ประตู เวลา ตู้', desc:'ยื่นพาสปอร์ต · ถามประตู · ทวนเบอร์ประตู · ทวนเวลา · ทวนเลขตู้',
+    vars:{G:rng(3,18), C:rng(3,16), H:[timeObj(9,30),timeObj(10,15),timeObj(11,0),timeObj(1,30),timeObj(3,0),timeObj(4,30)]},
+    turns:[
+      {ask:'请出示护照。', askPy:'qǐng chū shì hù zhào', askMean:'กรุณาแสดงพาสปอร์ต', hint:'ยื่นให้แล้วพูดว่า "นี่ครับ": hǎo de, gěi nǐ', accept:['给你','好的','好'], model:'好的，给你。', modelPy:'hǎo de, gěi nǐ', modelTh:'ได้ครับ นี่ครับ'},
+      {ask:'好了。还有什么问题？', askPy:'hǎo le. hái yǒu shén me wèn tí', askMean:'เรียบร้อย มีอะไรอีกไหม', hint:'ถามว่าประตูตรวจตั๋วเบอร์อะไร: jǐ hào jiǎn piào kǒu?', accept:['检票口','几号'], model:'几号检票口？', modelPy:'jǐ hào jiǎn piào kǒu', modelTh:'ประตูตรวจตั๋วเบอร์อะไร'},
+      {ask:'{G}号检票口。', askPy:'{G} hào jiǎn piào kǒu', askMean:'ประตูเบอร์อะไร? (ฟังตัวเลข)', hint:'ทวนเบอร์ประตู: … hào?', numAccept:'G', model:'{G}号？谢谢。', modelPy:'{G} hào? xiè xie', modelTh:'เบอร์ {G}? ขอบคุณ'},
+      {ask:'你的车{H}开。', askPy:'nǐ de chē {H} kāi', askMean:'รถออกกี่โมง? (ฟังตัวเลข)', hint:'ทวนเวลารถออก: … kāi?', timeAccept:'H', model:'{H}开？好的。', modelPy:'{H} kāi? hǎo de', modelTh:'ออก {H}? โอเค'},
+      {ask:'你在{C}号车厢。', askPy:'nǐ zài {C} hào chē xiāng', askMean:'อยู่ตู้ที่เท่าไหร่? (ฟังตัวเลข)', hint:'ทวนเลขตู้: … hào chē xiāng', numAccept:'C', model:'{C}号车厢，谢谢。', modelPy:'{C} hào chē xiāng, xiè xie', modelTh:'ตู้ {C} ขอบคุณ'}
+    ]},
+  { id:'rp6', icon:'🏔️', title:'จิ่วจ้ายโกว: ตั๋ว ยอดรวม รถเที่ยวสุดท้าย', desc:'ซื้อตั๋วกี่ใบ · ทวนยอดรวม · ถามรถเที่ยวสุดท้าย · ทวนเวลา',
+    vars:{N:[2,3,4], P:[169,190,220], H:[timeObj(5,0),timeObj(5,30),timeObj(6,0)]}, calc:v=>({T:v.P*v.N}),
+    turns:[
+      {ask:'你好，几张票？', askPy:'nǐ hǎo, jǐ zhāng piào', askMean:'สวัสดี กี่ใบ', hint:'ซื้อตั๋ว {N} ใบ: mǎi … zhāng piào', numAccept:'N', model:'买{N}张票。', modelPy:'mǎi {N} zhāng piào', modelTh:'ซื้อตั๋ว {N} ใบ'},
+      {ask:'一张{P}，一共{T}块。', askPy:'yì zhāng {P}, yí gòng {T} kuài', askMean:'ทั้งหมดกี่หยวน? (ฟังตัวเลขตัวหลัง)', hint:'ทวนยอดรวม: yí gòng … kuài?', numAccept:'T', model:'一共{T}块？好的。', modelPy:'yí gòng {T} kuài? hǎo de', modelTh:'ทั้งหมด {T} หยวน? โอเค'},
+      {ask:'观光车在那边坐。', askPy:'guān guāng chē zài nà biān zuò', askMean:'รถชมวิวขึ้นทางนั้น', hint:'ถามว่ารถเที่ยวสุดท้ายกี่โมง: zuì hòu yì bān chē jǐ diǎn?', accept:['最后','几点','末班'], model:'最后一班车几点？', modelPy:'zuì hòu yì bān chē jǐ diǎn', modelTh:'รถเที่ยวสุดท้ายกี่โมง'},
+      {ask:'下午{H}。', askPy:'xià wǔ {H}', askMean:'บ่ายกี่โมง? (ฟังตัวเลข)', hint:'ทวนเวลา: … ?', timeAccept:'H', model:'{H}，谢谢。', modelPy:'{H}, xiè xie', modelTh:'{H} ขอบคุณ'},
+      {ask:'上面很冷，你有高原反应吗？', askPy:'shàng miàn hěn lěng, nǐ yǒu gāo yuán fǎn yìng ma', askMean:'ข้างบนหนาว แพ้ความสูงไหม', hint:'ตอบว่าไม่มี (méi yǒu) หรือมีนิดหน่อย (yǒu yì diǎn)', accept:['没有','有','一点'], model:'没有，谢谢。', modelPy:'méi yǒu, xiè xie', modelTh:'ไม่มี ขอบคุณ'}
+    ]},
+  { id:'rp7', icon:'🏨', title:'โรงแรม: เช็กอิน ชั้น อาหารเช้า แจ้งปัญหา', desc:'บอกว่าจองไว้ · ทวนชั้น · ทวนเวลาอาหารเช้า · แจ้งแอร์เสีย',
+    vars:{F:rng(3,12), H:[timeObj(6,30),timeObj(7,0),timeObj(7,30)]},
+    turns:[
+      {ask:'你好，入住吗？', askPy:'nǐ hǎo, rù zhù ma', askMean:'สวัสดี เช็กอินใช่ไหม', hint:'บอกว่าจองห้องไว้: duì, wǒ dìng le fáng jiān', accept:['订','预订'], model:'对，我订了房间。', modelPy:'duì, wǒ dìng le fáng jiān', modelTh:'ใช่ ฉันจองห้องไว้'},
+      {ask:'请给我看一下护照。', askPy:'qǐng gěi wǒ kàn yí xià hù zhào', askMean:'ขอดูพาสปอร์ตหน่อย', hint:'ยื่นแล้วพูดว่า "นี่ครับ": hǎo de, gěi nǐ', accept:['给你','好'], model:'好的，给你。', modelPy:'hǎo de, gěi nǐ', modelTh:'ได้ครับ นี่ครับ'},
+      {ask:'你的房间在{F}楼。', askPy:'nǐ de fáng jiān zài {F} lóu', askMean:'ห้องอยู่ชั้นไหน? (ฟังตัวเลข)', hint:'ทวนชั้น: … lóu?', numAccept:'F', model:'{F}楼，谢谢。', modelPy:'{F} lóu, xiè xie', modelTh:'ชั้น {F} ขอบคุณ'},
+      {ask:'早餐{H}开始。', askPy:'zǎo cān {H} kāi shǐ', askMean:'อาหารเช้าเริ่มกี่โมง? (ฟังตัวเลข)', hint:'ทวนเวลา: … ?', timeAccept:'H', model:'{H}，好的。', modelPy:'{H}, hǎo de', modelTh:'{H} โอเค'},
+      {ask:'还有什么问题吗？', askPy:'hái yǒu shén me wèn tí ma', askMean:'มีปัญหาอะไรอีกไหม', hint:'บอกว่าแอร์เสีย: kōng tiáo huài le', accept:['空调','坏'], model:'空调坏了。', modelPy:'kōng tiáo huài le', modelTh:'แอร์เสีย'},
+      {ask:'不好意思，我马上叫人来修。', askPy:'bù hǎo yì si, wǒ mǎ shàng jiào rén lái xiū', askMean:'ขอโทษ เดี๋ยวเรียกช่างมาซ่อม', hint:'ตอบว่าโอเค ขอบคุณ: hǎo de, xiè xie', accept:['谢谢','好'], model:'好的，谢谢。', modelPy:'hǎo de, xiè xie', modelTh:'โอเค ขอบคุณ'}
+    ]},
+  { id:'rp8', icon:'💊', title:'ร้านยา: อาการ กินกี่ครั้ง กี่เม็ด', desc:'บอกอาการ · ทวนวันละกี่ครั้ง · ทวนครั้งละกี่เม็ด · ทวนราคา',
+    vars:{K:[2,3], Pi:[1,2], P:rng(15,45)},
+    turns:[
+      {ask:'你好，哪里不舒服？', askPy:'nǐ hǎo, nǎ lǐ bù shū fu', askMean:'สวัสดี ไม่สบายตรงไหน', hint:'บอกว่าปวดหัว: wǒ tóu téng', accept:['头疼','头','疼','不舒服'], model:'我头疼。', modelPy:'wǒ tóu téng', modelTh:'ฉันปวดหัว'},
+      {ask:'这个药，一天{K}次。', askPy:'zhè ge yào, yì tiān {K} cì', askMean:'วันละกี่ครั้ง? (ฟังตัวเลข)', hint:'ทวนจำนวนครั้ง: yì tiān … cì?', numAccept:'K', model:'一天{K}次？', modelPy:'yì tiān {K} cì', modelTh:'วันละ {K} ครั้ง?'},
+      {ask:'对，一次{Pi}片，饭后吃。', askPy:'duì, yí cì {Pi} piàn, fàn hòu chī', askMean:'ครั้งละกี่เม็ด? (ฟังตัวเลข)', hint:'ทวนครั้งละกี่เม็ด: yí cì … piàn', numAccept:'Pi', model:'一次{Pi}片，好的。', modelPy:'yí cì {Pi} piàn, hǎo de', modelTh:'ครั้งละ {Pi} เม็ด โอเค'},
+      {ask:'{P}块。', askPy:'{P} kuài', askMean:'ราคาเท่าไหร่? (ฟังตัวเลข)', hint:'ทวนราคา แล้วถามว่าสแกนได้ไหม', numAccept:'P', model:'{P}块，可以扫码吗？', modelPy:'{P} kuài, kě yǐ sǎo mǎ ma', modelTh:'{P} หยวน สแกนได้ไหม'}
+    ]},
+  { id:'rp9', icon:'🛍️', title:'ร้านของฝาก: ต่อราคา', desc:'ฟังราคา · บอกว่าแพง · ต่อเป็นตัวเลข · ทวนราคาสุดท้าย',
+    vars:{P:[80,120,150,180,200,260]}, calc:v=>{ const M=Math.round(v.P*0.6/10)*10; return {M:M, V:M+Math.round((v.P-M)/20)*10}; },
+    turns:[
+      {ask:'这个{P}块，质量很好。', askPy:'zhè ge {P} kuài, zhì liàng hěn hǎo', askMean:'อันนี้กี่หยวน? (ฟังตัวเลข)', hint:'บอกว่าแพงไป: tài guì le', accept:['太贵','贵'], model:'太贵了！', modelPy:'tài guì le', modelTh:'แพงไป!'},
+      {ask:'那你说多少？', askPy:'nà nǐ shuō duō shao', askMean:'งั้นคุณว่าเท่าไหร่', hint:'ต่อราคาเหลือ {M} หยวน: … kuài, kě yǐ ma?', numAccept:'M', model:'{M}块，可以吗？', modelPy:'{M} kuài, kě yǐ ma', modelTh:'{M} หยวน ได้ไหม'},
+      {ask:'{V}，不能再少了。', askPy:'{V}, bù néng zài shǎo le', askMean:'ลดเหลือเท่าไหร่? (ฟังตัวเลข)', hint:'ทวนราคา แล้วตกลงซื้อ: … kuài? hǎo, wǒ yào le', numAccept:'V', model:'{V}块？好，我要了。', modelPy:'{V} kuài? hǎo, wǒ yào le', modelTh:'{V} หยวน? โอเค เอาเลย'},
+      {ask:'要袋子吗？', askPy:'yào dài zi ma', askMean:'เอาถุงไหม', hint:'บอกว่าไม่ต้อง ขอบคุณ: bú yòng le, xiè xie', accept:['不用','不要','谢谢'], model:'不用了，谢谢。', modelPy:'bú yòng le, xiè xie', modelTh:'ไม่ต้อง ขอบคุณ'}
+    ]}
+];
+/* ดึงตัวเลขทุกตัวจากที่ได้ยิน (25 · 二十五 · 两 · 一刻) → ค่า */
+function numsIn(raw, want){
+  const tgt=numToHan(want);
+  let h=applyAlias(norm(String(raw||''),false), tgt);
+  const out=[];
+  (h.match(/[零一二两三四五六七八九十百千万]+/g)||[]).forEach(run=>{ const v=hanToNum(run); if(v!==null) out.push(v); });
+  return out;
+}
+function rpCard(){
+  const el=$('#rpCard'); if(!el) return;
+  el.hidden=!S.settings.focusTravel; if(el.hidden) return;
+  const T=S.talk||{};
+  $('#rpList').innerHTML=RP_SCENES.map(sc=>{ const r=T[sc.id]; return '<button class="rpbtn" data-rp="'+sc.id+'"><span>'+sc.icon+'</span><b>'+esc(sc.title)+'</b>'+(r?'<i>'+(r.best>=80?'✅ ':'')+r.best+'% · '+r.plays+' ครั้ง</i>':'<i>ยังไม่เคยเล่น</i>')+'</button>'; }).join('');
+}
+document.addEventListener('click', e=>{ const b=e.target.closest('.rpbtn'); if(!b) return; const sc=RP_SCENES.find(x=>x.id===b.dataset.rp); if(sc){ dlog('rp','เริ่ม '+sc.id+' '+sc.title); startTalk(sc); } });
+/* ============================================================
+   📇 สมุดพกเฉิงตู — เปิดให้คนจีนฟังได้เลยตอนอยู่ที่จีน · พิมพ์ราคาแล้วฟังว่าพูดยังไง
+   ============================================================ */
+const BOOK_GROUPS=[['🆘 เอาตัวรอด',['survive','chunk','help']],['🍜 ร้านอาหาร',['eat','food','pot','spice','taste','meat']],['🧋 ชานม · เครื่องดื่ม',['tea','drink','temp']],['📱 จ่ายเงิน · ต่อราคา',['pay','money']],
+  ['🧺 ตลาด · ของ',['mkt','fruit','veg','thing','street','flavor','size','num','any']],['🚄 รถไฟ · DiDi · ถามทาง',['rail','trip','place']],['🏔️ จิ่วจ้ายโกว · หวงหลง',['mtn']],['🛏️ โรงแรม',['room']],['💊 ร้านยา',['med']]];
+function renderBook(){
+  const q=($('#bookQ').value||'').trim().toLowerCase();
+  const learnedFirst=(a,b)=>((treeLearned(b.key)||treeGreen(b.key))?1:0)-((treeLearned(a.key)||treeGreen(a.key))?1:0);
+  let h='';
+  BOOK_GROUPS.forEach(([name,cats])=>{
+    const items=Object.values(TREE).filter(x=>x.kind!=='frame' && cats.indexOf(x.cat)>=0)
+      .filter(x=>!q || (x.pinyin+' '+x.meaning+' '+x.hanzi).toLowerCase().indexOf(q)>=0).sort(learnedFirst);
+    if(!items.length) return;
+    h+='<div class="bkh">'+name+'</div>'+items.map(x=>{ const say=x.car?x.car.hanzi:x.hanzi, py=x.car?x.car.pinyin:x.pinyin, me=x.car?x.car.meaning:x.meaning;
+      return '<button class="bkrow" data-say="'+esc(say)+'"><span class="bkpy">'+pyHTML(py)+'</span><span class="bkth">'+esc(String(me))+'</span><span class="bkzh">'+esc(say)+'</span><span class="bkplay">🔊</span></button>'; }).join('');
+  });
+  $('#bookBody').innerHTML=h||'<p class="small muted">ไม่พบ</p>';
+}
+function bookNum(){
+  const n=parseInt(($('#bookNum').value||'').replace(/\D/g,''),10);
+  if(!(n>=0)){ $('#bookNumOut').innerHTML=''; return; }
+  const zh=priceToHan(n)+'块', py=priceToPy(n)+' kuài';
+  $('#bookNumOut').innerHTML='<div class="bkpy" style="font-size:1.5rem">'+pyHTML(py)+'</div><div class="bkzh">'+esc(zh)+'</div>';
+  speak(zh, null, 0.85);
+}
+function openBook(){ show('scr-book'); renderBook(); }
+document.addEventListener('click', e=>{ const b=e.target.closest('.bkrow'); if(!b) return; speak(b.dataset.say, null, 0.85); });
+
+/* ดึงเวลาทุกแบบจากที่ได้ยิน → [ชั่วโมง, นาที] */
+function timesIn(raw){
+  const out=[], s0=String(raw||'');
+  s0.replace(/(\d{1,2})\s*[:\uff1a]\s*(\d{2})/g,(m,h,mm)=>{ out.push([+h%12, +mm]); return m; });
+  const h=norm(s0,false);
+  (h.match(/[零一二两三四五六七八九十]+点(半|一刻|[零一二三四五六七八九十]+分?)?/g)||[]).forEach(t=>{
+    const m=t.match(/^([零一二两三四五六七八九十]+)点(.*)$/); if(!m) return;
+    const H=hanToNum(m[1]); if(H===null) return;
+    let M=0; if(m[2]==='半') M=30; else if(m[2]==='一刻') M=15; else if(m[2]){ const v=hanToNum(m[2].replace('分','')); if(v!==null) M=v; }
+    out.push([H%12, M]);
+  });
+  return out;
 }
 /* ---------- โค้ช "โฟกัสเที่ยว" 15 นาที: ทบทวน 4 · ต้นไม้ 6 · เสาเข็ม 3 · ฟัง 2 ---------- */
 function pronItems(n){
@@ -10541,6 +10740,10 @@ $('#btnTreeGo').onclick=()=>coachStart(15);
 $('#btnTreeOnly').onclick=()=>startTreeLearn('อิสระ');   // นอกโค้ช: ขอไมค์ก่อนได้ (async)
 $('#btnLongLis').onclick=$('#btnLongLis2').onclick=()=>llStart();
 $('#btnFoundGo').onclick=()=>foundStart(14);
+$('#btnBook').onclick=()=>openBook();
+$('#bookQ').oninput=()=>renderBook();
+$('#bookNumGo').onclick=()=>bookNum();
+$('#bookNum').addEventListener('keydown', e=>{ if(e.key==='Enter') bookNum(); });
 $('#btnFoundPlace').onclick=()=>foundPlacement();
 $('#btnTreeNext').onclick=$('#btnTreeNext2').onclick=$('#btnCoachLevel').onclick=()=>startTreeLearn('เลเวลต่อไป', true);
 $('#btnCoach15').onclick=()=>coachStart(15);
@@ -10557,6 +10760,7 @@ function renderFocusHome(){
   $('#btnCoach25').className = f ? 'btn ghost' : 'btn';
   $('#btnCoach25').textContent = f ? 'โหมดเต็ม 25 นาที' : '▶ เริ่ม 25 นาที';
   renderFoundCard();
+  rpCard();
   renderTreeCard();
 }
 $('#swPretest').onclick=()=>{ S.settings.pretest=!S.settings.pretest; save(); renderSettings(); };
