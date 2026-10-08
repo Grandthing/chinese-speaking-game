@@ -203,6 +203,10 @@ h2{font-size:1.15rem;margin:1.5rem 0 .5rem}
 .zhsmall{font-size:1.05rem;opacity:.65}
 .pairVs{margin-top:.35rem;font-size:.9rem;color:var(--t3)}
 .fcm{display:flex;gap:.4rem .9rem;flex-wrap:wrap;justify-content:center;margin-top:.4rem}
+.fdchoices{display:grid;grid-template-columns:1fr 1fr;gap:.45rem}
+.fdc{font:inherit;font-size:1.1rem;font-weight:600;padding:.7rem .4rem;border:1px solid var(--rule);border-radius:.7rem;background:var(--card);color:var(--ink);cursor:pointer;min-height:3rem}
+.fdc.ok{background:#E8F0E4;border-color:var(--ok);color:var(--ok)}.fdc.bad{background:#F8E3E0;border-color:var(--bad);color:var(--bad)}
+.fdsay{margin-top:.6rem;padding:.6rem .7rem;border:1px dashed var(--t1);border-radius:.7rem;text-align:center}
 .rplist{display:grid;grid-template-columns:1fr 1fr;gap:.45rem;margin-top:.55rem}
 .rpbtn{display:flex;flex-direction:column;align-items:flex-start;gap:.1rem;text-align:left;font:inherit;padding:.55rem .65rem;border:1px solid var(--rule);border-radius:.7rem;background:var(--card);color:var(--ink);cursor:pointer}
 .rpbtn span{font-size:1.3rem}.rpbtn b{font-size:.9rem;line-height:1.3}.rpbtn i{font-style:normal;font-size:.75rem;color:var(--muted)}
@@ -389,10 +393,10 @@ td.r,th.r{text-align:right}
   <!-- ==================== HOME ==================== -->
   <section id="scr-home" class="screen on">
     <div class="card treecard" id="foundCard" hidden>
-      <div class="row"><b class="grow">🧱 วางเสาเข็ม</b><span class="small muted" id="fcHead"></span></div>
+      <div class="row"><b class="grow">🧱 วางเสาเข็ม · ตัวเลข</b><span class="small muted" id="fcHead"></span></div>
       <div class="small" id="fcToday" style="margin-top:.3rem"></div>
       <div class="fcm small" id="fcMetrics"></div>
-      <button class="btn ghost" id="btnFoundGo" style="margin-top:.45rem">▶ ฝึกเสาเข็มอย่างเดียว (3 นาที)</button>
+      <button class="btn ghost" id="btnFoundGo" style="margin-top:.45rem">▶ ฝึกตัวเลข 10 ข้อ</button>
       <button class="btn ghost sm" id="btnFoundPlace" style="margin-top:.4rem;width:100%">📝 วัดระดับ</button>
     </div>
     <div class="card treecard" id="rpCard" hidden>
@@ -3356,7 +3360,7 @@ const MILESTONES = [
 /* ============================================================
    2.5 บันทึกปัญหา (diagnostics) — ไว้ส่งให้ผู้พัฒนาดูเวลาไมค์มีปัญหา
    ============================================================ */
-const BUILD='2026-10-08a';                     // เปลี่ยนทุกครั้งที่แก้ไฟล์ จะได้รู้ว่า log มาจากรุ่นไหน
+const BUILD='2026-10-08b';                     // เปลี่ยนทุกครั้งที่แก้ไฟล์ จะได้รู้ว่า log มาจากรุ่นไหน
 const DIAG=[], STUCK={}, T0=Date.now();
 /* log ปัญหาเก็บลงเครื่องด้วย: iPhone ปิดแอปหรือรีเฟรชแล้ว log เก่ายังอยู่ ส่งย้อนหลังได้ */
 const DKEY='zhgame-diag', DIAG_MAX=2500;
@@ -4818,7 +4822,7 @@ function instantJudge(extra){
   emptyStreak=0;
   judgeFn()(all);
 }
-function judgeFn(){ return MODE==='talk' ? judgeTalk : MODE==='shadow' ? judgeShadow : MODE==='pair' ? judgePair : MODE==='tree' ? judgeTree : MODE==='retell' ? judgeRetell
+function judgeFn(){ return MODE==='talk' ? judgeTalk : MODE==='shadow' ? judgeShadow : MODE==='pair' ? judgePair : MODE==='tree' ? judgeTree : MODE==='fdnum' ? judgeFdNum : MODE==='retell' ? judgeRetell
   : MODE==='pretest' ? judgePretest : MODE==='exam' ? judgeExam : judge; }
 let lastStopAt=0;
 function scheduleStop(){
@@ -4935,6 +4939,7 @@ function renderItem(autoPlay){
   if(MODE==='shadow'){ renderShadow(it); return; }
   if(MODE==='pair'){ renderPair(it); return; }
   if(MODE==='tree'){ renderTree(it); return; }
+  if(MODE==='fdnum'){ renderFdNum(it); return; }
   if(MODE==='retell'){ renderRetell(it); return; }
   if(MODE==='pretest'){ renderPretest(it); return; }
   if(MODE==='exam'){ renderExam(it); return; }
@@ -5177,6 +5182,7 @@ function checkMilestone(){
 }
 function next(){ qi++; if(qi>=Q.length || coachTimeUp()) finishRun(); else renderItem(true); }
 function finishRun(){
+  if(MODE==='fdnum') return fdNumFinish();
   if(MODE==='shadow') return finishShadow();
   if(MODE==='pair') return finishPair();
   if(MODE==='tree') return finishTree();
@@ -5304,7 +5310,7 @@ function renderTurn(){
   $('#gloss').hidden=true; $('#pNote').hidden=true; $('#reviewBar').hidden=true;
   if(S.settings.pyFirst){ $('#tAsk').classList.remove('zh'); $('#tAsk').innerHTML=pyHTML(t.askPy); $('#tAskPy').innerHTML='<span class="zh small muted">'+esc(t.ask)+'</span>'; }
   else { $('#tAsk').classList.add('zh'); $('#tAsk').textContent=t.ask; $('#tAskPy').innerHTML=pyHTML(t.askPy); }
-  $('#tAskMean').textContent='“'+t.askMean+'”';
+  $('#tAskMean').innerHTML=esc('“'+t.askMean+'”')+(String(TSC.id||'').indexOf('rp')===0 ? '<div class="glossbox on" style="margin-top:.35rem">'+glossHTML(t.ask, t.askPy)+'</div>' : '');
   $('#tHint').innerHTML='<b>ตอบว่า:</b> '+esc(t.hint);
   $('#tModel').hidden=true;
   $('#heard').innerHTML='';
@@ -5322,15 +5328,17 @@ function showModel(){
   $('#tModel').hidden=false;
   $('#tModel').innerHTML='<div class="small muted">ตัวอย่างคำตอบ — พูดตามนี้ได้เลย</div>'+
     (S.settings.pyFirst ? '<div class="py" style="font-size:1.3rem;font-weight:700">'+pyHTML(t.modelPy)+'</div><div class="zh small muted">'+esc(t.model)+'</div>'
-      : '<div class="zh">'+esc(t.model)+'</div><div class="py">'+pyHTML(t.modelPy)+'</div>')+'<div class="th">'+esc(t.modelTh)+'</div>';
+      : '<div class="zh">'+esc(t.model)+'</div><div class="py">'+pyHTML(t.modelPy)+'</div>')+'<div class="th">'+esc(t.modelTh)+'</div>'+
+    '<div class="glossbox on" style="margin-top:.35rem">'+glossHTML(t.model, t.modelPy)+'</div>';
 }
 function judgeTalk(alts){
   const t=talkTurn(); if(!t) return;
   const best=(alts&&alts[0])||'';
   let hit=null, score=0, nearHit=false, tips=[];
   const vv=(TSC&&TSC._vals)||{};
-  if(t.numAccept && vv[t.numAccept]!==undefined){             // พูดตัวเลขตรงค่า = ถูก (25 · 二十五 · 两 ก็ได้)
-    const want=+vv[t.numAccept];
+  const fixedNum = t.numAccept && /^_\d+$/.test(t.numAccept) ? +t.numAccept.slice(1) : null;   // _2 = เลขคงที่ในบท
+  if(t.numAccept && (fixedNum!==null || vv[t.numAccept]!==undefined)){             // พูดตัวเลขตรงค่า = ถูก (25 · 二十五 · 两 ก็ได้)
+    const want=fixedNum!==null ? fixedNum : +vv[t.numAccept];
     if((alts||[]).some(a=>numsIn(a, want).indexOf(want)>=0)){ hit=String(want); score=95; }
   }
   if(t.timeAccept && vv[t.timeAccept]){                       // เวลา: 9:30 = 九点半 = 九点三十分
@@ -7933,7 +7941,7 @@ const CHAR_TH={'你':'คุณ','好':'ดี','谢':'ขอบคุณ','不'
 '几':'กี่','关':'ปิด','停':'จอด','新':'ใหม่','抹':'ลบ/ตัด','零':'เศษ/ศูนย์','帮':'ช่วย','挑':'เลือก','给':'ให้','位':'ท่าน','俩':'สองคน','来':'ขอ (ตอนสั่ง) / มา','份':'ที่ (ลักษณนาม)','真':'จริง',
 '订':'จอง','预':'ล่วงหน้า','退':'คืน','密':'ลับ','寄':'ฝาก','存':'เก็บ','马':'ม้า','上':'บน/ขึ้น','到':'ถึง','叫':'เรียก','迷':'หลง','舒':'สบาย','阿':'(คำเรียก)','姨':'ป้า/น้า','半':'ครึ่ง',
 '斤':'จิน (ครึ่งกิโล)','拼':'คละ','现':'ตอนนี้','们':'(พวก)','家':'บ้าน/ร้าน','招':'ป้าย','牌':'ป้าย','哪':'ไหน','得':'(เชื่อมคำ)','最':'ที่สุด','特':'พิเศษ','味':'รส','道':'ทาง/รส','还':'ยัง/หรือ',
-'般':'แบบ','盘':'จาน','油':'น้ำมัน','盐':'เกลือ','酱':'ซอส','分':'แยก','开':'เปิด/แยก','装':'ใส่','料':'เครื่องปรุง','独':'เดี่ยว','淋':'ราด','去':'ไป','师':'ช่าง/ครู','傅':'(ช่าง)','杯':'แก้ว'};
+'般':'แบบ','盘':'จาน','油':'น้ำมัน','盐':'เกลือ','酱':'ซอส','分':'นาที / แยก','开':'เปิด/แยก','装':'ใส่','料':'เครื่องปรุง','独':'เดี่ยว','淋':'ราด','去':'ไป','师':'ช่าง/ครู','傅':'(ช่าง)','杯':'แก้ว'};
 /* คำในประโยคฟังของจริง (คนขาย/โรงแรม/ถามทาง) */
 Object.assign(WORD_TH,{'现金':'เงินสด','八折':'ลด 20%','打八折':'ลด 20%','尾号':'เลขท้าย','手机':'มือถือ','护照':'พาสปอร์ต','押金':'เงินมัดจำ','中午':'เที่ยง','早餐':'อาหารเช้า','电梯':'ลิฟต์',
   '那边':'ทางนั้น','需要':'ต้องการ','叫醒':'ปลุก','服务':'บริการ','一直':'ตรงไป','然后':'แล้วก็','左转':'เลี้ยวซ้าย','左拐':'เลี้ยวซ้าย','右边':'ทางขวา','走路':'เดิน','分钟':'นาที','马路':'ถนน',
@@ -7956,6 +7964,14 @@ Object.assign(CHAR_TH,{'炒':'ผัด','条':'(ลักษณนาม เส
   '网':'เน็ต','连':'ต่อ','头':'หัว','疼':'ปวด','肚':'ท้อง','止':'หยุด','痛':'ปวด','感':'รู้สึก','冒':'(หวัด)','天':'วัน/ฟ้า','医':'แพทย์','院':'สถาน','吐':'อาเจียน','丢':'หาย','问':'ถาม',
   '筷':'ตะเกียบ','勺':'ช้อน','饿':'หิว','饱':'อิ่ม','喝':'ดื่ม','远':'ไกล','黑':'ดำ','免':'ยกเว้น','费':'ค่าใช้จ่าย','产':'ผลิตภัณฑ์','示':'แสดง','本':'นี้/ต้น','列':'ขบวน','穿':'สวม',
   '修':'ซ่อม','片':'แผ่น/เม็ด','系':'(ระบบ)','明':'พรุ่ง/สว่าง','今':'วันนี้','题':'หัวข้อ','完':'หมด/เสร็จ'});
+Object.assign(WORD_TH,{'车费':'ค่ารถ','发车':'รถออก','登机':'ขึ้นเครื่อง','登机口':'ประตูขึ้นเครื่อง','尾号':'เลขท้าย','座位':'ที่นั่ง','小时':'ชั่วโมง','分钟':'นาที','一刻':'15 นาที','大巴':'รถบัส',
+  '投币':'หยอดเหรียญ','或者':'หรือ','告诉':'บอก','晕车':'เมารถ','下面':'ข้างล่าง','托运':'โหลด (กระเป๋า)','旅途愉快':'เดินทางโดยสวัสดิภาพ','需要':'ต้องการ','帮忙':'ช่วย','直接':'ตรงไปเลย',
+  '左右':'ประมาณ','早上':'ตอนเช้า','上车':'ขึ้นรถ','号线':'สาย','车厢':'ตู้','收你':'รับเงินคุณ','找你':'ทอนให้คุณ','找我':'ทอนให้ฉัน','现金':'เงินสด','火车东站':'สถานีรถไฟตะวันออก','质量':'คุณภาพ'});
+Object.assign(WORD_TH,{'休息':'พัก','出发':'ออกเดินทาง','开始':'เริ่ม','大概':'ประมาณ','不客气':'ไม่เป็นไร'});
+Object.assign(CHAR_TH,{'休':'พัก','息':'พัก','发':'ออก/ส่ง','住':'พัก (อาศัย)','始':'เริ่ม','概':'(ประมาณ)','客':'แขก','祝':'อวยพร'});
+Object.assign(CHAR_TH,{'幺':'หนึ่ง (อ่านแบบเบอร์โทร/ห้อง)','零':'ศูนย์','一':'หนึ่ง','二':'สอง','三':'สาม','四':'สี่','五':'ห้า','六':'หก','七':'เจ็ด','八':'แปด','九':'เก้า','十':'สิบ','百':'ร้อย','千':'พัน','万':'หมื่น',
+  '月':'เดือน','号':'เบอร์/วันที่','刻':'15 นาที','登':'ขึ้น','座':'ที่นั่ง','巴':'บัส','投':'หยอด','币':'เหรียญ','或':'หรือ','者':'(ผู้)','告':'บอก','诉':'บอก','晕':'เวียนหัว','托':'ฝาก','运':'ขนส่ง',
+  '旅':'เดินทาง','途':'ทาง','愉':'สุข','快':'เร็ว/สุข','需':'ต้อง','忙':'ยุ่ง','直':'ตรง','接':'ต่อ/รับ','右':'ขวา','左':'ซ้าย','东':'ตะวันออก','质':'คุณภาพ','量':'ปริมาณ','收':'รับ','费':'ค่าใช้จ่าย'});
 Object.assign(CHAR_TH,{'请':'กรุณา/เชิญ','收':'รับ','金':'เงิน/ทอง','八':'แปด','折':'ส่วนลด','尾':'ท้าย','号':'เบอร์/เลข','护':'ปกป้อง','押':'มัดจำ','午':'เที่ยง','早':'เช้า','餐':'มื้ออาหาร',
   '楼':'ชั้น (ตึก)','梯':'บันได','边':'ข้าง/ทาง','需':'ต้อง','醒':'ตื่น','直':'ตรง','然':'(แล้ว)','后':'หลัง','左':'ซ้าย','转':'เลี้ยว','右':'ขวา','钟':'(นาที/นาฬิกา)','过':'ข้าม/ผ่าน','坐':'นั่ง',
   '线':'สาย','从':'จาก','四':'สี่','也':'ก็/ด้วย','往':'ไปทาง','您':'คุณ (สุภาพ)','拐':'เลี้ยว','都':'ทั้งหมด','称':'ชั่ง','样':'อย่าง','心':'ใจ','烫':'ร้อนลวก'});
@@ -8838,8 +8854,9 @@ function fdMetrics(){
   const f=foundS();
   const snd=fdHist(['tone','sandhi','pair']).slice(-50);
   const price=(S.listen.hist||[]).filter(h=>/^N\d/.test(String(h.id)) && (h.r||0)>=1.0).slice(-30).map(h=>h.ok&&!h.as?1:0);
-  const num=price.concat(fdHist(['change','time'])).slice(-50);
-  return {sound:pct(snd), fast:pct((f.fast||[]).slice(-50)), num:pct(num), nSound:snd.length, nFast:(f.fast||[]).length, nNum:num.length};
+  const num=price.concat(fdHist(['price','change','time','digits','id','dur','med','date','qty','hand'])).slice(-50);
+  const say=fdHist(['say']).slice(-50);
+  return {sound:pct(snd), fast:pct((f.fast||[]).slice(-50)), num:pct(num), say:pct(say), nSound:snd.length, nFast:(f.fast||[]).length, nNum:num.length};
 }
 /* ---------- ตารางทางด่วน ---------- */
 const FD_TOPICS={
@@ -8867,6 +8884,7 @@ function fdTopic(){
 }
 /* หัวข้อที่สอบผ่านแล้ว (แบบทดสอบจัดระดับ) → ฝึกหัวข้อที่ยังอ่อนที่สุดแทน */
 function fdRunTopic(){
+  return 'number';                                   // ผู้ใช้ขอ (8 ต.ค.): เสาเข็ม = ตัวเลขทุกสถานการณ์อย่างเดียว
   const t=fdTopic(), f=foundS();
   if(t==='rest') return 'mix';
   if(!(f.pass||{})[t]) return t;
@@ -8994,6 +9012,7 @@ function fdSpeedStart(){
 let FD_ON=false, PLACE_ON=null;
 function foundStart(n){
   const topic=fdRunTopic();
+  if(topic==='number') return fdNumStart(n && n<=14 ? 10 : 14);
   if(topic==='speed'){ if(fdSpeedStart()) return true; }
   const q=fdQueue(topic==='speed'?'mix':topic, n||14);
   const f=foundS(); f.lastDay=today(); save();
@@ -9099,9 +9118,9 @@ function renderFoundCard(){
   const fmt=v=>v===null ? '—' : v+'%';
   $('#fcHead').textContent = d>0 ? (d>=84 ? '📘 หลักสูตรเต็ม' : '⚡ ทางด่วนก่อนบิน · วันที่ '+day+'/'+total) : '✈️ เดินทางแล้ว';
   const passed=Object.keys(f.pass||{}).map(k=>FD_TOPICS[k]?FD_TOPICS[k].icon:'').join(' ');
-  $('#fcToday').innerHTML='วันนี้: '+T.icon+' '+esc(T.name)+(run!==t ? ' <span class="small muted">('+FD_TOPICS[t].icon+' ผ่านแล้ว → ฝึกจุดที่ยังอ่อน)</span>' : '')+(passed?'<div class="small muted">ผ่านแล้ว: '+passed+'</div>':'');
-  $('#fcMetrics').innerHTML='<span>🎯 แยกเสียง <b>'+fmt(m.sound)+'</b></span><span>⚡ ใน 3 วิ <b>'+fmt(m.fast)+'</b></span><span>👂 ตัวเลข <b>'+fmt(m.num)+'</b></span>';
-  if($('#btnFoundPlace')) $('#btnFoundPlace').textContent = f.placement ? '📝 วัดระดับอีกครั้ง' : '📝 วัดระดับ (20 ข้อ · ข้ามหัวข้อที่เก่งแล้ว)';
+  $('#fcToday').innerHTML='🔢 <b>ตัวเลขทุกสถานการณ์</b>: ราคา · ทอนเงิน · เวลา · วันที่ · เบอร์โทร/ห้อง · ชั้น/ประตู/สาย/ที่นั่ง · กี่นาที/กี่ป้าย · ยา · ภาษามือ<div class="small muted">ฟัง → เลือก → พูดเองทุกข้อ → เฉลยแปลทีละคำ</div>';
+  $('#fcMetrics').innerHTML='<span>👂 ฟังตัวเลข <b>'+fmt(m.num)+'</b></span><span>🗣️ พูดตัวเลข <b>'+fmt(m.say)+'</b></span><span>⚡ ใน 3 วิ <b>'+fmt(m.fast)+'</b></span>';
+  if($('#btnFoundPlace')) $('#btnFoundPlace').hidden=true;
 }
 /* ============================================================
    🎭 ซ้อมสถานการณ์จริง — คนขาย/พนักงานพูด (เสียง) → เราตอบ (ไมค์) · ตัวเลขสุ่มใหม่ทุกครั้ง
@@ -9258,6 +9277,306 @@ function timesIn(raw){
     out.push([H%12, M]);
   });
   return out;
+}
+/* ---- 🎭 ฉากเพิ่ม (8 ต.ค.): การเดินทางจริง — รถเมล์ · บัส VIP ไปจิ่วจ้ายโกว · บนรถบัส · สนามบิน · รถไฟใต้ดิน · ศูนย์แพนด้า · สตรีทฟู้ด · หม้อไฟ · ร้านสะดวกซื้อ ---- */
+RP_SCENES.push(
+  { id:'rp10', icon:'🚌', title:'รถเมล์ในเมือง: ถามสาย ค่ารถ กี่ป้าย', desc:'ถามว่าไปไหม · ค่ารถ · ถามกี่ป้าย · ขอให้บอกตอนถึง',
+    vars:{L:[{zh:'春熙路',py:'chūn xī lù',th:'ถนนชุนซี'},{zh:'宽窄巷子',py:'kuān zhǎi xiàng zi',th:'ตรอกกว้าง-แคบ'},{zh:'锦里',py:'jǐn lǐ',th:'จิ่นหลี่'},{zh:'火车站',py:'huǒ chē zhàn',th:'สถานีรถไฟ'}], N:[3,4,5,6,7,8]},
+    turns:[
+      {ask:'你好，上车吧。', askPy:'nǐ hǎo, shàng chē ba', askMean:'สวัสดี ขึ้นรถเลย', hint:'ถามคนขับว่ารถคันนี้ไป{L.th}ไหม: zhè ge chē dào {L.py} ma?', accept:['{L}','到','去'], model:'这个车到{L}吗？', modelPy:'zhè ge chē dào {L} ma', modelTh:'รถคันนี้ไป{L}ไหม'},
+      {ask:'到，两块，扫码或者投币。', askPy:'dào, liǎng kuài, sǎo mǎ huò zhě tóu bì', askMean:'ไป ค่ารถกี่หยวน? (ฟังตัวเลข)', hint:'ทวนค่ารถ แล้วบอกว่าจะสแกน: liǎng kuài? wǒ sǎo mǎ', numAccept:'_2', model:'两块？我扫码。', modelPy:'liǎng kuài? wǒ sǎo mǎ', modelTh:'2 หยวน? ฉันสแกนนะ'},
+      {ask:'好了，坐吧。', askPy:'hǎo le, zuò ba', askMean:'เรียบร้อย นั่งเลย', hint:'ถามว่าอีกกี่ป้าย: hái yǒu jǐ zhàn?', accept:['几站','还有'], model:'还有几站？', modelPy:'hái yǒu jǐ zhàn', modelTh:'อีกกี่ป้าย'},
+      {ask:'还有{N}站。', askPy:'hái yǒu {N} zhàn', askMean:'อีกกี่ป้าย? (ฟังตัวเลข)', hint:'ทวนจำนวนป้าย: … zhàn?', numAccept:'N', model:'{N}站？谢谢。', modelPy:'{N} zhàn? xiè xie', modelTh:'{N} ป้าย? ขอบคุณ'},
+      {ask:'不客气。', askPy:'bú kè qi', askMean:'ไม่เป็นไร', hint:'ขอให้บอกตอนถึง: dào le qǐng gào su wǒ', accept:['告诉','到了'], model:'到了请告诉我。', modelPy:'dào le qǐng gào su wǒ', modelTh:'ถึงแล้วช่วยบอกฉันด้วย'}
+    ]},
+  { id:'rp11', icon:'🎫', title:'สถานีรถบัส: ซื้อตั๋วบัส VIP ไปจิ่วจ้ายโกว', desc:'บอกที่หมาย · เลือกรอบ · ทวนราคา · ทวนเลขที่นั่ง · ถามกี่ชั่วโมง',
+    vars:{N:[2,3], P:[140,145,160], H:[timeObj(7,0),timeObj(7,30),timeObj(8,0),timeObj(9,0)], S:rng(5,40), D:[8,9,10]}, calc:v=>({T:v.P*v.N}),
+    turns:[
+      {ask:'你好，去哪里？', askPy:'nǐ hǎo, qù nǎ lǐ', askMean:'สวัสดี ไปไหน', hint:'บอกว่าไปจิ่วจ้ายโกว ซื้อ {N} ใบ: qù Jiǔ zhài gōu, mǎi … zhāng', accept:['九寨沟'], numAccept:null, model:'去九寨沟，{N}张。', modelPy:'qù Jiǔ zhài gōu, {N} zhāng', modelTh:'ไปจิ่วจ้ายโกว {N} ใบ'},
+      {ask:'明天{H}的车可以吗？', askPy:'míng tiān {H} de chē kě yǐ ma', askMean:'รอบพรุ่งนี้กี่โมง ได้ไหม? (ฟังตัวเลข)', hint:'ทวนเวลา แล้วตอบได้: … kě yǐ', timeAccept:'H', model:'{H}，可以。', modelPy:'{H}, kě yǐ', modelTh:'{H} ได้'},
+      {ask:'一张{P}，一共{T}块。', askPy:'yì zhāng {P}, yí gòng {T} kuài', askMean:'ทั้งหมดกี่หยวน? (ฟังตัวเลขตัวหลัง)', hint:'ทวนยอดรวม: yí gòng … kuài?', numAccept:'T', model:'一共{T}块？好的。', modelPy:'yí gòng {T} kuài? hǎo de', modelTh:'ทั้งหมด {T} หยวน? โอเค'},
+      {ask:'你的座位是{S}号。', askPy:'nǐ de zuò wèi shì {S} hào', askMean:'ที่นั่งเบอร์อะไร? (ฟังตัวเลข)', hint:'ทวนเลขที่นั่ง: … hào', numAccept:'S', model:'{S}号，谢谢。', modelPy:'{S} hào, xiè xie', modelTh:'เบอร์ {S} ขอบคุณ'},
+      {ask:'还有问题吗？', askPy:'hái yǒu wèn tí ma', askMean:'มีคำถามอีกไหม', hint:'ถามว่าต้องนั่งกี่ชั่วโมง: yào zuò jǐ ge xiǎo shí?', accept:['几个小时','多久','小时'], model:'要坐几个小时？', modelPy:'yào zuò jǐ ge xiǎo shí', modelTh:'ต้องนั่งกี่ชั่วโมง'},
+      {ask:'大概{D}个小时。', askPy:'dà gài {D} ge xiǎo shí', askMean:'ประมาณกี่ชั่วโมง? (ฟังตัวเลข)', hint:'ทวนจำนวนชั่วโมง: … ge xiǎo shí?', numAccept:'D', model:'{D}个小时？好的。', modelPy:'{D} ge xiǎo shí? hǎo de', modelTh:'{D} ชั่วโมง? โอเค'}
+    ]},
+  { id:'rp12', icon:'🚍', title:'บนรถบัส VIP: ที่นั่ง กระเป๋า พักรถ เมารถ', desc:'หาที่นั่ง · วางกระเป๋า · ทวนเวลาพัก · ขอถุง · ถามว่าถึงหรือยัง',
+    vars:{S:rng(5,40), M:[10,15,20,30]},
+    turns:[
+      {ask:'你几号？', askPy:'nǐ jǐ hào', askMean:'คุณที่นั่งเบอร์อะไร', hint:'บอกเลขที่นั่ง {S}: wǒ … hào', numAccept:'S', model:'我{S}号。', modelPy:'wǒ {S} hào', modelTh:'ฉันเบอร์ {S}'},
+      {ask:'行李放下面。', askPy:'xíng li fàng xià miàn', askMean:'กระเป๋าวางข้างล่าง (ใต้ท้องรถ)', hint:'ตอบว่าโอเค ขอบคุณ: hǎo de, xiè xie', accept:['好','谢谢'], model:'好的，谢谢。', modelPy:'hǎo de, xiè xie', modelTh:'โอเค ขอบคุณ'},
+      {ask:'前面休息{M}分钟，可以上厕所。', askPy:'qián miàn xiū xi {M} fēn zhōng, kě yǐ shàng cè suǒ', askMean:'พักกี่นาที? (ฟังตัวเลข)', hint:'ทวนเวลาพัก: … fēn zhōng?', numAccept:'M', model:'{M}分钟？好的。', modelPy:'{M} fēn zhōng? hǎo de', modelTh:'{M} นาที? โอเค'},
+      {ask:'你还好吗？', askPy:'nǐ hái hǎo ma', askMean:'คุณโอเคไหม', hint:'บอกว่าเมารถ ขอถุงหน่อย: wǒ yūn chē, yǒu dài zi ma?', accept:['晕车','袋子','不舒服','想吐'], model:'我晕车，有袋子吗？', modelPy:'wǒ yūn chē, yǒu dài zi ma', modelTh:'ฉันเมารถ มีถุงไหม'},
+      {ask:'有，给你。', askPy:'yǒu, gěi nǐ', askMean:'มี เอาไป', hint:'ขอบคุณ แล้วถามว่าถึงหรือยัง: xiè xie. dào le ma?', accept:['到了吗','谢谢'], model:'谢谢。到了吗？', modelPy:'xiè xie. dào le ma', modelTh:'ขอบคุณ ถึงหรือยัง'},
+      {ask:'还没有，还要两个小时。', askPy:'hái méi yǒu, hái yào liǎng ge xiǎo shí', askMean:'ยัง อีกกี่ชั่วโมง? (ฟังตัวเลข)', hint:'ทวนเวลา: liǎng ge xiǎo shí? hǎo', numAccept:'_2', model:'两个小时？好。', modelPy:'liǎng ge xiǎo shí? hǎo', modelTh:'2 ชั่วโมง? โอเค'}
+    ]},
+  { id:'rp13', icon:'✈️', title:'สนามบิน: เช็กอิน กระเป๋า ประตู เวลาขึ้นเครื่อง', desc:'ยื่นพาสปอร์ต · โหลดกระเป๋ากี่ใบ · ทวนประตู · ทวนเวลาขึ้นเครื่อง',
+    vars:{B:[1,2], G:rng(3,40), H:[timeObj(9,30),timeObj(10,45),timeObj(1,15),timeObj(2,30),timeObj(6,0)]},
+    turns:[
+      {ask:'你好，护照给我。', askPy:'nǐ hǎo, hù zhào gěi wǒ', askMean:'สวัสดี ขอพาสปอร์ต', hint:'ยื่นให้: hǎo de, gěi nǐ', accept:['给你','好'], model:'好的，给你。', modelPy:'hǎo de, gěi nǐ', modelTh:'ได้ครับ นี่ครับ'},
+      {ask:'有托运行李吗？', askPy:'yǒu tuō yùn xíng li ma', askMean:'มีกระเป๋าโหลดไหม', hint:'บอกว่ามี {B} ใบ: yǒu, … ge', numAccept:'B', model:'有，{B}个。', modelPy:'yǒu, {B} ge', modelTh:'มี {B} ใบ'},
+      {ask:'{G}号登机口。', askPy:'{G} hào dēng jī kǒu', askMean:'ประตูขึ้นเครื่องเบอร์อะไร? (ฟังตัวเลข)', hint:'ทวนเบอร์ประตู: … hào?', numAccept:'G', model:'{G}号？谢谢。', modelPy:'{G} hào? xiè xie', modelTh:'เบอร์ {G}? ขอบคุณ'},
+      {ask:'{H}登机。', askPy:'{H} dēng jī', askMean:'ขึ้นเครื่องกี่โมง? (ฟังตัวเลข)', hint:'ทวนเวลาขึ้นเครื่อง: … dēng jī?', timeAccept:'H', model:'{H}登机，好的。', modelPy:'{H} dēng jī, hǎo de', modelTh:'ขึ้นเครื่อง {H} โอเค'},
+      {ask:'祝你旅途愉快。', askPy:'zhù nǐ lǚ tú yú kuài', askMean:'ขอให้เดินทางอย่างมีความสุข', hint:'ขอบคุณ: xiè xie', accept:['谢谢'], model:'谢谢！', modelPy:'xiè xie', modelTh:'ขอบคุณ'}
+    ]},
+  { id:'rp14', icon:'🚇', title:'รถไฟใต้ดิน: สายไหน เปลี่ยนที่ไหน ทางออก', desc:'ถามสาย · ทวนเลขสาย · ถามจุดเปลี่ยน · ทวนทางออก',
+    vars:{L:[{zh:'宽窄巷子',py:'kuān zhǎi xiàng zi',th:'ตรอกกว้าง-แคบ'},{zh:'熊猫基地',py:'xióng māo jī dì',th:'ศูนย์แพนด้า'},{zh:'机场',py:'jī chǎng',th:'สนามบิน'},{zh:'火车东站',py:'huǒ chē dōng zhàn',th:'สถานีรถไฟตะวันออก'}],
+      A:[1,3,4,5,6,7,10], X:[1,3,4,5,6,7,8,9,10,11,12,13,14]},
+    turns:[
+      {ask:'你好，需要帮忙吗？', askPy:'nǐ hǎo, xū yào bāng máng ma', askMean:'สวัสดี ให้ช่วยอะไรไหม', hint:'ถามว่าไป{L.th}นั่งสายไหน: qù {L.py} zuò jǐ hào xiàn?', accept:['几号线','{L}'], model:'去{L}坐几号线？', modelPy:'qù {L} zuò jǐ hào xiàn', modelTh:'ไป{L}นั่งสายไหน'},
+      {ask:'坐{A}号线。', askPy:'zuò {A} hào xiàn', askMean:'สายอะไร? (ฟังตัวเลข)', hint:'ทวนเลขสาย แล้วถามว่าต้องเปลี่ยนไหม: … hào xiàn? yào huàn chéng ma?', numAccept:'A', model:'{A}号线？要换乘吗？', modelPy:'{A} hào xiàn? yào huàn chéng ma', modelTh:'สาย {A}? ต้องเปลี่ยนสายไหม'},
+      {ask:'不用换，直接到。', askPy:'bú yòng huàn, zhí jiē dào', askMean:'ไม่ต้องเปลี่ยน ถึงเลย', hint:'ถามว่าออกทางออกไหน: jǐ hào chū kǒu?', accept:['出口','几号'], model:'几号出口？', modelPy:'jǐ hào chū kǒu', modelTh:'ทางออกเบอร์อะไร'},
+      {ask:'{X}号出口。', askPy:'{X} hào chū kǒu', askMean:'ทางออกเบอร์อะไร? (ฟังตัวเลข)', hint:'ทวนเบอร์ทางออก ขอบคุณ: … hào chū kǒu, xiè xie', numAccept:'X', model:'{X}号出口，谢谢。', modelPy:'{X} hào chū kǒu, xiè xie', modelTh:'ทางออก {X} ขอบคุณ'}
+    ]},
+  { id:'rp15', icon:'🐼', title:'ศูนย์แพนด้า: ตั๋ว เวลา รถชมวิว', desc:'ซื้อตั๋ว · ทวนยอด · ถามเวลาแพนด้ากิน · ถามรถชมวิว',
+    vars:{N:[2,3,4], P:[55], H:[timeObj(8,30),timeObj(9,0),timeObj(9,30)], C:[10,15,20]}, calc:v=>({T:v.P*v.N}),
+    turns:[
+      {ask:'几张票？', askPy:'jǐ zhāng piào', askMean:'กี่ใบ', hint:'ซื้อ {N} ใบ: mǎi … zhāng', numAccept:'N', model:'买{N}张。', modelPy:'mǎi {N} zhāng', modelTh:'ซื้อ {N} ใบ'},
+      {ask:'一张五十五，一共{T}块。', askPy:'yì zhāng wǔ shí wǔ, yí gòng {T} kuài', askMean:'ทั้งหมดกี่หยวน? (ฟังตัวเลขตัวหลัง)', hint:'ทวนยอดรวม: yí gòng … kuài', numAccept:'T', model:'一共{T}块，好的。', modelPy:'yí gòng {T} kuài, hǎo de', modelTh:'ทั้งหมด {T} หยวน โอเค'},
+      {ask:'还有什么问题？', askPy:'hái yǒu shén me wèn tí', askMean:'มีคำถามอีกไหม', hint:'ถามว่าแพนด้ากินข้าวกี่โมง: xióng māo jǐ diǎn chī fàn?', accept:['几点','熊猫'], model:'熊猫几点吃饭？', modelPy:'xióng māo jǐ diǎn chī fàn', modelTh:'แพนด้ากินข้าวกี่โมง'},
+      {ask:'早上{H}左右。', askPy:'zǎo shang {H} zuǒ yòu', askMean:'ราวกี่โมง? (ฟังตัวเลข)', hint:'ทวนเวลา: zǎo shang …?', timeAccept:'H', model:'早上{H}？谢谢。', modelPy:'zǎo shang {H}? xiè xie', modelTh:'เช้า {H}? ขอบคุณ'},
+      {ask:'观光车{C}块一个人。', askPy:'guān guāng chē {C} kuài yí ge rén', askMean:'รถชมวิวคนละกี่หยวน? (ฟังตัวเลข)', hint:'ทวนราคา: … kuài?', numAccept:'C', model:'{C}块？好的。', modelPy:'{C} kuài? hǎo de', modelTh:'{C} หยวน? โอเค'}
+    ]},
+  { id:'rp16', icon:'🍢', title:'สตรีทฟู้ด: ไม้เสียบ กี่ไม้ เผ็ด', desc:'สั่งกี่ไม้ · เผ็ดไหม · กินตอนนี้ · ทวนยอด',
+    vars:{Q:[2,3,4,5,6], P:[2,3,5]}, calc:v=>({T:v.P*v.Q}),
+    turns:[
+      {ask:'要几串？', askPy:'yào jǐ chuàn', askMean:'เอากี่ไม้', hint:'เอา {Q} ไม้: lái … chuàn', numAccept:'Q', model:'来{Q}串。', modelPy:'lái {Q} chuàn', modelTh:'ขอ {Q} ไม้'},
+      {ask:'要辣的吗？', askPy:'yào là de ma', askMean:'เอาเผ็ดไหม', hint:'เผ็ดน้อย: wēi là / ไม่เผ็ด: bú yào là', accept:['微辣','不要辣','不辣','少放辣'], model:'微辣。', modelPy:'wēi là', modelTh:'เผ็ดน้อย'},
+      {ask:'现在吃还是带走？', askPy:'xiàn zài chī hái shi dài zǒu', askMean:'กินตอนนี้หรือห่อกลับ', hint:'กินตอนนี้: xiàn zài chī', accept:['现在吃','带走'], model:'现在吃。', modelPy:'xiàn zài chī', modelTh:'กินตอนนี้'},
+      {ask:'一串{P}块，一共{T}块。', askPy:'yí chuàn {P} kuài, yí gòng {T} kuài', askMean:'ทั้งหมดกี่หยวน? (ฟังตัวเลขตัวหลัง)', hint:'ทวนยอดรวม แล้วบอกว่าจะสแกน: … kuài, wǒ sǎo nǐ ba', numAccept:'T', model:'{T}块，我扫你吧。', modelPy:'{T} kuài, wǒ sǎo nǐ ba', modelTh:'{T} หยวน ฉันสแกนนะ'}
+    ]},
+  { id:'rp17', icon:'🍲', title:'หม้อไฟเฉิงตู: คน ซุป เผ็ด น้ำจิ้ม', desc:'บอกจำนวนคน · หม้อสองซุป · ระดับเผ็ด · น้ำจิ้ม · ทวนยอด',
+    vars:{N:[2,3,4], T:rng(120,320,10)},
+    turns:[
+      {ask:'几位？', askPy:'jǐ wèi', askMean:'กี่ท่าน', hint:'บอกจำนวน {N} คน: … ge rén', numAccept:'N', model:'{N}个人。', modelPy:'{N} ge rén', modelTh:'{N} คน'},
+      {ask:'锅底要什么？', askPy:'guō dǐ yào shén me', askMean:'เอาน้ำซุปแบบไหน', hint:'ขอหม้อสองซุป: lái yí ge yuān yang guō', accept:['鸳鸯','清汤'], model:'来一个鸳鸯锅。', modelPy:'lái yí ge yuān yang guō', modelTh:'ขอหม้อสองซุป'},
+      {ask:'微辣、中辣还是特辣？', askPy:'wēi là, zhōng là hái shi tè là', askMean:'เผ็ดน้อย กลาง หรือมาก', hint:'เผ็ดน้อย: wēi là', accept:['微辣','中辣','特辣','不辣'], model:'微辣。', modelPy:'wēi là', modelTh:'เผ็ดน้อย'},
+      {ask:'油碟还是干碟？', askPy:'yóu dié hái shi gān dié', askMean:'น้ำจิ้มน้ำมันหรือพริกแห้ง', hint:'เอาน้ำมันงา: yóu dié', accept:['油碟','干碟'], model:'油碟。', modelPy:'yóu dié', modelTh:'น้ำจิ้มน้ำมัน'},
+      {ask:'一共{T}块。', askPy:'yí gòng {T} kuài', askMean:'ทั้งหมดกี่หยวน? (ฟังตัวเลข)', hint:'ทวนยอด: … kuài', numAccept:'T', model:'{T}块，好的。', modelPy:'{T} kuài, hǎo de', modelTh:'{T} หยวน โอเค'}
+    ]},
+  { id:'rp18', icon:'🏪', title:'ร้านสะดวกซื้อ: ถุง ยอดเงิน เงินทอน', desc:'ไม่เอาถุง · ทวนยอด · จ่ายเงินสด · ทวนเงินทอน',
+    vars:{P:rng(8,46)}, calc:v=>{ const G=v.P<=20?20:50; return {G:G, C:G-v.P}; },
+    turns:[
+      {ask:'要袋子吗？', askPy:'yào dài zi ma', askMean:'เอาถุงไหม', hint:'ไม่ต้อง ขอบคุณ: bú yòng le, xiè xie', accept:['不用','不要'], model:'不用了，谢谢。', modelPy:'bú yòng le, xiè xie', modelTh:'ไม่ต้อง ขอบคุณ'},
+      {ask:'一共{P}块。', askPy:'yí gòng {P} kuài', askMean:'ทั้งหมดกี่หยวน? (ฟังตัวเลข)', hint:'ทวนยอด แล้วบอกว่าจ่ายเงินสด: … kuài, wǒ gěi nǐ xiàn jīn', numAccept:'P', model:'{P}块，给你现金。', modelPy:'{P} kuài, gěi nǐ xiàn jīn', modelTh:'{P} หยวน จ่ายเงินสดนะ'},
+      {ask:'收你{G}块，找你{C}块。', askPy:'shōu nǐ {G} kuài, zhǎo nǐ {C} kuài', askMean:'ทอนกี่หยวน? (ฟังตัวเลขตัวหลัง)', hint:'ทวนเงินทอน: zhǎo wǒ … kuài? xiè xie', numAccept:'C', model:'找我{C}块？谢谢。', modelPy:'zhǎo wǒ {C} kuài? xiè xie', modelTh:'ทอน {C} หยวน? ขอบคุณ'}
+    ]}
+);
+/* ============================================================
+   🧱 วางเสาเข็ม = 🔢 ตัวเลขทุกสถานการณ์ (ผู้ใช้ขอ 8 ต.ค.)
+   ทุกข้อ: ฟังอีกฝ่ายพูด → เลือกคำตอบ → (ถูกหรือผิด) พูดตัวเลขนั้นเองทุกครั้ง → เฉลยแปลทีละคำ → พูดผ่านแล้วกด "ถัดไป ›" เอง
+   MODE 'fdnum' บนหน้าเล่นปกติ (มีไมค์) · ตัดสินตัวเลข/เวลา/เลขเรียงตัว เทียบเป็นค่า
+   ============================================================ */
+const FD_DIG_HAN={'0':'零','1':'幺','2':'二','3':'三','4':'四','5':'五','6':'六','7':'七','8':'八','9':'九'};
+const FD_DIG_PY={'0':'líng','1':'yāo','2':'èr','3':'sān','4':'sì','5':'wǔ','6':'liù','7':'qī','8':'bā','9':'jiǔ'};
+const digHan=d=>[...String(d)].map(c=>FD_DIG_HAN[c]).join(''), digPy=d=>[...String(d)].map(c=>FD_DIG_PY[c]).join(' ');
+/* เลขเรียงตัวจากที่ได้ยิน (3856 · 三八五六 · 幺=1) */
+function digitsIn(raw){
+  const M={'零':'0','〇':'0','幺':'1','一':'1','二':'2','两':'2','三':'3','四':'4','五':'5','六':'6','七':'7','八':'8','九':'9'};
+  let out=''; for(const c of String(raw||'')){ if(/\d/.test(c)) out+=c; else if(M[c]) out+=M[c]; }
+  return out;
+}
+const fdR=(a,b)=>a+Math.floor(Math.random()*(b-a+1));
+const fdNoTwo=(a,b)=>{ let n; do{ n=fdR(a,b); }while(n===2); return n; };
+function fdNumChoices(n){ return [n].concat(lisDistract(n)).map(String); }
+const FD_PRICE_TPL=[
+  ['一共{N}块。','yí gòng {P} kuài','ทั้งหมด {N} หยวน','ร้านอาหาร · จ่ายเงิน'],
+  ['这个{N}块。','zhè ge {P} kuài','อันนี้ {N} หยวน','ร้านค้า'],
+  ['{N}块一斤。','{P} kuài yì jīn','จินละ {N} หยวน','ตลาดสด'],
+  ['门票{N}块一张。','mén piào {P} kuài yì zhāng','ตั๋วใบละ {N} หยวน','จุดขายตั๋ว'],
+  ['车费{N}块。','chē fèi {P} kuài','ค่ารถ {N} หยวน','แท็กซี่ · รถบัส'],
+  ['到九寨沟一张{N}块。','dào Jiǔ zhài gōu yì zhāng {P} kuài','ไปจิ่วจ้ายโกวใบละ {N} หยวน','สถานีรถบัส']
+];
+function fdmPrice(){
+  const t=rnd(FD_PRICE_TPL), n=t[0].indexOf('张')>=0||t[0].indexOf('九寨沟')>=0 ? rnd([90,120,145,169,190,220]) : lisPrice();
+  return {unit:'price', ctx:t[3], q:'ราคาเท่าไหร่?', zh:t[0].replace('{N}',priceToHan(n)), py:t[1].replace('{P}',priceToPy(n)), th:t[2].replace('{N}',n),
+    ans:String(n), choices:fdNumChoices(n), say:{zh:priceToHan(n)+'块', py:priceToPy(n)+' kuài', th:n+' หยวน', num:n}};
+}
+function fdmChange(){
+  const P=fdR(11,95), G=P<50&&Math.random()<0.6?50:100, C=G-P;
+  return {unit:'change', ctx:'จ่ายเงินสด', q:'ราคา '+P+' จ่าย '+G+' — เขาทอนเท่าไหร่?', zh:'找你'+priceToHan(C)+'块。', py:'zhǎo nǐ '+priceToPy(C)+' kuài', th:'ทอนให้ '+C+' หยวน',
+    ans:String(C), choices:fdNumChoices(C), say:{zh:'找你'+priceToHan(C)+'块', py:'zhǎo nǐ '+priceToPy(C)+' kuài', th:'ทอน '+C+' หยวน', num:C}};
+}
+const FD_TIME_TPL2=[
+  ['{T}关门。','{P} guān mén','ปิด {T}','ร้าน · อุทยาน','ปิดกี่โมง?'],
+  ['大巴{T}发车。','dà bā {P} fā chē','รถบัสออก {T}','สถานีรถบัส','รถบัสออกกี่โมง?'],
+  ['火车{T}开。','huǒ chē {P} kāi','รถไฟออก {T}','รถไฟ','รถไฟออกกี่โมง?'],
+  ['{T}登机。','{P} dēng jī','ขึ้นเครื่อง {T}','สนามบิน','ขึ้นเครื่องกี่โมง?'],
+  ['早餐{T}开始。','zǎo cān {P} kāi shǐ','อาหารเช้าเริ่ม {T}','โรงแรม','อาหารเช้าเริ่มกี่โมง?'],
+  ['最后一班车是{T}。','zuì hòu yì bān chē shì {P}','รถเที่ยวสุดท้าย {T}','จิ่วจ้ายโกว','รถเที่ยวสุดท้ายกี่โมง?']
+];
+function fdmTime(){
+  const h=fdR(1,12), m=rnd([0,0,30,30,15,45,10]), T=timeObj(h,m), t=rnd(FD_TIME_TPL2);
+  const fmt=(H,M)=>H+':'+String(M).padStart(2,'0');
+  const ds=new Set([fmt(h===4?10:h===10?4:(h%12)+1,m), fmt(h,m===30?0:30), fmt(h===2?12:(h+10)%12+1,m), fmt(h,(m+15)%60)]); ds.delete(T.th);
+  return {unit:'time', ctx:t[3], q:t[4], zh:t[0].replace('{T}',T.zh), py:t[1].replace('{P}',T.py), th:t[2].replace('{T}',T.th),
+    ans:T.th, choices:[T.th].concat([...ds].slice(0,3)), say:{zh:T.zh, py:T.py, th:T.th, time:[h%12,m]}};
+}
+function fdmDigits(){
+  const kind=Math.random()<0.5 ? 'phone' : 'room';
+  let d; if(kind==='phone'){ d=''; for(let i=0;i<4;i++) d+=String(fdR(0,9)); } else { d=String(fdR(2,12))+String(fdR(0,2))+String(fdR(1,9)); }
+  const perm=()=>{ const a=[...d]; const i=fdR(0,a.length-2); [a[i],a[i+1]]=[a[i+1],a[i]]; return a.join(''); };
+  const ch=new Set([d]); let g=0; while(ch.size<4 && g++<30){ ch.add(Math.random()<0.6?perm():d.slice(0,-1)+String((+d.slice(-1)+fdR(1,8))%10)); }
+  const zhD=digHan(d), pyD=digPy(d);
+  const t= kind==='phone' ? ['你的尾号是'+zhD+'吗？','nǐ de wěi hào shì '+pyD+' ma','เลขท้ายเบอร์โทร '+d+' ใช่ไหม','DiDi','เลขท้ายเบอร์อะไร?']
+                          : ['你的房间是'+zhD+'。','nǐ de fáng jiān shì '+pyD,'ห้องของคุณคือ '+d,'โรงแรม','ห้องเบอร์อะไร?'];
+  return {unit:'digits', ctx:t[3], q:t[4], zh:t[0], py:t[1], th:t[2], ans:d, choices:[...ch],
+    say:{zh:zhD, py:pyD, th:d+' (อ่านทีละตัว · 1 = yāo)', digits:d}, tip:'เบอร์โทร/เลขห้อง อ่านทีละตัว และเลข 1 อ่านว่า yāo (幺) ไม่ใช่ yī'};
+}
+const FD_ID_TPL=[
+  ['{N}号检票口。','{P} hào jiǎn piào kǒu','ประตูตรวจตั๋วเบอร์ {N}','รถไฟ','号','hào','ประตูตรวจตั๋วเบอร์อะไร?'],
+  ['坐{N}号线。','zuò {P} hào xiàn','นั่งสาย {N}','รถไฟใต้ดิน','号线','hào xiàn','นั่งสายอะไร?'],
+  ['你在{N}号车厢。','nǐ zài {P} hào chē xiāng','อยู่ตู้ที่ {N}','รถไฟ','号车厢','hào chē xiāng','ตู้ที่เท่าไหร่?'],
+  ['从{N}号出口出去。','cóng {P} hào chū kǒu chū qù','ออกทางออกที่ {N}','รถไฟใต้ดิน','号出口','hào chū kǒu','ทางออกเบอร์อะไร?'],
+  ['你的房间在{N}楼。','nǐ de fáng jiān zài {P} lóu','ห้องอยู่ชั้น {N}','โรงแรม','楼','lóu','ชั้นอะไร?'],
+  ['你是{N}号，好了叫你。','nǐ shì {P} hào, hǎo le jiào nǐ','คุณเบอร์ {N}','ร้านชานม','号','hào','เบอร์คิวอะไร?'],
+  ['{N}号登机口。','{P} hào dēng jī kǒu','ประตูขึ้นเครื่องเบอร์ {N}','สนามบิน','号登机口','hào dēng jī kǒu','ประตูขึ้นเครื่องเบอร์อะไร?'],
+  ['你的座位是{N}号。','nǐ de zuò wèi shì {P} hào','ที่นั่งเบอร์ {N}','รถบัส','号','hào','ที่นั่งเบอร์อะไร?']
+];
+function fdmId(){
+  const t=rnd(FD_ID_TPL), n=fdNoTwo(1,45);
+  return {unit:'id', ctx:t[3], q:t[6], zh:t[0].replace('{N}',numToHan(n)), py:t[1].replace('{P}',priceToPy(n).replace(/^liǎng$/,'èr')), th:t[2].replace('{N}',n),
+    ans:String(n), choices:fdNumChoices(n), say:{zh:numToHan(n)+t[4], py:priceToPy(n)+' '+t[5], th:t[2].replace('{N}',n), num:n}};
+}
+const FD_DUR_TPL=[
+  ['大概{N}分钟。','dà gài {P} fēn zhōng','ประมาณ {N} นาที','DiDi · เดิน','分钟','fēn zhōng','นาที',[5,60]],
+  ['还有{N}站。','hái yǒu {P} zhàn','อีก {N} ป้าย','รถบัส · รถไฟใต้ดิน','站','zhàn','ป้าย',[2,9]],
+  ['要坐{N}个小时。','yào zuò {P} ge xiǎo shí','ต้องนั่ง {N} ชั่วโมง','รถบัส VIP','个小时','ge xiǎo shí','ชั่วโมง',[2,9]],
+  ['休息{N}分钟。','xiū xi {P} fēn zhōng','พัก {N} นาที','รถบัส VIP','分钟','fēn zhōng','นาที',[10,30]],
+  ['走路{N}分钟就到。','zǒu lù {P} fēn zhōng jiù dào','เดิน {N} นาทีก็ถึง','ถามทาง','分钟','fēn zhōng','นาที',[3,20]]
+];
+function fdmDur(){
+  const t=rnd(FD_DUR_TPL), n=fdR(t[7][0], t[7][1]);
+  return {unit:'dur', ctx:t[3], q:'กี่'+t[6]+'?', zh:t[0].replace('{N}',priceToHan(n)), py:t[1].replace('{P}',priceToPy(n)), th:t[2].replace('{N}',n),
+    ans:String(n), choices:fdNumChoices(n).filter(x=>+x>0), say:{zh:priceToHan(n)+t[4], py:priceToPy(n)+' '+t[5], th:n+' '+t[6], num:n}};
+}
+function fdmMed(){
+  const K=fdR(2,3), P=fdR(1,2), lab=(k,p)=>'วันละ '+k+' ครั้ง ครั้งละ '+p+' เม็ด';
+  const ch=[lab(K,P), lab(P,K===P?K+1:K), lab(K===2?3:2,P), lab(K,P===1?2:1)];
+  return {unit:'med', ctx:'ร้านยา', q:'กินยายังไง?', zh:'一天'+priceToHan(K)+'次，一次'+priceToHan(P)+'片。', py:'yì tiān '+priceToPy(K)+' cì, yí cì '+(P===1?'yí':priceToPy(P))+' piàn', th:lab(K,P),
+    ans:ch[0], choices:[...new Set(ch)], say:{zh:'一天'+priceToHan(K)+'次', py:'yì tiān '+priceToPy(K)+' cì', th:'วันละ '+K+' ครั้ง', num:K}};
+}
+const FD_MON=['','ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+function fdmDate(){
+  const M=rnd([10,11,11,11,12]), D=fdR(1,28);
+  const zh=numToHan(M)+'月'+numToHan(D)+'号', py=priceToPy(M).replace('liǎng','èr')+' yuè '+priceToPy(D).replace(/^liǎng$/,'èr')+' hào', th=D+' '+FD_MON[M];
+  const ch=new Set([th, (D===28?1:D+1)+' '+FD_MON[M], D+' '+FD_MON[M===12?11:M+1], (D>10?D-10:D+10)+' '+FD_MON[M]]);
+  const t=rnd([['你的票是{Z}的。','nǐ de piào shì {P} de','ตั๋วของคุณวันที่ {T}','รถไฟ · รถบัส'],['你住到{Z}。','nǐ zhù dào {P}','คุณพักถึงวันที่ {T}','โรงแรม'],['{Z}出发。','{P} chū fā','ออกเดินทางวันที่ {T}','ทัวร์']]);
+  return {unit:'date', ctx:t[3], q:'วันที่เท่าไหร่?', zh:t[0].replace('{Z}',zh), py:t[1].replace('{P}',py), th:t[2].replace('{T}',th),
+    ans:th, choices:[...ch].slice(0,4), say:{zh:zh, py:py, th:th, nums:[M,D]}, tip:'วันที่จีน: เดือนก่อน แล้ววัน — shí yī yuè shí èr hào = 12 พ.ย.'};
+}
+function fdmQty(){
+  const Q=fdR(2,5), P=rnd([10,15,20,25]), lab=(q,p)=>q+' อัน '+p+' หยวน';
+  const ch=[lab(Q,P), lab(Q+1,P), lab(Q,P===10?15:10), lab(Q===2?3:2,P)];
+  return {unit:'qty', ctx:'ตลาด · สตรีทฟู้ด', q:'กี่อันกี่หยวน?', zh:priceToHan(Q)+'个'+priceToHan(P)+'块。', py:priceToPy(Q)+' ge '+priceToPy(P)+' kuài', th:lab(Q,P),
+    ans:ch[0], choices:[...new Set(ch)], say:{zh:priceToHan(Q)+'个'+priceToHan(P)+'块', py:priceToPy(Q)+' ge '+priceToPy(P)+' kuài', th:lab(Q,P), nums:[Q,P]}};
+}
+function fdmHand(){
+  const x=rnd(FD_HAND);
+  return {unit:'hand', ctx:'ภาษามือตัวเลขจีน', noAudio:true, q:'ภาษามือนี้คือเลขอะไร?', show:'<div class="fdHand">'+x[3]+'</div>', zh:x[2]+'个', py:x[1]+' ge', th:'เลข '+x[0],
+    ans:String(x[0]), choices:FD_HAND.map(h=>String(h[0])), say:{zh:x[2]+'个', py:x[1]+' ge', th:x[0]+' อัน', num:x[0]}, tip:'คนขายในตลาดมักทำมือบอกราคา 6–10 ด้วยมือเดียว'};
+}
+const FDN_MAKERS={price:fdmPrice, change:fdmChange, time:fdmTime, digits:fdmDigits, id:fdmId, dur:fdmDur, med:fdmMed, date:fdmDate, qty:fdmQty, hand:fdmHand};
+const FDN_MIX=[['price',22],['change',10],['time',14],['digits',10],['id',12],['dur',10],['med',6],['date',6],['qty',6],['hand',4]];
+function fdNumQueue(n){
+  const q=[]; let last='';
+  for(let i=0;i<n;i++){ let u, g=0; do{ u=fdPick(FDN_MIX); }while(u===last && g++<5); last=u; q.push(Object.assign({kind:'fdnum', hanzi:'', pinyin:''}, FDN_MAKERS[u]())); }
+  return q;
+}
+/* ---------- เล่น ---------- */
+function fdNumStart(n){
+  const q=fdNumQueue(n||12);
+  MODE='fdnum'; levelId='found'; Q=q; qi=0; tries=0; sessUtter=0; sessStars=0; bestPer=[];
+  playing=true; t0=Date.now(); FD_ON=true;
+  const d=today(); if(!S.stats.days.includes(d)) S.stats.days.push(d);
+  dlog('found','🔢 ตัวเลข '+q.length+' ข้อ: '+q.map(x=>x.unit).join(' '));
+  requestWake(); show('scr-play'); renderMode();
+  renderItem(true);
+  return true;
+}
+function renderFdNum(it){
+  tries=0; it.phase='pick'; hideAllBoxes();
+  $('#pKind').textContent='🧱 ตัวเลข · '+it.ctx+' · ฟัง → เลือก → พูด';
+  $('#playBar').style.width=(qi/Q.length*100)+'%'; $('#playCount').textContent=(qi+1)+'/'+Q.length;
+  $('#pHan').className='han'; $('#pHan').innerHTML = it.noAudio ? it.show : '<span style="font-size:1.3rem">🔊 ฟังแล้วเลือก</span>';
+  $('#pPy').innerHTML=''; $('#pThai').textContent='';
+  $('#pMean').innerHTML='<div style="font-size:1.15rem;margin:.2rem 0 .5rem">'+esc(it.q)+'</div>'+
+    '<div class="fdchoices">'+shuf(it.choices).map(c=>'<button class="fdc" data-c="'+esc(c)+'">'+esc(c)+'</button>').join('')+'</div>'+
+    (it.noAudio?'':'<button class="btn ghost sm fdre" style="margin-top:.5rem">🔊 ฟังอีกครั้ง (ช้าลง)</button>');
+  $('#heard').innerHTML=''; micState('');
+  $('#btnSkip').style.visibility='visible'; $('#btnSelfPass').style.visibility='hidden';
+  if(!it.noAudio) speak(it.zh, null, 0.9);
+}
+function fdNumGloss(it){
+  let h='<div class="glossbox on">'+glossHTML(it.zh, it.py)+'</div>';
+  const s=it.say;
+  const nums=s.num!==undefined ? [s.num] : s.nums || [];
+  const bits=[];
+  (it.zh.match(/[零一二两三四五六七八九十百千万]+/g)||[]).forEach(r=>{ const v=hanToNum(r); if(v!==null && r.length>1) bits.push(toPinyin(r)+' = '+v); });
+  if(s.digits) bits.push(s.py+' = '+s.digits);
+  if(bits.length) h+='<div class="small" style="margin-top:.3rem">🔢 '+bits.map(esc).join(' · ')+'</div>';
+  if(it.tip) h+='<div class="nearTip">💡 '+esc(it.tip)+'</div>';
+  return h;
+}
+document.addEventListener('click', e=>{
+  const re=e.target.closest('#pMean .fdre'); if(re){ const it=cur(); if(it && MODE==='fdnum') speak(it.zh, null, 0.7); return; }
+  const b=e.target.closest('#pMean .fdc'); if(!b || MODE!=='fdnum') return;
+  const it=cur(); if(!it || it.phase!=='pick') return;
+  const choice=b.dataset.c, ok=choice===it.ans;
+  $$('#pMean .fdc').forEach(x=>{ x.disabled=true; if(x.dataset.c===it.ans) x.classList.add('ok'); else if(x===b) x.classList.add('bad'); });
+  fdRecord(it.unit, ok);
+  S.log.push({t:'found', u:it.unit, id:it.unit+':'+it.ans, ok:ok, ans:choice, ts:Date.now()});
+  dlog('found','🔢 '+it.unit+' '+(ok?'ถูก':'ผิด (ตอบ '+choice+' · เฉลย '+it.ans+')')+' · '+it.zh);
+  vib(ok?[30,40,30]:140);
+  it.phase='say';
+  $('#pHan').className='han'; $('#pHan').innerHTML=bigWordHTML(it.zh, it.py);
+  $('#pMean').innerHTML='<div class="stars" style="color:var(--'+(ok?'ok':'bad')+')">'+(ok?'✓ ถูก':'✗ คำตอบคือ '+esc(it.ans))+'</div>'+
+    '<div style="margin:.2rem 0">'+esc(it.th)+'</div>'+fdNumGloss(it)+
+    '<div class="fdsay">🗣️ ทีนี้พูดตัวเลขนี้: <b class="py" style="font-size:1.25rem">'+pyHTML(it.say.py)+'</b><div class="small muted">'+esc(it.say.th)+' · '+esc(it.say.zh)+'</div></div>';
+  if(!HAS_SR || manualMode){ $('#btnSelfPass').style.visibility='visible'; $('#btnSelfPass').textContent='✅ พูดแล้ว'; }
+  speak(it.say.zh, armMic, 0.85);
+});
+function fdSayPass(it, alts){
+  const s=it.say;
+  return (alts||[]).some(a=>{
+    if(s.digits) return digitsIn(a).indexOf(s.digits)>=0;
+    if(s.time) return timesIn(a).some(x=>x[0]===s.time[0] && x[1]===s.time[1]);
+    if(s.nums) return s.nums.every(n=>numsIn(a,n).indexOf(n)>=0);
+    if(s.num!==undefined) return numsIn(a, s.num).indexOf(s.num)>=0;
+    return scoreAll(s.zh,[a]).score>=80;
+  });
+}
+function judgeFdNum(alts){
+  const it=cur(); if(!it) return;
+  if(it.phase!=='say'){ toast('เลือกคำตอบก่อน','ฟังแล้วแตะตัวเลือก แล้วค่อยพูด',1500); return; }
+  const ok=fdSayPass(it, alts), heard=(alts&&alts[0])||'';
+  tries++; sessUtter++; S.stats.utter++; if(ok){ sessStars+=3; S.stats.stars+=3; }
+  fdRecord('say', ok);
+  dlog('found','🗣️ พูด '+it.say.zh+' → '+(ok?'ผ่าน':'ไม่ผ่าน')+' (ได้ยิน: '+(heard||'—')+(heard?' = '+toPinyin(heard):'')+')');
+  save();
+  $('#heard').innerHTML='<div class="lab">ได้ยินว่า</div>'+heardBox(heard)+
+    '<div class="stars" style="color:var(--'+(ok?'ok':'bad')+')">'+(ok?'✓ พูดผ่าน':'✗ ยังไม่ตรง — ฟังแล้วลองอีกครั้ง')+'</div>';
+  if(ok){ it.phase='done'; micState('ok'); vib([30,40,30]); waitNext(); return; }
+  micState(''); vib(140);
+  if(tries>=2){ $('#btnSelfPass').style.visibility='visible'; $('#btnSelfPass').textContent='✅ พูดถูกแล้ว แต่ระบบฟังไม่ออก'; }
+  if(tries>=3){ waitNext('ไม่เป็นไร ไปข้อต่อไปได้'); return; }
+  setTimeout(()=>{ if(playing && cur()===it) speak(it.say.zh, armMic, 0.75); }, 700);
+}
+function fdNumSelfPass(){
+  const it=cur(); if(!it || MODE!=='fdnum' || it.phase!=='say') return false;
+  it.phase='done'; fdRecord('say', true);
+  dlog('found','🗣️ ผ่านเอง (ระบบฟังไม่ออก/ไม่มีไมค์): '+it.say.zh);
+  $('#btnSelfPass').style.visibility='hidden';
+  waitNext(); return true;
+}
+function fdNumFinish(){
+  FD_ON=false;
+  const m=fdMetrics();
+  dlog('found','จบตัวเลข · ฟัง '+(m.num===null?'—':m.num+'%')+' · พูด '+(m.say===null?'—':m.say+'%'));
+  if(COACH.active) return coachNextBlock();
+  const ms=Date.now()-t0; S.stats.ms+=ms; save(true);
+  endPlay(); MODE='lesson';
+  toast('🔢 ตัวเลขจบรอบ', '👂 ฟังถูก '+(m.num===null?'—':m.num+'%')+' · 🗣️ พูดผ่าน '+(m.say===null?'—':m.say+'%'), 2800);
+  screenStack=['scr-home']; renderHome(); show('scr-home',false);
 }
 /* ---------- โค้ช "โฟกัสเที่ยว" 15 นาที: ทบทวน 4 · ต้นไม้ 6 · เสาเข็ม 3 · ฟัง 2 ---------- */
 function pronItems(n){
@@ -10509,6 +10828,7 @@ $('#btnSkip').onclick=()=>{
 $('#btnSelfPass') && null;
 $('#btnSelfPass').onclick=()=>{                 // ระบบฟังไม่ออกเอง ไม่ควรทำให้ผู้ใช้ติดอยู่กับที่
   if(MODE==='pretest'){ abortRec(); finishPretest(); return; }       // ลองก่อนเรียน: ข้ามไปเรียนเลย
+  if(MODE==='fdnum'){ abortRec(); fdNumSelfPass(); return; }
   const it=cur(); if(!it||!playing) return;
   abortRec();
   if(MODE==='prod'||MODE==='pattern'){          // T2: นึกออกแต่ระบบฟังไม่ออก → ฟังเฉลย → ตรงกับที่นึกไว้ไหม
