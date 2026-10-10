@@ -3370,7 +3370,7 @@ const MILESTONES = [
 /* ============================================================
    2.5 บันทึกปัญหา (diagnostics) — ไว้ส่งให้ผู้พัฒนาดูเวลาไมค์มีปัญหา
    ============================================================ */
-const BUILD='2026-10-08c';                     // เปลี่ยนทุกครั้งที่แก้ไฟล์ จะได้รู้ว่า log มาจากรุ่นไหน
+const BUILD='2026-10-10a';                     // เปลี่ยนทุกครั้งที่แก้ไฟล์ จะได้รู้ว่า log มาจากรุ่นไหน
 const DIAG=[], STUCK={}, T0=Date.now();
 /* log ปัญหาเก็บลงเครื่องด้วย: iPhone ปิดแอปหรือรีเฟรชแล้ว log เก่ายังอยู่ ส่งย้อนหลังได้ */
 const DKEY='zhgame-diag', DIAG_MAX=2500;
@@ -4771,7 +4771,7 @@ function startRec(keepHeard){
     else {
       micState(''); emptyStreak++;
       const it0=cur();
-      const shortWord = it0 && [...it0.hanzi].filter(c=>/[一-鿿]/.test(c)).length<=1;
+      const shortWord = it0 && it0.hanzi && [...it0.hanzi].filter(c=>/[一-鿿]/.test(c)).length<=1;
       if(emptyStreak>=2){ $('#btnSkip').style.visibility='visible'; $('#btnSelfPass').style.visibility='visible'; }
       let tip = S.settings.autoListen
         ? 'ไม่ได้ยินเสียง — รอปุ่มเป็นสีแดงก่อนแล้วค่อยพูด'
@@ -4819,6 +4819,11 @@ function quickCheck(cand){
     return false;
   }
   const it=cur(); if(!it) return false;
+  if(MODE==='v300'){
+    if(it.phase!=='go' || (it.w && it.w.use!=='say')) return false;
+    if(v3Pass(it,[cand]).ok){ instantJudge([cand]); return true; }
+    return false;
+  }
   if(scoreAll(it.hanzi,[cand]).score>=90){ instantJudge([cand]); return true; }
   return false;
 }
@@ -9804,8 +9809,8 @@ function v3Queue(words){
   const q=[];
   for(let i=0;i<words.length;i+=5){
     const ch=words.slice(i,i+5);
-    ch.forEach(w=>q.push({kind:'v300', t:'learn', w:w}));
-    shuf(ch).forEach(w=>q.push({kind:'v300', t:'recall', w:w}));
+    ch.forEach(w=>q.push({kind:'v300', t:'learn', w:w, hanzi:w.zh}));
+    shuf(ch).forEach(w=>q.push({kind:'v300', t:'recall', w:w, hanzi:w.zh}));
   }
   return q;
 }
@@ -9814,7 +9819,7 @@ function v3Start(n, mode){
   const st=v3Set(n);
   const part = mode==='test' ? 2 : mode==='words' ? (st.part>=2 ? 0 : st.part) : st.part;
   let q;
-  if(part===2) q=shuf(V300_SENT[n-1]).map((s,i)=>({kind:'v300', t:'sent', s:s}));
+  if(part===2) q=shuf(V300_SENT[n-1]).map((s,i)=>({kind:'v300', t:'sent', s:s, hanzi:s[0]}));
   else q=v3Queue(v3Words(n, part));
   V3={n:n, part:part, ok:0, total:part===2?q.length:0, requeued:{}};
   MODE='v300'; levelId='v300:'+n; Q=q; qi=0; tries=0; sessUtter=0; sessStars=0; bestPer=[];
@@ -9891,13 +9896,57 @@ function v3Rec(it, ok){
 function v3Requeue(it){
   const key=it.t+':'+(it.w?it.w.n:it.s[0]);
   if(it.t!=='recall' || V3.requeued[key]) return;
-  V3.requeued[key]=true; Q.push({kind:'v300', t:'recall', w:it.w, again:true});
+  V3.requeued[key]=true; Q.push({kind:'v300', t:'recall', w:it.w, hanzi:it.w.zh, again:true});
+}
+/* พินอินแบบไม่มีวรรณยุกต์ เป็นพยางค์ (เลขอารบิกแปลงเป็นจีนก่อน) */
+function v3Syl(str){
+  return toPinyin(norm(str,false)).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().split(/[^a-z]+/).filter(Boolean);
+}
+const v3Bare=x=>String(x).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z]/g,'');
+/* ได้ยินเสียงตรงพยางค์ (แค่ตัวอักษรพ้องเสียง) → คืนตัวที่ได้ยิน ไม่งั้น null
+   คำพยางค์เดียว: ต้องเป็นเสียงนั้นล้วน (พูด 1–4 ครั้ง) — กัน 不要 ผ่านเป็น 要
+   คำหลายพยางค์: มีพยางค์ติดกันชุดหนึ่งเสียงตรงทั้งคำ */
+function v3PyHit(targets, alts){
+  for(const t of targets){
+    const tj=v3Syl(t).join(''); if(!tj) continue;
+    const one=v3Syl(t).length===1;
+    for(const a of alts||[]){
+      const hs=v3Syl(a), hj=hs.join(''); if(!hj) continue;
+      if(one){ for(let k=1;k<=4;k++) if(hj===tj.repeat(k)) return [a,t]; continue; }
+      for(let i=0;i<hs.length;i++){ let j=''; for(let e=i;e<hs.length && j.length<tj.length;e++){ j+=hs[e]; if(j===tj) return [a,t]; } }
+    }
+  }
+  return null;
+}
+/* ประโยค: ความคล้ายระดับพยางค์ (ไม่สนวรรณยุกต์/ตัวอักษร) */
+function v3PySim(target, alts){
+  const map={}, enc=arr=>arr.map(x=>map[x]||(map[x]=String.fromCharCode(0xE000+Object.keys(map).length))).join('');
+  const t=enc(v3Syl(target)); let best={sim:0, heard:''};
+  (alts||[]).forEach(a=>{ const h=enc(v3Syl(a)); if(!h) return; const x=Math.max(sim(t,h), scoreOne(t,h)); if(x>best.sim) best={sim:x, heard:a}; });
+  return best;
 }
 function v3Pass(it, alts){
-  if(it.t==='sent'){ const r=scoreAll(it.s[0], alts); return {ok:r.score>=80 || !!r.nearFull, r:r}; }
+  if(it.t==='sent'){
+    const r=scoreAll(it.s[0], alts);
+    if(r.score>=80 || r.nearFull) return {ok:true, r:r};
+    const p=v3PySim(it.s[0], alts), pct=Math.round(p.sim);
+    if(pct>=85) return {ok:true, r:Object.assign({}, r, {score:Math.max(r.score, pct), heard:p.heard, hints:['เสียงตรงแล้ว ระบบแค่เขียนเป็นคำพ้องเสียง']})};
+    return {ok:false, r:r};
+  }
   const w=it.w; let best=scoreAll(w.zh, alts);
   w.alt.forEach(a=>{ const x=scoreAll(a, alts); if(x.score>best.score) best=x; });
-  return {ok:best.score>=(it.t==='learn'?70:80) || !!best.nearFull, r:best};
+  const need=it.t==='learn'?70:80;
+  if(best.score>=need || best.nearFull) return {ok:true, r:best};
+  const targets=[w.zh].concat(w.alt).concat(w.zh==='二'?['两']:w.zh==='两'?['二']:[]);   // นึก "สอง" พูด èr หรือ liǎng ก็ถูก
+  const hit0=v3PyHit(targets, alts), hit=hit0&&hit0[0];
+  if(hit){
+    const want=hit0[1]===w.zh ? String(w.py) : toPinyin(hit0[1]);
+    const sameTone=v3Syl(hit).length && toPinyin(norm(hit,false)).split(/\s+/).every(x=>want.split(/\s+/).indexOf(x)>=0);
+    const tip=sameTone ? 'เสียงตรงแล้ว (ระบบเขียนเป็นคำพ้องเสียง)'
+      : 'เสียงตรงแล้ว — เช็กวรรณยุกต์อีกนิด: ที่ถูก <b>'+esc(want)+'</b>';
+    return {ok:true, r:Object.assign({}, best, {score:Math.max(best.score, 85), heard:hit, hints:[tip]})};
+  }
+  return {ok:false, r:best};
 }
 function judgeV300(alts){
   const it=cur(); if(!it || it.phase!=='go') return;
@@ -9906,7 +9955,7 @@ function judgeV300(alts){
   tries++; sessUtter++; S.stats.utter++; sessStars+=st; S.stats.stars+=st;
   dlog('v300',it.t+' '+(it.w?it.w.zh:it.s[0])+' → '+r.score+'% '+(ok?'ผ่าน':'ไม่ผ่าน')+' (ได้ยิน: '+(heard||'—')+(heard?' = '+toPinyin(heard):'')+')');
   const hb='<div class="lab">ได้ยินว่า</div>'+heardBox(heard)+'<div class="stars" style="color:var(--'+(ok?'ok':st>=2?'warn':'bad')+')">'+starStr(st)+' <span class="small">'+r.score+'%</span></div>'+
-    (r.hints&&r.hints.length ? '<div class="nearTip">ใกล้แล้ว — '+r.hints.map(esc).join('<br>')+'</div>' : '');
+    (r.hints&&r.hints.length ? '<div class="nearTip">'+(ok?'':'ใกล้แล้ว — ')+r.hints.map(h=>/^เสียงตรงแล้ว/.test(h)?h:esc(h)).join('<br>')+'</div>' : '');
   if(ok){
     it.phase='done'; micState('ok'); vib([30,40,30]);
     if(it.t==='sent' && tries<=2) V3.ok++;
