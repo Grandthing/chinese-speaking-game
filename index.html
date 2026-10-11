@@ -3373,7 +3373,7 @@ const MILESTONES = [
 /* ============================================================
    2.5 บันทึกปัญหา (diagnostics) — ไว้ส่งให้ผู้พัฒนาดูเวลาไมค์มีปัญหา
    ============================================================ */
-const BUILD='2026-10-11d';                     // เปลี่ยนทุกครั้งที่แก้ไฟล์ จะได้รู้ว่า log มาจากรุ่นไหน
+const BUILD='2026-10-11e';                     // เปลี่ยนทุกครั้งที่แก้ไฟล์ จะได้รู้ว่า log มาจากรุ่นไหน
 const DIAG=[], STUCK={}, T0=Date.now();
 /* log ปัญหาเก็บลงเครื่องด้วย: iPhone ปิดแอปหรือรีเฟรชแล้ว log เก่ายังอยู่ ส่งย้อนหลังได้ */
 const DKEY='zhgame-diag', DIAG_MAX=2500;
@@ -4089,6 +4089,28 @@ function homoFix(h, t){
   }
   return {text:out, n:n, tone:tone};
 }
+/* คู่พยัญชนะที่คนไทยสับสน (sh/x/s/q/ch/c/zh/j/z · r/l): ถ้าตัวในโจทย์ถูกได้ยินเป็นอีกตัวในกลุ่มเดียวกัน = เสียงหลักผิด */
+const KEY_SIB={s:1,sh:1,x:1,q:1,ch:1,c:1,zh:1,j:1,z:1};
+const pyInit=b=>((/^(zh|ch|sh|[bpmfdtnlgkhjqxrzcsyw])/.exec(b)||[''])[0]);
+function keyErrs(t, h){
+  t=String(t||''); h=String(h||'');
+  const n=t.length, m=h.length; if(!n || !m) return [];
+  const d=[]; for(let i=0;i<=n;i++){ d.push(new Array(m+1).fill(0)); d[i][0]=i; } for(let j=0;j<=m;j++) d[0][j]=j;
+  const same=(a,b)=>a===b || (pyBare(a) && pyBare(a)===pyBare(b));
+  for(let i=1;i<=n;i++) for(let j=1;j<=m;j++) d[i][j]=Math.min(d[i-1][j]+1, d[i][j-1]+1, d[i-1][j-1]+(same(t[i-1],h[j-1])?0:1));
+  const out=[]; let i=n, j=m;
+  while(i>0 && j>0){
+    if(d[i][j]===d[i-1][j-1]+(same(t[i-1],h[j-1])?0:1)){
+      if(!same(t[i-1],h[j-1])){
+        const a=pyBare(t[i-1]), b=pyBare(h[j-1]), ia=pyInit(a), ib=pyInit(b);
+        if(ia!==ib && ((KEY_SIB[ia] && KEY_SIB[ib]) || (ia+ib==='rl' || ia+ib==='lr'))) out.push([t[i-1], h[j-1]]);
+      }
+      i--; j--;
+    }else if(d[i][j]===d[i-1][j]+1) i--; else j--;
+  }
+  return out.reverse();
+}
+const keyErrTip=errs=>'เสียงหลักผิด: '+errs.map(([a,b])=>pyChar(a)+' ('+a+') → ระบบได้ยินเป็น '+pyChar(b)+' ('+b+')').join(' · ')+' — ยังไม่นับผ่าน';
 /* คะแนนของ 1 alternative: เทียบเต็มสตริง + เทียบแบบเลื่อนหน้าต่าง (กันกรณีถอดเสียงพ่วงคำอื่นมาด้วย) */
 function scoreOne(target, heard){
   if(!heard) return 0;
@@ -4148,6 +4170,10 @@ function scoreAll(targetRaw, alts){
         const ns=(tNum!==null) ? numScore(t1,tNum,nf.text) : scoreOne(t1,dedupe(nf.text,t1));
         if(ns>sc){ sc=Math.min(NEAR_CAP, ns); hints=nf.hints; if(ns>=90) hints.full=true; }
       }
+    }
+    if(sc>60){                                  // R-3: เสียงหลักผิด → สูงสุด 1★ (60) ไม่ว่าจะแก้ด้วย NEAR/ALIAS/พ้องเสียงได้เท่าไหร่
+      const ke=keyErrs(t1, norm(aFix,false));
+      if(ke.length){ sc=60; hints=[keyErrTip(ke)]; }
     }
     const better = sc>best || (sc===best && /[A-Za-z]/.test(bestHeard) && !/[A-Za-z]/.test(a))
       || (sc===best && !!(hints && hints.full) && !(bestHints && bestHints.full));   // คะแนนเท่ากัน: เลือกแบบที่แก้พยัญชนะแล้วตรงเป๊ะ (เช่น 在哪 → 在哪儿)
@@ -5388,19 +5414,21 @@ function showModel(){
 }
 function judgeTalk(alts){
   const t=talkTurn(); if(!t) return;
-  const best=(alts&&alts[0])||'';
+  let best=(alts&&alts[0])||'';
   let hit=null, score=0, nearHit=false, tips=[];
+  NUM_NEAR=false; MATCHED='';
   const vv=(TSC&&TSC._vals)||{};
   const fixedNum = t.numAccept && /^_\d+$/.test(t.numAccept) ? +t.numAccept.slice(1) : null;   // _2 = เลขคงที่ในบท
   if(t.numAccept && (fixedNum!==null || vv[t.numAccept]!==undefined)){             // พูดตัวเลขตรงค่า = ถูก (25 · 二十五 · 两 ก็ได้)
     const want=fixedNum!==null ? fixedNum : +vv[t.numAccept];
     NUM_NEAR=false;
-    if((alts||[]).some(a=>numsIn(a, want).indexOf(want)>=0)){ hit=String(want); score=95; if(NUM_NEAR){ score=75; nearHit=true; tips=[SHI_TIP]; } }
+    const ma=(alts||[]).find(a=>numsIn(a, want).indexOf(want)>=0);
+    if(ma){ hit=String(want); score=95; MATCHED=ma; }
   }
   if(t.timeAccept && vv[t.timeAccept]){                       // เวลา: 9:30 = 九点半 = 九点三十分
     const w=vv[t.timeAccept].th.split(':').map(Number); const wh=w[0]%12, wm=w[1];
     if((alts||[]).some(a=>timesIn(a).some(x=>x[0]===wh && x[1]===wm))){ hit=vv[t.timeAccept].th; score=95; }
-    else { const w0=w[0]; let why=''; (alts||[]).some(a=>(why=timeNear(a, w0, wm))); if(why){ hit=vv[t.timeAccept].th; score=75; nearHit=true; tips=[why==='ke'?KE_TIP:SHI_TIP]; } }
+    else { const w0=w[0]; let why=''; (alts||[]).some(a=>(why=timeNear(a, w0, wm))); if(why==='ke'){ hit=vv[t.timeAccept].th; score=75; nearHit=true; tips=[KE_TIP]; } else if(why) NUM_NEAR='shi'; }
   }
   (alts||[]).forEach(a=>{
     (t.accept||[]).forEach(acc=>{
@@ -5410,7 +5438,7 @@ function judgeTalk(alts){
       let h1=applyAlias(phraseFix(norm(latinFix(a,na),false),na),na);
       if(h1.indexOf(na)<0){ const hf=homoFix(h1,na); if(hf.n && hf.tone===0 && hf.text.indexOf(na)>=0) h1=hf.text; }   // พ้องเสียงเป๊ะ (วรรณยุกต์ตรง)
       if(h1.indexOf(na)>=0){
-        if(score<95){ hit=acc; nearHit=false; tips=[]; }
+        if(score<95){ hit=acc; nearHit=false; tips=[]; MATCHED=a; }
         score=Math.max(score,95); return;
       }
       const nf=nearFix(h1,na);                    // ตอบถูกเรื่องแต่ออกเสียงเพี้ยน -> ผ่านแบบ 2 ดาว + บอกวิธีแก้
@@ -5421,13 +5449,14 @@ function judgeTalk(alts){
     });
     score=Math.max(score, scoreAll(t.model,[a]).score);   // พูดตามตัวอย่างเป๊ะก็ผ่าน
   });
+  if(MATCHED) best=MATCHED;                                     // B6: แสดง/บันทึกตัวที่ใช้ตัดสินจริง
   const st = score>=90?3 : score>=70?2 : score>=50?1 : 0;
   tTries++; sessUtter++; sessStars+=st;
   S.stats.utter++; S.stats.stars+=st;
   bestPer[ti]=Math.max(bestPer[ti]||0, score);
   if(COACH.active) coachLog({h:t.ask, st:st, lat:null, heard:best, score:score, hit:hit||''});
   else S.log.push({levelId, hanzi:t.ask, heard:best, score, stars:st, ts:Date.now()});
-  dlog('ตอบโต้', t.ask+' -> '+score+'% '+(hit?('เจอคำตอบ '+hit+(nearHit?' (เสียงเพี้ยน)':'')):'ไม่ตรงคำตอบที่รับได้')+' (ได้ยิน: '+(best||'—')+')');
+  dlog('ตอบโต้', t.ask+' -> '+score+'% '+(hit?('เจอคำตอบ '+hit+(nearHit?' (เสียงเพี้ยน)':'')):'ไม่ตรงคำตอบที่รับได้')+(NUM_NEAR==='shi'?' (十 เพี้ยน)':'')+' (ตัดสินจาก: '+(best||'—')+' · ทั้งหมด: '+(alts||[]).slice(0,5).join(' / ')+')');
   save();
 
   const heardPy=best?toPinyin(best):'';
@@ -5438,7 +5467,8 @@ function judgeTalk(alts){
     '<div class="stars" style="color:var(--'+(st>=3?'ok':st>=2?'warn':'bad')+')">'+
       (st>=2?'✓ ตอบเป็นเรื่องแล้ว ':'✗ ยังไม่ตรงคำถาม ')+starStr(st)+'</div>'+
     (nearHit&&tips.length ? '<div class="nearTip">ตอบถูกเรื่องแล้ว แต่เสียงยังเพี้ยน — '+esc(tips[0])+'</div>' : '')+
-    (!hit&&(t.numAccept||t.timeAccept) ? '<div class="nearTip">ต้องพูด'+(t.timeAccept?'เวลา':'ตัวเลข')+'ที่ได้ยินให้ตรง — ฟังเฉลยแล้วลองใหม่</div>' :
+    (!hit&&NUM_NEAR==='shi' ? '<div class="nearTip">'+esc(SHI_TIP)+'</div>' :
+     !hit&&(t.numAccept||t.timeAccept) ? '<div class="nearTip">ต้องพูด'+(t.timeAccept?'เวลา':'ตัวเลข')+'ที่ได้ยินให้ตรง — ฟังเฉลยแล้วลองใหม่</div>' :
      !hit&&t.hint&&(t.accept||[]).length ? '<div class="nearTip">คำตอบนี้ต้องมีคำว่า <b>'+esc((t.accept||[]).slice(0,3).map(x=>toPinyin(x)).join(' / '))+'</b></div>' : '');
 
   if(st>=2){
@@ -8525,7 +8555,7 @@ function judgeTree(alts){
   sessUtter++; sessStars+=st; S.stats.utter++; S.stats.stars+=st;
   bestPer[qi]=Math.max(bestPer[qi]||0, r.score);
   const rec=treeRec(it.k); if(rec) rec.tries=(rec.tries||0)+1;
-  dlog('tree', TSTEP_LABEL[it.t]+' '+it.k+' ('+it.hanzi+') -> '+r.score+'% (ได้ยิน: '+(r.heard||'—')+(r.heard?' = '+toPinyin(r.heard):'')+')');
+  dlog('tree', TSTEP_LABEL[it.t]+' '+it.k+' ('+it.hanzi+') -> '+r.score+'% (ตัดสินจาก: '+(r.heard||'—')+(r.heard?' = '+toPinyin(r.heard):'')+((alts||[]).length>1?' · ทั้งหมด: '+alts.slice(0,5).join(' / '):'')+')');
   treeLog(it, st, r);
   save();
   const heardHTML='<div class="lab">ได้ยินว่า</div>'+heardBox(r.heard)+
@@ -9327,11 +9357,11 @@ function numsIn(raw, want){
       k += SHI_NEAR[b] ? '十' : (/^(e|er)$/.test(b) && tgt.indexOf('二')>=0) ? '二' : (/^(fu|hu|wu)$/.test(b) && tgt.indexOf('五')>=0) ? '五' : c;
     }
     const o2=grab(k);
-    if(o2.indexOf(want)>=0){ NUM_NEAR=true; return out.concat([want]); }
+    if(o2.indexOf(want)>=0){ NUM_NEAR='shi'; dlog('found','十 เพี้ยน (ได้ยิน '+raw+') → ไม่นับผ่าน (R-3)'); }
   }
   return out;
 }
-const SHI_TIP='十 = shí: ปลายลิ้นม้วนขึ้น ออกเสียง "ซือ" — ระบบได้ยินเป็น qǔ / xí / qì (ชี/ซี) · ครั้งนี้นับผ่าน';
+const SHI_TIP='เลขถูกแล้ว แต่ 十 = shí ระบบได้ยินเป็น qǔ / xí / qì (ชี/ซี) — ม้วนปลายลิ้นขึ้น ออกเสียง "ซือ" แล้วลองใหม่ (ยังไม่นับผ่าน)';
 function rpCard(){
   const el=$('#rpCard'); if(!el) return;
   el.hidden=!S.settings.focusTravel; if(el.hidden) return;
@@ -9653,12 +9683,16 @@ document.addEventListener('click', e=>{
   if(!HAS_SR || manualMode){ $('#btnSelfPass').style.visibility='visible'; $('#btnSelfPass').textContent='✅ พูดแล้ว'; }
   speak(it.say.zh, armMic, 0.85);
 });
+let MATCHED='';
 function fdSayPass(it, alts){
-  const s=it.say;
-  return (alts||[]).some(a=>{
+  const s=it.say; MATCHED='';
+  return (alts||[]).some(a=>{ const ok=fdSayOne(s,a); if(ok) MATCHED=a; return ok; });
+}
+function fdSayOne(s, a){
+  return [a].some(a=>{
     if(s.digits) return digitsIn(a).indexOf(s.digits)>=0 || digitsPy(a).indexOf(s.digits)>=0;
     if(s.time){ if(timesIn(a).some(x=>x[0]===s.time[0] && x[1]===s.time[1])) return true;
-      const w=timeNear(a, s.time[0], s.time[1]); if(w){ NUM_NEAR=w; return true; } return false; }
+      const w=timeNear(a, s.time[0], s.time[1]); if(w){ NUM_NEAR=w; MATCHED=a; return w==='ke'; } return false; }
     if(s.nums) return s.nums.every(n=>numsIn(a,n).indexOf(n)>=0);
     if(s.num!==undefined) return numsIn(a, s.num).indexOf(s.num)>=0;
     return scoreAll(s.zh,[a]).score>=80;
@@ -9668,10 +9702,10 @@ function judgeFdNum(alts){
   const it=cur(); if(!it) return;
   if(it.phase!=='say'){ toast('เลือกคำตอบก่อน','ฟังแล้วแตะตัวเลือก แล้วค่อยพูด',1500); return; }
   NUM_NEAR=false;
-  const ok=fdSayPass(it, alts), heard=(alts&&alts[0])||'', shiNear=ok&&NUM_NEAR;
+  const ok=fdSayPass(it, alts), heard=(ok&&MATCHED)||(alts&&alts[0])||'', shiNear = ok ? NUM_NEAR==='ke' : !!NUM_NEAR;   // ผ่าน: โชว์แค่คำแนะนำ 一刻 · ไม่ผ่าน: โชว์ 十/一刻 · B6: แสดงตัวที่ใช้ตัดสินจริง
   tries++; sessUtter++; S.stats.utter++; if(ok){ sessStars+=3; S.stats.stars+=3; }
   fdRecord('say', ok);
-  dlog('found','🗣️ พูด '+it.say.zh+' → '+(ok?'ผ่าน':'ไม่ผ่าน')+(shiNear?' (十 เพี้ยน)':'')+' (ได้ยิน: '+(heard||'—')+(heard?' = '+toPinyin(heard):'')+')');
+  dlog('found','🗣️ พูด '+it.say.zh+' → '+(ok?'ผ่าน':'ไม่ผ่าน')+(shiNear?' ('+NUM_NEAR+' เพี้ยน)':'')+' (ตัดสินจาก: '+(heard||'—')+(heard?' = '+toPinyin(heard):'')+' · ทั้งหมด: '+(alts||[]).slice(0,5).join(' / ')+')');
   save();
   $('#heard').innerHTML='<div class="lab">ได้ยินว่า</div>'+heardBox(heard)+
     '<div class="stars" style="color:var(--'+(ok?'ok':'bad')+')">'+(ok?'✓ พูดผ่าน':'✗ ยังไม่ตรง — ฟังแล้วลองอีกครั้ง')+'</div>'+
@@ -10030,7 +10064,7 @@ function v3Pass(it, alts){
     const r=scoreAll(it.s[0], alts);
     if(r.score>=80 || r.nearFull) return {ok:true, r:r};
     const p=v3PySim(it.s[0], alts), pct=Math.round(p.sim);
-    if(pct>=85) return {ok:true, r:Object.assign({}, r, {score:Math.max(r.score, pct), heard:p.heard, hints:['เสียงตรงแล้ว ระบบแค่เขียนเป็นคำพ้องเสียง']})};
+    if(pct>=85 && !keyErrs(norm(it.s[0],false), norm(p.heard,false)).length) return {ok:true, r:Object.assign({}, r, {score:Math.max(r.score, pct), heard:p.heard, hints:['เสียงตรงแล้ว ระบบแค่เขียนเป็นคำพ้องเสียง']})};
     return {ok:false, r:r};
   }
   const w=it.w; let best=scoreAll(w.zh, alts);
