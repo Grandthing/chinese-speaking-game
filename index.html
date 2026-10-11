@@ -874,6 +874,13 @@ td.r,th.r{text-align:right}
     <button class="btn ghost" id="btnDiag">🐞 บันทึกปัญหา (log) — ส่งให้ผู้พัฒนาดู</button>
     <button class="btn ghost" id="btnExport" style="margin-top:.5rem">⬇ ดาวน์โหลด log การฝึก (JSON)</button>
     <div class="card" style="margin-top:.75rem">
+      <b>👩‍🏫 ส่งครู</b>
+      <p class="small muted" style="margin:.4rem 0 .6rem">รายงานฉบับเต็ม (ทุกตารางทบทวน + สรุปรายวัน + log 14 วัน) สำหรับให้ Claude ตรวจ · หรือคัดลอกสรุปสั้นไปวางในแชท</p>
+      <button class="btn" id="btnTeacher">📤 รายงานสำหรับครู (.json)</button>
+      <button class="btn ghost" id="btnTeacherMd" style="margin-top:.5rem">📋 คัดลอกสรุป 7 วัน</button>
+      <textarea id="mdOut" hidden readonly style="width:100%;min-height:12rem;margin-top:.5rem;font:inherit;font-size:.8rem"></textarea>
+    </div>
+    <div class="card" style="margin-top:.75rem">
       <b>ย้ายเครื่อง / สำรองความคืบหน้า</b>
       <p class="small muted" style="margin:.4rem 0 .6rem">ความคืบหน้าผูกกับที่อยู่เว็บ ถ้าเปลี่ยนจาก localhost ไปเป็นเว็บจริง หรือย้ายไปเล่นบนมือถือ ต้องบันทึกจากเครื่องเดิมแล้วมากู้คืนที่เครื่องใหม่</p>
       <button class="btn ghost" id="btnBackup">💾 บันทึกความคืบหน้าเป็นไฟล์</button>
@@ -3373,7 +3380,7 @@ const MILESTONES = [
 /* ============================================================
    2.5 บันทึกปัญหา (diagnostics) — ไว้ส่งให้ผู้พัฒนาดูเวลาไมค์มีปัญหา
    ============================================================ */
-const BUILD='2026-10-12a';                     // เปลี่ยนทุกครั้งที่แก้ไฟล์ จะได้รู้ว่า log มาจากรุ่นไหน
+const BUILD='2026-10-12b';                     // เปลี่ยนทุกครั้งที่แก้ไฟล์ จะได้รู้ว่า log มาจากรุ่นไหน
 const DIAG=[], STUCK={}, T0=Date.now();
 /* log ปัญหาเก็บลงเครื่องด้วย: iPhone ปิดแอปหรือรีเฟรชแล้ว log เก่ายังอยู่ ส่งย้อนหลังได้ */
 const DKEY='zhgame-diag', DIAG_MAX=2500;
@@ -4762,6 +4769,7 @@ function startRec(keepHeard){
 
   recStarting=true; micState('wait');
   dlog('mic','start() — ขอเริ่มฟัง');
+  if(CARD.t0 && !CARD.press) CARD.press=Date.now();
   // ไม่บอกให้พูดจนกว่าไมค์จะเริ่มอัดจริง (onaudiostart) — ต้นเหตุของอาการ "พูดแล้วระบบไม่ได้ยิน"
   const goLive=()=>{
     if(recActive) return;
@@ -4785,6 +4793,7 @@ function startRec(keepHeard){
       }
     }
     gotAlts=combineAlts(segAlts);
+    if(CARD.t0 && !CARD.first){ const any0=(segAlts.length? segAlts[segAlts.length-1][0] : '')+interimText; if(/[\u4e00-\u9fff]/.test(any0)) CARD.first=Date.now(); }
     if(latT0 && !latT1){                            // โค้ช: เวลาตอบ = ตั้งแต่โจทย์ขึ้นจอ ถึงตอนได้ยินตัวจีนตัวแรก
       const any=(segAlts.length? segAlts[segAlts.length-1][0] : '')+interimText;
       if(/[\u4e00-\u9fff]/.test(any)){ latT1=Date.now(); coachRingStop(coachLatency()); }
@@ -4899,7 +4908,8 @@ function instantJudge(extra){
   emptyStreak=0;
   judgeFn()(all);
 }
-function judgeFn(){ return MODE==='talk' ? judgeTalk : MODE==='shadow' ? judgeShadow : MODE==='pair' ? judgePair : MODE==='tree' ? judgeTree : MODE==='fdnum' ? judgeFdNum : MODE==='v300' ? judgeV300 : MODE==='retell' ? judgeRetell
+function judgeFn(){ const f=judgeFn0(); return alts=>{ LAST_ALTS=(alts||[]).slice(0,5); CARD.n++; return f(alts); }; }
+function judgeFn0(){ return MODE==='talk' ? judgeTalk : MODE==='shadow' ? judgeShadow : MODE==='pair' ? judgePair : MODE==='tree' ? judgeTree : MODE==='fdnum' ? judgeFdNum : MODE==='v300' ? judgeV300 : MODE==='retell' ? judgeRetell
   : MODE==='pretest' ? judgePretest : MODE==='exam' ? judgeExam : judge; }
 let lastStopAt=0;
 function scheduleStop(){
@@ -5010,7 +5020,7 @@ function cur(){
   return Q[qi];
 }
 function renderItem(autoPlay){
-  SRS_TOK++;
+  SRS_TOK++; cardReset();
   const it=cur();
   if(!it){ finishRun(); return; }
   if(MODE==='prod' || MODE==='pattern'){ renderProd(it); return; }
@@ -5138,8 +5148,8 @@ function judge(alts){
   tries++; sessUtter++; sessStars+=st;
   S.stats.utter++; S.stats.stars+=st;
   if(COACH.active) coachLog({h:skeyOf(it), st:st, lat:lat, heard:heard, score:score, hintN:hintN});
-  else if(prod && S.settings.recallStrict) S.log.push({t:'recall', h:it.hanzi, hintN:hintN, gaveUp:false, st:st, lat:lat, heard:heard, score:score, levelId:levelId, ts:Date.now()});
-  else S.log.push({levelId, hanzi:it.hanzi, heard, score, stars:st, ts:Date.now()});
+  else if(prod && S.settings.recallStrict) S.log.push(logEnrich({t:'recall', h:it.hanzi, hintN:hintN, gaveUp:false, st:st, lat:lat, heard:heard, score:score, levelId:levelId, ts:Date.now()}));
+  else S.log.push(logEnrich({levelId, hanzi:it.hanzi, heard, score, st:st, stars:st, lat:prod?lat:'n/a', ts:Date.now()}));
   if(S.log.length>2000) S.log=S.log.slice(-1500);
   bestPer[qi]=Math.max(bestPer[qi]||0, score);
   if(it.kind==='vocab' && !prod) recordWord(it, st, levelId);   // โหมดพูดตาม -> คลังคำบทเรียน
@@ -5382,6 +5392,7 @@ async function startTalk(id){
   renderTurn();
 }
 function renderTurn(){
+  cardReset();
   const t=talkTurn();
   if(!t){ finishTalk(); return; }
   tTries=0; tRevealed=false;
@@ -5454,8 +5465,8 @@ function judgeTalk(alts){
   tTries++; sessUtter++; sessStars+=st;
   S.stats.utter++; S.stats.stars+=st;
   bestPer[ti]=Math.max(bestPer[ti]||0, score);
-  if(COACH.active) coachLog({h:t.ask, st:st, lat:null, heard:best, score:score, hit:hit||''});
-  else S.log.push({levelId, hanzi:t.ask, heard:best, score, stars:st, ts:Date.now()});
+  if(COACH.active) coachLog({h:t.ask, tgt:t.model, st:st, lat:null, heard:best, score:score, hit:hit||''});
+  else S.log.push(logEnrich({t:'talk', levelId, hanzi:t.ask, tgt:t.model, heard:best, score, st:st, stars:st, lat:null, ts:Date.now()}));
   dlog('ตอบโต้', t.ask+' -> '+score+'% '+(hit?('เจอคำตอบ '+hit+(nearHit?' (เสียงเพี้ยน)':'')):'ไม่ตรงคำตอบที่รับได้')+(NUM_NEAR==='shi'?' (十 เพี้ยน)':'')+' (ตัดสินจาก: '+(best||'—')+' · ทั้งหมด: '+(alts||[]).slice(0,5).join(' / ')+')');
   save();
 
@@ -6199,7 +6210,7 @@ function coachDay(d){
 /* บันทึกทุกข้อในโหมดโค้ชลง log ให้ดาวน์โหลดไปวิเคราะห์ได้ */
 function coachLog(e){
   const blk=coachBlock();
-  const row=Object.assign({t:'coach', b:blk?blk.b:'', ts:Date.now()}, e);
+  const row=logEnrich(Object.assign({t:'coach', b:blk?blk.b:'', ts:Date.now()}, e));
   COACH.items.push(row);
   S.log.push(row);
   if(S.log.length>2000) S.log=S.log.slice(-1500);
@@ -8545,7 +8556,7 @@ function treeReveal(it, heardNorm, silent){
   if(!silent) speak(it.hanzi);                    // ตอบถูกแล้วไม่ต้องฟังซ้ำ (ประหยัด ~1 วิ/ข้อ)
 }
 function treeLog(it, st, r, extra){
-  const row=Object.assign({h:it.k, step:it.t, st:st, lat:null, heard:r?r.heard:'', score:r?r.score:0}, extra||{});
+  const row=logEnrich(Object.assign({h:it.k, step:it.t, tgt:it.hanzi, st:st, lat:it.t==='see'?'n/a':null, heard:r?r.heard:'', score:r?r.score:0}, extra||{}));
   if(COACH.active) coachLog(row);
   else { S.log.push(Object.assign({t:'tree', ts:Date.now()}, row)); if(S.log.length>2000) S.log=S.log.slice(-1500); }
 }
@@ -9672,7 +9683,7 @@ document.addEventListener('click', e=>{
   const choice=b.dataset.c, ok=choice===it.ans;
   $$('#pMean .fdc').forEach(x=>{ x.disabled=true; if(x.dataset.c===it.ans) x.classList.add('ok'); else if(x===b) x.classList.add('bad'); });
   fdRecord(it.unit, ok);
-  S.log.push({t:'found', u:it.unit, id:it.unit+':'+it.ans, ok:ok, ans:choice, ts:Date.now()});
+  S.log.push({t:'found', u:it.unit, id:it.unit+':'+it.ans, ok:ok, ans:choice, pickMs:CARD.t0?Date.now()-CARD.t0:null, ts:Date.now()});
   dlog('found','🔢 '+it.unit+' '+(ok?'ถูก':'ผิด (ตอบ '+choice+' · เฉลย '+it.ans+')')+' · '+it.zh);
   vib(ok?[30,40,30]:140);
   it.phase='say';
@@ -9705,6 +9716,7 @@ function judgeFdNum(alts){
   const ok=fdSayPass(it, alts), heard=(ok&&MATCHED)||(alts&&alts[0])||'', shiNear = ok ? NUM_NEAR==='ke' : !!NUM_NEAR;   // ผ่าน: โชว์แค่คำแนะนำ 一刻 · ไม่ผ่าน: โชว์ 十/一刻 · B6: แสดงตัวที่ใช้ตัดสินจริง
   tries++; sessUtter++; S.stats.utter++; if(ok){ sessStars+=3; S.stats.stars+=3; }
   fdRecord('say', ok);
+  S.log.push(logEnrich({t:'found', step:'say', u:it.unit, tgt:it.say.zh, ok:ok, st:ok?3:0, heard:heard, nearSh:NUM_NEAR||'', ts:Date.now()}));
   dlog('found','🗣️ พูด '+it.say.zh+' → '+(ok?'ผ่าน':'ไม่ผ่าน')+(shiNear?' ('+NUM_NEAR+' เพี้ยน)':'')+' (ตัดสินจาก: '+(heard||'—')+(heard?' = '+toPinyin(heard):'')+' · ทั้งหมด: '+(alts||[]).slice(0,5).join(' / ')+')');
   save();
   $('#heard').innerHTML='<div class="lab">ได้ยินว่า</div>'+heardBox(heard)+
@@ -9911,6 +9923,143 @@ const V300_SENT=[
   Object.assign(CHAR_TH,{'盔':'(กัวขุย)','混':'ปน','装':'ใส่','加':'เพิ่ม/บวก'}); CHAR_TH['鸳']=addC['鸳']; CHAR_TH['鸯']=addC['鸯'];
 })();
 /* ============================================================
+   📤 R-5: log สำหรับครู — เวลานึก (lat) ทุกโหมดที่ให้นึกเอง · S.daily (ไม่ถูกตัด) · รายงาน v2 · สรุป markdown
+   ============================================================ */
+let LAST_ALTS=[];
+const CARD={t0:0, press:0, first:0, n:0};
+function cardReset(){ CARD.t0=Date.now(); CARD.press=0; CARD.first=0; CARD.n=0; LAST_ALTS=[]; }
+/* เวลานึก = จากโจทย์ขึ้นจอ ถึงตอนเริ่มตอบ (กดไมค์ หรือตัวจีนตัวแรก − เวลาถอดเสียง) · ใช้ค่าที่มากกว่า เหมือน coachLatency */
+function uniLat(){
+  if(!CARD.t0) return null;
+  const a=CARD.press ? CARD.press-CARD.t0 : null, b=CARD.first ? CARD.first-CARD.t0-ASR_LAG : null;
+  if(a===null && b===null) return null;
+  return Math.max(0, Math.round(Math.max(a===null?0:a, b===null?0:b)));
+}
+const LOG_MODES={prod:1, tree:1, v300:1, fdnum:1, talk:1, shadow:1};
+function logEnrich(row){
+  if(!LOG_MODES[MODE]) return row;
+  if(row.try===undefined) row.try=CARD.n||1;
+  row.first=row.try===1;
+  if(row.alts===undefined && LAST_ALTS.length) row.alts=LAST_ALTS.slice(0,5);
+  if(row.lat===null || row.lat===undefined){
+    const it=(typeof cur==='function') ? cur() : null;
+    const see = MODE==='shadow' || (it && it.kind==='tstep' && it.t==='see') || (MODE==='v300' && it && it.t==='learn');
+    row.lat = see ? 'n/a' : uniLat();
+  }
+  if(!row.tgt){ const it=(typeof cur==='function') ? cur() : null; if(it && it.hanzi) row.tgt=it.hanzi; }
+  return row;
+}
+/* พยัญชนะต้นที่สลับกัน (ทุกตัว ไม่ใช่แค่คู่สับสน) เพื่อทำตาราง confusion: 'sh>q' */
+function confPairs(t, h){
+  t=norm(t||'',false); h=norm(h||'',false);
+  const n=t.length, m=h.length; if(!n || !m || n>14 || m>20) return [];
+  const d=[]; for(let i=0;i<=n;i++){ d.push(new Array(m+1).fill(0)); d[i][0]=i; } for(let j=0;j<=m;j++) d[0][j]=j;
+  const same=(a,b)=>a===b || (pyBare(a) && pyBare(a)===pyBare(b));
+  for(let i=1;i<=n;i++) for(let j=1;j<=m;j++) d[i][j]=Math.min(d[i-1][j]+1, d[i][j-1]+1, d[i-1][j-1]+(same(t[i-1],h[j-1])?0:1));
+  const out=[]; let i=n, j=m;
+  while(i>0 && j>0){
+    if(d[i][j]===d[i-1][j-1]+(same(t[i-1],h[j-1])?0:1)){
+      if(!same(t[i-1],h[j-1])){ const a=pyInit(pyBare(t[i-1]))||'∅', b=pyInit(pyBare(h[j-1]))||'∅'; if(a!==b) out.push(a+'>'+b); }
+      i--; j--;
+    }else if(d[i][j]===d[i-1][j]+1) i--; else j--;
+  }
+  return out;
+}
+function rowTgt(r){
+  if(r.tgt) return r.tgt;
+  const h=r.h||r.hanzi||''; const T=TREE[h];
+  return T ? treeSay(T) : h;
+}
+const isSpeakRow=r=>typeof r.st==='number' && r.heard!==undefined && !/^\(|^เสียง /.test(String(r.heard||'')) && r.b!=='FL' && r.t!=='lis';
+/* สรุปรายวันจาก S.log → S.daily[วัน] (log ถูกตัดเหลือ ~8 วัน แต่ daily เก็บถาวร) */
+function dailyRoll(){
+  S.daily=S.daily||{};
+  const by={};
+  (S.log||[]).forEach(r=>{ if(r && r.ts){ const k=new Date(r.ts).toISOString().slice(0,10); (by[k]=by[k]||[]).push(r); } });   // วันแบบเดียวกับ today()
+  Object.keys(by).forEach(k=>{
+    const rows=by[k].sort((a,b)=>a.ts-b.ts);
+    let ms=0; for(let i=1;i<rows.length;i++){ const g=rows[i].ts-rows[i-1].ts; if(g<120000) ms+=g; }
+    const sp=rows.filter(isSpeakRow), ft=sp.filter(r=>r.first===true);
+    const lats=rows.map(r=>r.lat).filter(x=>typeof x==='number').sort((a,b)=>a-b);
+    const lis=rows.filter(r=>r.b==='FL' || r.t==='lis');
+    const conf={}; sp.filter(r=>r.st<3).forEach(r=>confPairs(rowTgt(r), r.heard).forEach(p=>conf[p]=(conf[p]||0)+1));
+    const newItems=Object.keys(S.tree||{}).filter(x=>S.tree[x].firstDay===k).length;
+    const prev=S.daily[k]||{};
+    S.daily[k]={min:Math.round(ms/60000), n:sp.length, firstTry:ft.length, firstTryOk:ft.filter(r=>r.st>=3).length,
+      hint:rows.filter(r=>r.hintN>0).length, selfPass:rows.filter(r=>r.self || /ผ่านเอง|ให้คะแนนตัวเอง|นึกออกเอง/.test(String(r.heard||''))).length,
+      latMed:lats.length ? lats[Math.floor(lats.length/2)] : null, newItems:newItems,
+      dueLeft: k===today() ? treeDueList().length : (prev.dueLeft===undefined?null:prev.dueLeft),
+      lisOk:lis.filter(r=>r.st>=3 || r.ok===true).length, lisN:lis.length, conf:conf};
+  });
+  return S.daily;
+}
+function tripDaysLeft(){ const t=new Date((S.settings.tripDate||'2026-11-12')+'T00:00:00'); return Math.max(0, Math.ceil((t-Date.now())/86400000)); }
+function teacherReport(){
+  dailyRoll(); save();
+  const pick=(o,keys)=>{ const out={}; Object.keys(o||{}).forEach(k=>{ const r=o[k]; if(r && typeof r==='object'){ const x={}; keys.forEach(f=>{ if(r[f]!==undefined) x[f]=r[f]; }); out[k]=x; } }); return out; };
+  const SRSF=['box','next','tries','ok','last','lat','stage','first','firstDay','parked','stuckN','src'];
+  const since=Date.now()-14*86400000;
+  const log=(S.log||[]).filter(r=>r.ts>=since).map(r=>Object.assign({}, r, {tgt:rowTgt(r), matched:r.heard}));
+  const conf={}; Object.values(S.daily||{}).forEach(d=>Object.entries(d.conf||{}).forEach(([k,v])=>conf[k]=(conf[k]||0)+v));
+  return {kind:'teacher-report', v:2, meta:{build:BUILD, exportedAt:new Date().toISOString(), tripDate:S.settings.tripDate, daysLeft:tripDaysLeft(),
+      dueTree:treeDueList().length, treeLevel:treeLevel(), stage1Green:treeStage1Ready()},
+    stores:{tree:pick(S.tree,SRSF), srx:pick(S.srx,SRSF), core:pick(S.core,SRSF), lv:S.lv, pron:S.pron, pair:S.pair, treeStats:S.treeStats,
+      listen:{rate:(S.listen||{}).rate, streak:(S.listen||{}).streak}, exams:S.exams, retell:pick(S.retell,['box','next','best','plays']),
+      coach:{sessions:(S.coach||{}).sessions, days:(S.coach||{}).days}, v300:S.v300||null, found:S.found||null,
+      homework:S.homework||null, settings:{newPerDay:S.settings.newPerDay, pyFirst:S.settings.pyFirst, focusTravel:S.settings.focusTravel, simpleHome:S.settings.simpleHome!==false}},
+    daily:S.daily, conf:conf, log:log};
+}
+function treeStage1Ready(){ const s1=treeStage1(); return s1.length ? Math.round(100*s1.filter(it=>treeGreen(it.key)).length/s1.length) : 0; }
+/* สรุปอ่านง่าย 7 วัน (คัดลอกไปวางในแชทได้เลย) */
+function teacherMarkdown(){
+  dailyRoll();
+  const days=[]; for(let o=-6;o<=0;o++) days.push(dayKey(o));
+  const D=days.map(k=>S.daily[k]).filter(Boolean);
+  const sum=f=>D.reduce((a,d)=>a+(d[f]||0),0);
+  const pct=(a,b)=>b?Math.round(100*a/b)+'%':'—';
+  const lats=D.map(d=>d.latMed).filter(x=>typeof x==='number').sort((a,b)=>a-b);
+  const conf={}; D.forEach(d=>Object.entries(d.conf||{}).forEach(([k,v])=>conf[k]=(conf[k]||0)+v));
+  const topConf=Object.entries(conf).sort((a,b)=>b[1]-a[1]).slice(0,5);
+  // คำที่อ่อนสุด: พลาดมากสุดใน 7 วัน + สิ่งที่ระบบได้ยิน
+  const since=Date.now()-7*86400000, miss={};
+  (S.log||[]).filter(r=>r.ts>=since && isSpeakRow(r) && r.st<3).forEach(r=>{ const t=rowTgt(r); const m=miss[t]||(miss[t]={n:0, heard:{}}); m.n++; if(r.heard) m.heard[r.heard]=(m.heard[r.heard]||0)+1; });
+  const weak=Object.entries(miss).sort((a,b)=>b[1].n-a[1].n).slice(0,10);
+  const L=[];
+  L.push('## 📋 รายงานฝึกพูดจีน · '+today()+' · BUILD '+BUILD);
+  L.push('- ✈️ อีก **'+tripDaysLeft()+' วัน** ถึงเฉิงตู · ลำต้นเขียว (พร้อมเที่ยว) **'+treeStage1Ready()+'%** · เลเวลต้นไม้ '+treeLevel()+' · ค้างทวน '+treeDueList().length+' ข้อ');
+  L.push('- 7 วัน: ฝึก **'+sum('min')+' นาที** ('+D.length+' วัน) · พูด '+sum('n')+' ครั้ง · ผ่านครั้งแรก **'+pct(sum('firstTryOk'),sum('firstTry'))+'** · ใช้ใบ้ '+pct(sum('hint'),sum('n'))+' · ผ่านเอง '+sum('selfPass')+' ครั้ง');
+  L.push('- เวลานึก (มัธยฐานรายวัน): '+(lats.length?(lats[Math.floor(lats.length/2)]/1000).toFixed(1)+' วิ':'—')+' · ฟังถูก '+pct(sum('lisOk'),sum('lisN'))+' · คำใหม่ '+sum('newItems')+' คำ');
+  if(S.v300){ const ps=Object.keys(S.v300.sets||{}).filter(k=>S.v300.sets[k].pass).length; L.push('- 📚 300 คำ: ผ่าน '+ps+'/15 ชุด · ชุดปัจจุบัน '+S.v300.cur); }
+  if(typeof fdMetrics==='function'){ const m=fdMetrics(); L.push('- 🧱 ตัวเลข: ฟัง '+(m.num===null?'—':m.num+'%')+' · พูด '+(m.say===null?'—':m.say+'%')); }
+  L.push(''); L.push('**10 คำที่อ่อนสุด (7 วัน)**');
+  weak.forEach(([t,m],i)=>{ const hs=Object.entries(m.heard).sort((a,b)=>b[1]-a[1]).slice(0,2).map(([h])=>toPinyin(h)+' ('+h+')').join(', '); L.push((i+1)+'. '+toPinyin(t)+' ('+t+') พลาด '+m.n+' · ได้ยินเป็น '+(hs||'—')); });
+  if(!weak.length) L.push('- (ยังไม่มีข้อมูล)');
+  L.push(''); L.push('**เสียงที่สับสนบ่อยสุด** (เป้าหมาย > ระบบได้ยิน)');
+  L.push(topConf.length ? topConf.map(([k,v])=>'`'+k+'` '+v).join(' · ') : '- (ยังไม่มีข้อมูล)');
+  const pr=Object.entries(S.pron||{}).sort((a,b)=>b[1]-a[1]).slice(0,6);
+  if(pr.length){ L.push(''); L.push('**คิวฝึกออกเสียง:** '+pr.map(([k])=>{ const T=TREE[k]; return T ? T.pinyin : k; }).join(' · ')); }
+  if(S.homework && S.homework.note){ L.push(''); L.push('**การบ้านจากครูที่ใช้อยู่:** '+S.homework.note+' (ถึง '+S.homework.until+')'); }
+  return L.join('\n');
+}
+function shareTeacherReport(){
+  const d=today(), name='teacher-report-'+d+'.json', js=JSON.stringify(teacherReport(),null,1);
+  dlog('แชร์','รายงานครู v2: '+Math.round(js.length/1024)+' KB');
+  let f=null; try{ f=new File([js], name, {type:'application/json'}); }catch(e){}
+  const fallback=()=>{ downloadText(name, js, 'application/json'); toast('บันทึกเป็นไฟล์','teacher-report อยู่ใน Downloads',2500); };
+  try{
+    if(f && navigator.canShare && navigator.canShare({files:[f]})){ navigator.share({files:[f], title:'รายงานส่งครู '+d}).catch(e=>{ if(!e || e.name!=='AbortError') fallback(); }); return; }
+  }catch(e){}
+  fallback();
+}
+function copyTeacherMd(){
+  const md=teacherMarkdown();
+  const done=()=>toast('📋 คัดลอกแล้ว','วางในแชทให้ครูได้เลย',2000);
+  const show=()=>{ $('#mdOut').value=md; $('#mdOut').hidden=false; $('#mdOut').select(); toast('คัดลอกเองนะ','กดค้างที่ข้อความแล้วเลือกคัดลอก',2500); };
+  try{ if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(md).then(done, show); return; } }catch(e){}
+  show();
+}
+setTimeout(()=>{ try{ dailyRoll(); save(); }catch(e){ dlog('daily','สรุปรายวันไม่สำเร็จ: '+(e&&e.message)); } }, 3000);
+/* ============================================================
    📚 ท่องศัพท์ 300 คำ (คู่มือ) — 15 ชุด × 20 คำ
    ชุดหนึ่ง = ท่องคำ 1–10 → ท่องคำ 11–20 → 📝 สอบแต่งประโยค 10 ข้อ (ผ่าน 8/10 → ปลดล็อกชุดถัดไป)
    ท่องคำ: ทีละ 5 คำ ดู+ฟัง+พูดตาม → นึกเองจากความหมายไทย (คำ "ดูออก/ฟังออก" ใช้เลือกคำตอบ ไม่ต้องพูด)
@@ -10026,7 +10175,7 @@ function v3Reveal(it, heard){
 function v3Rec(it, ok){
   const v=v3S();
   if(it.w){ const r=v.words[it.w.n]||(v.words[it.w.n]={ok:0, miss:0}); if(ok) r.ok++; else r.miss++; }
-  S.log.push({t:'v300', set:V3.n, step:it.t, id:it.w?it.w.n:it.s[0], ok:ok, ts:Date.now()});
+  S.log.push(logEnrich({t:'v300', set:V3.n, step:it.t, id:it.w?it.w.n:it.s[0], tgt:it.w?it.w.zh:it.s[0], ok:ok, st:ok?3:0, lat:it.t==='learn'?'n/a':null, ts:Date.now()}));
   if(S.log.length>2000) S.log=S.log.slice(-1500);
 }
 function v3Requeue(it){
@@ -11556,6 +11705,8 @@ function shareLogs(){
   fail({name:'NoShare'});
 }
 $('#btnShareLogs').onclick=shareLogs;
+$('#btnTeacher').onclick=shareTeacherReport;
+$('#btnTeacherMd').onclick=copyTeacherMd;
 $('#diagClear').onclick=()=>{
   if(!confirm('ล้างบันทึกปัญหาเก่าทั้งหมด? (log การฝึกไม่หาย)')) return;
   DIAG.length=0; DIAG.push({ts:Date.now(), sep:true, tag:'────', msg:'ล้าง log '+new Date().toLocaleString('th-TH')});
