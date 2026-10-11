@@ -115,6 +115,8 @@ h2{font-size:1.15rem;margin:1.5rem 0 .5rem}
 .topbar .pbar{flex:1;height:.4rem;background:var(--rule);border-radius:1rem;overflow:hidden}
 .topbar .pbar>i{display:block;height:100%;background:var(--t1);transition:width .3s}
 .iconbtn{border:0;background:transparent;font-size:1.3rem;line-height:1;padding:.3rem .4rem;cursor:pointer;color:var(--muted)}
+#scr-play .topbar .pbar{min-width:3.5rem}
+@media (max-width:400px){#scr-play .topbar .iconbtn{padding:.3rem .2rem}#scr-play .topbar #btnMode{padding-left:.45rem;padding-right:.45rem}}
 .stage{flex:1;display:flex;flex-direction:column;justify-content:center;min-height:0}
 .prompt{text-align:center;padding:.5rem 0}
 .prompt .kind{font-size:.8rem;color:var(--muted);letter-spacing:.02em}
@@ -600,6 +602,7 @@ td.r,th.r{text-align:right}
       <button class="iconbtn" id="btnQuit">✕</button>
       <div class="pbar"><i id="playBar" style="width:0%"></i></div>
       <span class="small muted" id="playCount">0/0</span>
+      <button class="iconbtn" id="btnBug" title="แจ้งปัญหาตรงข้อนี้ (จดลง log)" style="font-size:1rem;padding:.3rem .15rem">🐞</button>
       <button class="iconbtn" id="btnNote" title="โครงสร้างประโยคของบทนี้">💡</button>
       <button class="chip" id="btnMode" title="สลับโหมดกดค้าง / แฮนด์ฟรี" style="flex:none">🖐 กดค้าง</button>
       <button class="iconbtn" id="btnThai" title="ซ่อน/แสดงคำอ่านไทย">👁</button>
@@ -875,15 +878,16 @@ td.r,th.r{text-align:right}
       <button class="btn ghost" id="btnForceUpdate">♻️ บังคับโหลดรุ่นล่าสุด</button>
     </div>
 
+    <textarea id="bugNote" placeholder="🐞 เจอปัญหาอะไร? พิมพ์ไว้ตรงนี้ได้ (ไม่บังคับ) — จะแนบไปบนสุดของ log" style="width:100%;min-height:3.5rem;font:inherit;font-size:.85rem;margin-bottom:.45rem"></textarea>
     <button class="btn" id="btnShareLogs">📤 แชร์ log ทั้งหมด ไปแอปอื่น</button>
+    <p class="small muted" style="margin:.3rem 0 0">ส่ง 3 ไฟล์: บันทึกปัญหา (.txt มีสรุปปัญหาที่เจอไว้บนสุด) · log การฝึก (.json) · รายงานสำหรับครู (.json)</p>
     <p class="small muted" style="margin:.3rem 0 .6rem">ส่งทั้งบันทึกปัญหา (.txt) และ log การฝึก (.json) พร้อมกัน ผ่าน LINE, Mail, Drive, AirDrop ฯลฯ · บันทึกปัญหาเก็บไว้ในเครื่องแล้ว ปิดแอปไปก่อนก็ยังส่งย้อนหลังได้</p>
     <button class="btn ghost" id="btnDiag">🐞 บันทึกปัญหา (log) — ส่งให้ผู้พัฒนาดู</button>
     <button class="btn ghost" id="btnExport" style="margin-top:.5rem">⬇ ดาวน์โหลด log การฝึก (JSON)</button>
     <div class="card" style="margin-top:.75rem">
       <b>👩‍🏫 ส่งครู</b>
-      <p class="small muted" style="margin:.4rem 0 .6rem">รายงานฉบับเต็ม (ทุกตารางทบทวน + สรุปรายวัน + log 14 วัน) สำหรับให้ Claude ตรวจ · หรือคัดลอกสรุปสั้นไปวางในแชท</p>
-      <button class="btn" id="btnTeacher">📤 รายงานสำหรับครู (.json)</button>
-      <button class="btn ghost" id="btnTeacherMd" style="margin-top:.5rem">📋 คัดลอกสรุป 7 วัน</button>
+      <p class="small muted" style="margin:.4rem 0 .6rem">รายงานฉบับเต็มส่งไปพร้อมปุ่ม "📤 แชร์ log ทั้งหมด" แล้ว · ตรงนี้คัดลอกสรุปสั้นไปวางในแชท และนำเข้าการบ้านจากครู</p>
+      <button class="btn ghost" id="btnTeacherMd">📋 คัดลอกสรุป 7 วัน</button>
       <div style="margin-top:.75rem"><b>📝 นำเข้าการบ้านจากครู</b></div>
       <textarea id="hwIn" placeholder='วาง JSON การบ้านที่ครูให้มา {"from":"teacher", …}' style="width:100%;min-height:6rem;margin-top:.4rem;font:inherit;font-size:.8rem"></textarea>
       <div class="row" style="margin-top:.4rem">
@@ -3394,7 +3398,7 @@ const MILESTONES = [
 /* ============================================================
    2.5 บันทึกปัญหา (diagnostics) — ไว้ส่งให้ผู้พัฒนาดูเวลาไมค์มีปัญหา
    ============================================================ */
-const BUILD='2026-10-12c';                     // เปลี่ยนทุกครั้งที่แก้ไฟล์ จะได้รู้ว่า log มาจากรุ่นไหน
+const BUILD='2026-10-12d';                     // เปลี่ยนทุกครั้งที่แก้ไฟล์ จะได้รู้ว่า log มาจากรุ่นไหน
 const DIAG=[], STUCK={}, T0=Date.now();
 /* log ปัญหาเก็บลงเครื่องด้วย: iPhone ปิดแอปหรือรีเฟรชแล้ว log เก่ายังอยู่ ส่งย้อนหลังได้ */
 const DKEY='zhgame-diag', DIAG_MAX=2500;
@@ -3419,6 +3423,36 @@ function dlog(tag, msg, extra){
   const box=document.getElementById('diagBox');
   if(box && document.getElementById('mDiag').classList.contains('on')) renderDiag();
 }
+window.addEventListener('error', e=>{ try{ dlog('ERROR', (e.message||'error')+' @'+String(e.filename||'').split('/').pop()+':'+(e.lineno||'')+':'+(e.colno||'')); }catch(_){} });
+window.addEventListener('unhandledrejection', e=>{ try{ const r=e.reason; dlog('ERROR', 'promise: '+((r&&(r.message||r.name))||String(r))); }catch(_){} });
+/* 🐞 สรุปปัญหาที่เจอ (อัตโนมัติ) — อยู่บนสุดของไฟล์ log ให้ผู้พัฒนาเห็นก่อน */
+function problemSummary(){
+  const out=[], since=Date.now()-3*86400000, clk=ts=>{ const d=new Date(ts), p=n=>String(n).padStart(2,'0'); return (d.getMonth()+1)+'/'+d.getDate()+' '+p(d.getHours())+':'+p(d.getMinutes()); };
+  const D=DIAG.filter(l=>!l.sep && (l.ts||0)>=since);
+  let S0=null; try{ S0=S; }catch(e){}
+  if(S0 && S0.bugNote) out.push('📝 ผู้ใช้เขียนมา: '+S0.bugNote);
+  const bugs=((S0&&S0.bugs)||[]).filter(b=>b.ts>=since);
+  if(bugs.length){ out.push('🐞 ผู้ใช้กดแจ้งปัญหาระหว่างเล่น '+bugs.length+' ครั้ง:'); bugs.slice(-15).forEach(b=>out.push('   '+clk(b.ts)+'  '+(b.note||'(ไม่ได้พิมพ์)')+'  ·  '+b.ctx)); }
+  const errs=D.filter(l=>l.tag==='ERROR');
+  if(errs.length){ out.push('❌ โค้ด error '+errs.length+' ครั้ง:'); const seen={}; errs.forEach(l=>{ seen[l.msg]=(seen[l.msg]||0)+1; }); Object.keys(seen).slice(0,10).forEach(m=>out.push('   ×'+seen[m]+'  '+m)); }
+  const self=D.filter(l=>/ผ่านเอง|ระบบฟังไม่ออก/.test(l.msg));
+  if(self.length){ out.push('🙋 กด "ระบบฟังไม่ออก/ผ่านเอง" '+self.length+' ครั้ง:'); self.slice(-10).forEach(l=>out.push('   '+clk(l.ts)+'  '+l.msg)); }
+  if(S0 && S0.log){
+    const g={};
+    S0.log.filter(r=>r.ts>=since && typeof r.st==='number' && r.st<3 && r.heard!==undefined && !/^\(/.test(String(r.heard||''))).forEach(r=>{
+      const t=(typeof rowTgt==='function') ? rowTgt(r) : (r.tgt||r.h||r.hanzi); const x=g[t]||(g[t]={n:0, heard:{}}); x.n++; if(r.heard) x.heard[r.heard]=1; });
+    const hard=Object.entries(g).filter(([t,x])=>x.n>=3).sort((a,b)=>b[1].n-a[1].n).slice(0,12);
+    if(hard.length){ out.push('🔁 โจทย์ที่พลาด ≥ 3 ครั้ง (3 วัน) — อาจเป็นบัคการตรวจเสียง ถ้าที่ได้ยินดูถูกแล้ว:');
+      hard.forEach(([t,x])=>out.push('   '+t+' ('+(typeof toPinyin==='function'?toPinyin(t):'')+') พลาด '+x.n+'  ได้ยิน: '+Object.keys(x.heard).slice(0,5).join(' / '))); }
+  }
+  const park=D.filter(l=>/พักคำ|ติดวน|พลาดเกิน 2 วน/.test(l.msg));
+  if(park.length){ out.push('⏸ คำที่ติดวน/ถูกพัก:'); park.slice(-8).forEach(l=>out.push('   '+clk(l.ts)+'  '+l.msg)); }
+  const keyErr=D.filter(l=>/เสียงหลักผิด|十 เพี้ยน/.test(l.msg)).length;
+  if(keyErr) out.push('🗣️ เสียงหลักผิด (sh/x/q, r/l …) '+keyErr+' ครั้ง');
+  const wd=D.filter(l=>/watchdog/.test(l.msg)).length, merr=D.filter(l=>l.tag==='mic' && /onerror/.test(l.msg) && !/aborted|no-speech/.test(l.msg)), empty=D.filter(l=>/ได้ผล=false/.test(l.msg)).length;
+  if(wd || merr.length || empty>=5) out.push('🎤 ไมค์: บังคับหยุด '+wd+' · error '+merr.length+(merr.length?' ('+[...new Set(merr.map(l=>l.msg))].join(', ')+')':'')+' · อัดแล้วไม่ได้ผล '+empty+' ครั้ง');
+  return out.length ? out.join('\n') : 'ไม่พบปัญหาที่ตรวจจับได้อัตโนมัติ (3 วันล่าสุด)';
+}
 function diagText(){
   let vs=[];
   try{ vs=(window.speechSynthesis&&speechSynthesis.getVoices())||[]; }catch(e){}
@@ -3434,7 +3468,10 @@ function diagText(){
     'เสียงจีนในเครื่อง: '+(zhVoiceList.join(' · ')||'—'),
     'สถานะเกม   : ด่าน '+levelId+'  ข้อ '+(qi+1)+'/'+Q.length+'  playing='+playing+'  autoListen='+S.settings.autoListen,
     'ไมค์ตอนนี้  : recActive='+recActive+'  recStarting='+recStarting+'  heldStream='+(!!heldStream),
-    '─────────────────────────────────────────',
+    '═════════════════════════════════════════',
+    '🐞 ปัญหาที่เจอ (สรุปอัตโนมัติ 3 วันล่าสุด)',
+    (()=>{ try{ return problemSummary(); }catch(e){ return 'สรุปไม่สำเร็จ: '+(e&&e.message); } })(),
+    '═════════════════════════════════════════',
     (Object.keys(STUCK).length
       ? 'คำที่ยังไม่ผ่าน (ระบบได้ยินเป็น):\n'+Object.keys(STUCK).map(k=>'   '+k+'  ->  '+STUCK[k].join(' / ')).join('\n')+'\n─────────────────────────────────────────'
       : 'ยังไม่มีคำที่ติด\n─────────────────────────────────────────')
@@ -11772,7 +11809,7 @@ function fallbackCopy(txt,done){
 }
 /* แชร์ log ทั้งสองไฟล์ไปแอปอื่น (Web Share) · เครื่องที่แชร์ไฟล์ไม่ได้ → แชร์ข้อความ → ดาวน์โหลดไฟล์ */
 function exportJSONText(){
-  return JSON.stringify({exportedAt:new Date().toISOString(), build:BUILD, stats:S.stats, words:S.words, mistakes:S.mistakes, progress:S.progress, log:S.log},null,2);
+  return JSON.stringify({exportedAt:new Date().toISOString(), build:BUILD, stats:S.stats, words:S.words, mistakes:S.mistakes, progress:S.progress, bugs:S.bugs||[], bugNote:S.bugNote||'', log:S.log},null,2);
 }
 function downloadText(name, text, type){
   const a=document.createElement('a');
@@ -11784,30 +11821,43 @@ function downloadText(name, text, type){
 function shareLogs(){
   diagSave();
   const d=today(), txt=diagText(), js=exportJSONText();
-  const nTxt='chinese-game-diag-'+d+'.txt', nJs='chinese-speaking-log-'+d+'.json';
+  let tr=''; try{ tr=JSON.stringify(teacherReport(),null,1); }catch(e){ dlog('แชร์','สร้างรายงานครูไม่สำเร็จ: '+(e&&e.message)); }
+  const nTxt='chinese-game-diag-'+d+'.txt', nJs='chinese-speaking-log-'+d+'.json', nTr='teacher-report-'+d+'.json';
   const title='ฝึกพูดจีน log '+d+' · '+BUILD;
   let files=null;
-  try{ files=[new File([txt], nTxt, {type:'text/plain'}), new File([js], nJs, {type:'application/json'})]; }catch(e){}
+  try{ files=[new File([txt], nTxt, {type:'text/plain'}), new File([js], nJs, {type:'application/json'})].concat(tr?[new File([tr], nTr, {type:'application/json'})]:[]); }catch(e){}
   const fail=e=>{
     if(e && e.name==='AbortError') return;     // ผู้ใช้กดยกเลิกเอง
     dlog('แชร์','แชร์ไม่สำเร็จ: '+(e&&e.name));
     downloadText(nTxt, txt, 'text/plain'); setTimeout(()=>downloadText(nJs, js, 'application/json'), 600);
-    toast('บันทึกเป็นไฟล์แทน','แชร์ไม่ได้ เลยเซฟ 2 ไฟล์ไว้ใน Downloads',3000);
+    if(tr) setTimeout(()=>downloadText(nTr, tr, 'application/json'), 1200);
+    toast('บันทึกเป็นไฟล์แทน','แชร์ไม่ได้ เลยเซฟ '+(tr?3:2)+' ไฟล์ไว้ใน Downloads',3000);
   };
   try{
     if(files && navigator.canShare && navigator.canShare({files:files})){
-      navigator.share({files:files, title:title}).then(()=>dlog('แชร์','แชร์ไฟล์ log แล้ว'), fail);
+      navigator.share({files:files, title:title}).then(()=>dlog('แชร์','แชร์ไฟล์ log แล้ว ('+files.length+' ไฟล์)'), fail);
       return;
     }
     if(navigator.share){                       // แชร์ไฟล์ไม่ได้ แต่แชร์ข้อความได้: ส่งบันทึกปัญหาเป็นข้อความ แล้วเซฟ JSON ไว้
-      navigator.share({title:title, text:txt}).then(()=>{ downloadText(nJs, js, 'application/json'); }, fail);
+      navigator.share({title:title, text:txt}).then(()=>{ downloadText(nJs, js, 'application/json'); if(tr) setTimeout(()=>downloadText(nTr, tr, 'application/json'), 600); }, fail);
       return;
     }
   }catch(e){ fail(e); return; }
   fail({name:'NoShare'});
 }
 $('#btnShareLogs').onclick=shareLogs;
-$('#btnTeacher').onclick=shareTeacherReport;
+$('#btnBug').onclick=()=>{
+  const it=(typeof cur==='function') ? cur() : null, t=(MODE==='talk' && typeof talkTurn==='function') ? talkTurn() : null;
+  const tgt = t ? t.ask+' → '+t.model : it ? (it.hanzi || (it.say&&it.say.zh) || (it.w&&it.w.zh) || (it.s&&it.s[0]) || it.zh || '') : '';
+  const heard=($('#heard')&&$('#heard').innerText||'').replace(/\s+/g,' ').slice(0,120);
+  const ctx='โหมด '+MODE+' · ด่าน '+levelId+' · ข้อ '+(qi+1)+'/'+Q.length+' · โจทย์ '+tgt+' · ได้ยินล่าสุด '+(LAST_ALTS.join(' / ')||'—')+' · จอ: '+heard;
+  const note=prompt('🐞 เจอปัญหาอะไรตรงข้อนี้? (พิมพ์สั้นๆ หรือกดตกลงเลย — ระบบจดหน้าจอตอนนี้ไว้ให้)', '');
+  if(note===null) return;
+  S.bugs=(S.bugs||[]).concat([{ts:Date.now(), note:note.trim().slice(0,300), ctx:ctx}]).slice(-50);
+  dlog('🐞แจ้ง', (note.trim()||'(ไม่ได้พิมพ์)')+' · '+ctx);
+  save(true); toast('🐞 จดไว้แล้ว','จะติดไปกับ "แชร์ log ทั้งหมด"',1800);
+};
+$('#bugNote').oninput=e=>{ S.bugNote=String(e.target.value||'').slice(0,1000); save(); };
 $('#btnTeacherMd').onclick=copyTeacherMd;
 function hwShow(r){
   if(r.err){ $('#hwMsg').innerHTML='<span style="color:var(--bad)">✗ '+esc(r.err)+'</span>'; return; }
@@ -11909,6 +11959,7 @@ function renderSettings(){
     ? 'เครื่องนี้มีเสียงชาย: '+esc(zhVoiceM.name)+' · ฟังคนพูดหลายแบบช่วยให้หูชินกับเสียงจริง'
     : 'เครื่องนี้ยังไม่มีเสียงผู้ชายภาษาจีน ตอนนี้ใช้เสียงผู้หญิงแบบทุ้มลงแทน · ถ้าอยากได้เสียงชายจริงบน iPhone: <b>ตั้งค่า → การช่วยการเข้าถึง → เนื้อหาที่พูด → เสียง → จีน (จีนแผ่นดินใหญ่) → ดาวน์โหลด Li-mu</b> แล้วปิดเปิดแอปใหม่';
   $('#swPy').textContent=S.settings.pyFirst?'เปิด':'ปิด'; $('#swPy').classList.toggle('on',!!S.settings.pyFirst);
+  if($('#bugNote') && document.activeElement!==$('#bugNote')) $('#bugNote').value=S.bugNote||'';
   $('#swFocus').textContent=S.settings.focusTravel?'เปิด':'ปิด'; $('#swFocus').classList.toggle('on',!!S.settings.focusTravel);
   { const on=S.settings.simpleHome!==false; $('#swSimple').textContent=on?'เปิด':'ปิด'; $('#swSimple').classList.toggle('on',on); }
   $$('#newChips .chip').forEach(c=>c.classList.toggle('on', +c.dataset.n===(S.settings.newPerDay||8)));
