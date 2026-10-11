@@ -210,6 +210,8 @@ h2{font-size:1.15rem;margin:1.5rem 0 .5rem}
 .v3chip.ok{border-color:var(--ok);color:var(--ok)}.v3chip.on{border-color:var(--t1);color:var(--t1);font-weight:700}.v3chip.lock{opacity:.45}
 .v3chips{display:flex;flex-wrap:wrap;gap:.35rem;justify-content:center;margin-top:.5rem}.v3chips span{border:1px solid var(--rule);border-radius:.5rem;padding:.2rem .5rem;font-weight:600}
 #scr-home.simple:not(.moreopen) #examCard,#scr-home.simple:not(.moreopen) #retellCard,#scr-home.simple:not(.moreopen) #ccFullRow{display:none!important}
+.gcard{margin-top:.5rem;padding:.45rem .6rem;border:1px solid var(--rule);border-radius:.6rem;background:var(--card);text-align:left;font-size:.9rem;line-height:1.5}
+.gcard summary{cursor:pointer}.gcard .gbody{margin-top:.35rem}.gcard .gtrap{margin-top:.3rem;color:var(--bad)}
 .fdchoices{display:grid;grid-template-columns:1fr 1fr;gap:.45rem}
 .fdc{font:inherit;font-size:1.1rem;font-weight:600;padding:.7rem .4rem;border:1px solid var(--rule);border-radius:.7rem;background:var(--card);color:var(--ink);cursor:pointer;min-height:3rem}
 .fdc.ok{background:#E8F0E4;border-color:var(--ok);color:var(--ok)}.fdc.bad{background:#F8E3E0;border-color:var(--bad);color:var(--bad)}
@@ -535,6 +537,8 @@ td.r,th.r{text-align:right}
       <div class="row" style="margin-top:.45rem;gap:.5rem"><input id="bookNum" inputmode="numeric" placeholder="เช่น 35" style="flex:1;font:inherit;font-size:1.2rem;padding:.45rem .6rem;border:1px solid var(--rule);border-radius:.6rem;background:var(--card);color:var(--ink)"><button class="btn" id="bookNumGo" style="width:auto;padding:.5rem 1rem">🔊 ฟัง</button></div>
       <div id="bookNumOut" style="text-align:center;margin-top:.5rem"></div>
     </div>
+    <div class="row" style="gap:.4rem;margin:.5rem 0"><button class="chip on" id="bookTabP" style="flex:1">📇 ประโยค</button><button class="chip" id="bookTabG" style="flex:1">📖 ไวยากรณ์</button></div>
+    <div id="gramBody" hidden></div>
     <input id="bookQ" placeholder="🔍 ค้นหา เช่น ห้องน้ำ / shuǐ / หวาน" style="width:100%;box-sizing:border-box;font:inherit;padding:.55rem .7rem;border:1px solid var(--rule);border-radius:.6rem;background:var(--card);color:var(--ink);margin:.2rem 0 .6rem">
     <p class="sub">แตะแถวไหน แอปพูดประโยคนั้นให้คนจีนฟัง (คำที่เรียนแล้วอยู่บนสุดของแต่ละหมวด)</p>
     <div id="bookBody"></div>
@@ -3398,7 +3402,7 @@ const MILESTONES = [
 /* ============================================================
    2.5 บันทึกปัญหา (diagnostics) — ไว้ส่งให้ผู้พัฒนาดูเวลาไมค์มีปัญหา
    ============================================================ */
-const BUILD='2026-10-13a';                     // เปลี่ยนทุกครั้งที่แก้ไฟล์ จะได้รู้ว่า log มาจากรุ่นไหน
+const BUILD='2026-10-13b';                     // เปลี่ยนทุกครั้งที่แก้ไฟล์ จะได้รู้ว่า log มาจากรุ่นไหน
 const DIAG=[], STUCK={}, T0=Date.now();
 /* log ปัญหาเก็บลงเครื่องด้วย: iPhone ปิดแอปหรือรีเฟรชแล้ว log เก่ายังอยู่ ส่งย้อนหลังได้ */
 const DKEY='zhgame-diag', DIAG_MAX=2500;
@@ -4961,7 +4965,8 @@ function instantJudge(extra){
   judgeFn()(all);
 }
 function judgeFn(){ const f=judgeFn0(); return alts=>{ LAST_ALTS=(alts||[]).slice(0,5); CARD.n++; return f(alts); }; }
-function judgeFn0(){ return MODE==='talk' ? judgeTalk : MODE==='shadow' ? judgeShadow : MODE==='pair' ? judgePair : MODE==='tree' ? judgeTree : MODE==='fdnum' ? judgeFdNum : MODE==='v300' ? judgeV300 : MODE==='retell' ? judgeRetell
+function judgeFn0(){ if(MODE==='prod' && typeof cur==='function' && cur() && cur().contrast!==undefined) return judgeContrast;
+  return MODE==='talk' ? judgeTalk : MODE==='shadow' ? judgeShadow : MODE==='pair' ? judgePair : MODE==='tree' ? judgeTree : MODE==='fdnum' ? judgeFdNum : MODE==='v300' ? judgeV300 : MODE==='retell' ? judgeRetell
   : MODE==='pretest' ? judgePretest : MODE==='exam' ? judgeExam : judge; }
 let lastStopAt=0;
 function scheduleStop(){
@@ -5075,7 +5080,7 @@ function renderItem(autoPlay){
   SRS_TOK++; cardReset();
   const it=cur();
   if(!it){ finishRun(); return; }
-  if(MODE==='prod' || MODE==='pattern'){ renderProd(it); return; }
+  if(MODE==='prod' || MODE==='pattern'){ renderProd(it); if(it.contrast!==undefined) contrastDecor(it); return; }
   if(MODE==='shadow'){ renderShadow(it); return; }
   if(MODE==='pair'){ renderPair(it); return; }
   if(MODE==='tree'){ renderTree(it); return; }
@@ -9592,7 +9597,15 @@ function bookNum(){
   $('#bookNumOut').innerHTML='<div class="bkpy" style="font-size:1.5rem">'+pyHTML(py)+'</div><div class="bkzh">'+esc(zh)+'</div>';
   speak(zh, null, 0.85);
 }
-function openBook(){ show('scr-book'); renderBook(); }
+function openBook(){ show('scr-book'); renderBook(); bookTab(false); }
+function bookTab(g){
+  $('#bookTabG').classList.toggle('on', g); $('#bookTabP').classList.toggle('on', !g);
+  $('#gramBody').hidden=!g; ['#bookBody','#bookQ'].forEach(x=>$(x).hidden=g);
+  const sub=$('#scr-book p.sub'); if(sub) sub.hidden=g;
+  const numCard=$('#bookNum') && $('#bookNum').closest('.card'); if(numCard) numCard.hidden=g;
+  if(g) renderGramBook();
+}
+$('#bookTabP').onclick=()=>bookTab(false); $('#bookTabG').onclick=()=>bookTab(true);
 document.addEventListener('click', e=>{ const b=e.target.closest('.bkrow'); if(!b) return; speak(b.dataset.say, null, 0.85); });
 
 /* ดึงเวลาทุกแบบจากที่ได้ยิน → [ชั่วโมง, นาที] */
@@ -10332,6 +10345,109 @@ function renderHwCard(){
   $('#hwFocus').innerHTML=(fp.length?'🎯 เน้น: '+fp.map(esc).join(' · '):'')+(h.add.length?'<br>➕ คำใหม่จากครู '+h.add.length+' คำ':'')+(h.skip.length?'<br>⏸ พักไว้ '+h.skip.length+' คำ':'');
 }
 /* ============================================================
+   📖 R-9: การ์ดไวยากรณ์ 10 ใบ + ข้อแยกคู่ที่สับสน (CONTRAST)
+   ไม่สอนก่อน — โชว์หลังตอบข้อที่เกี่ยวข้อง (1 บรรทัด แตะดูเพิ่ม) · CONTRAST แทรกในบล็อกทวน FR 2–3 ข้อ/รอบ · SRS ใน S.srx key 'C:'+i
+   ============================================================ */
+const GRAMMAR={
+ G1:{name:'เวลาอยู่หน้ากริยา', rule:'เวลาวางหน้ากริยาเสมอ (ภาษาไทยวางท้าย)', ex:[['我明天去','wǒ míng tiān qù','ฉันไปพรุ่งนี้'],['我们下午三点见','wǒ men xià wǔ sān diǎn jiàn','เจอกันบ่ายสามโมง']], trap:'คนไทยมักพูด 我去明天 (ไป + พรุ่งนี้) ❌', hot:true},
+ G2:{name:'สถานที่อยู่หน้ากริยา', rule:'在 + ที่ + กริยา (ภาษาไทยพูด "กินที่นี่")', ex:[['在这儿吃','zài zhèr chī','กินที่นี่'],['我在门口等你','wǒ zài mén kǒu děng nǐ','ฉันรออยู่หน้าประตู']], trap:'吃在这儿 (กิน + ที่นี่) ❌', hot:true},
+ G3:{name:'คำขยายอยู่หน้าคำนาม', rule:'ขยาย (+的) + คำนาม — กลับกับภาษาไทย', ex:[['冰可乐','bīng kě lè','โค้กเย็น'],['别的颜色','bié de yán sè','สีอื่น']], trap:'可乐冰 (โค้ก + เย็น) ❌', hot:true},
+ G4:{name:'คุณศัพท์ไม่ต้องมี 是', rule:'ใช้ 很 / 太 / 有点 + คุณศัพท์ ห้ามใช้ 是', ex:[['这个很好吃','zhè ge hěn hǎo chī','อันนี้อร่อยมาก'],['太贵了','tài guì le','แพงไป']], trap:'这个是好吃 (อันนี้ "เป็น" อร่อย) ❌', hot:true},
+ G5:{name:'不 กับ 没', rule:'不 = ไม่ (ตั้งใจ/ปกติ) · 没 = ไม่มี / ยังไม่ได้', ex:[['不要辣','bú yào là','ไม่เอาเผ็ด'],['我还没付','wǒ hái méi fù','ฉันยังไม่ได้จ่าย']], trap:'不有 ❌ → ต้องเป็น 没有'},
+ G6:{name:'要 · 想 · 可以/能 · 会', rule:'เอา · อยาก · ได้ (อนุญาต/ทำได้) · ทำเป็น (ทักษะ)', ex:[['我想去机场','wǒ xiǎng qù jī chǎng','อยากไปสนามบิน'],['可以扫码吗？','kě yǐ sǎo mǎ ma','สแกนจ่ายได้ไหม']], trap:'พูดภาษาเป็น ใช้ 会 ไม่ใช่ 可以: 我会说一点'},
+ G7:{name:'คำถาม: 吗 / 还是', rule:'ถามใช่ไหม เติม 吗 · ให้เลือก ใช้ 还是 · มีคำถามอยู่แล้ว (多少/哪里/什么) ไม่ต้องเติม 吗', ex:[['辣吗？','là ma','เผ็ดไหม'],['冰的还是热的？','bīng de hái shi rè de','เย็นหรือร้อน']], trap:'多少钱吗？ ❌ (มี 多少 แล้ว)'},
+ G8:{name:'ลักษณนาม + 两', rule:'เลข + ลักษณนาม + คำนาม · "สอง" หน้าลักษณนามใช้ 两', ex:[['一碗面','yì wǎn miàn','บะหมี่ชามนึง'],['两张票','liǎng zhāng piào','ตั๋วสองใบ']], trap:'二张票 ❌ · 两票 (ไม่มีลักษณนาม) ❌'},
+ G9:{name:'有点 กับ 一点', rule:'有点 + คุณศัพท์ = บ่นว่า "…ไปนิด" · คุณศัพท์ + 一点 = ขอให้ "…ขึ้นหน่อย"', ex:[['有点贵','yǒu diǎn guì','แพงไปนิด'],['便宜一点','pián yi yì diǎn','ถูกลงหน่อย']], trap:'一点贵 ❌ · 有点便宜 = มันค่อนข้างถูก (ไม่ได้ขอลด)'},
+ G10:{name:'了 = จบแล้ว / เปลี่ยนแล้ว', rule:'ใส่ 了 ท้ายเมื่อทำเสร็จหรือสภาพเปลี่ยน', ex:[['到了','dào le','ถึงแล้ว'],['我吃饱了','wǒ chī bǎo le','ฉันอิ่มแล้ว']], trap:'我吃饱 (ไม่มี 了) ฟังไม่จบ'}
+};
+// [g, สถานการณ์ไทย, ถูก, พินอินถูก, คำอ่านไทย, ผิด (ตัวลวง), พินอินผิด, อธิบายสั้น]
+const CONTRAST=[
+ ['G1','บอกว่า "พรุ่งนี้เช้าฉันไป"','我明天早上去','wǒ míng tiān zǎo shang qù','หว่อ หมิง เทียน เจ่า ชาง ชวี่','我去明天早上','wǒ qù míng tiān zǎo shang','เวลาอยู่หน้ากริยา'],
+ ['G1','นัดว่า "เจอกันบ่ายสามโมง"','我们下午三点见','wǒ men xià wǔ sān diǎn jiàn','หว่อ เมิน เซี่ย อู่ ซาน เตี่ยน เจี้ยน','我们见下午三点','wǒ men jiàn xià wǔ sān diǎn','เวลาอยู่หน้ากริยา'],
+ ['G1','บอกว่า "วันนี้ฉันไปจิ่วจ้ายโกว"','我今天去九寨沟','wǒ jīn tiān qù Jiǔ zhài gōu','หว่อ จิน เทียน ชวี่ จิ่ว จ้าย โกว','我去九寨沟今天','wǒ qù Jiǔ zhài gōu jīn tiān','เวลาอยู่หน้ากริยา'],
+ ['G2','ร้านถาม ตอบว่า "กินที่นี่"','在这儿吃','zài zhèr chī','จ้าย เจ้อร์ ชือ','吃在这儿','chī zài zhèr','ที่อยู่หน้ากริยา'],
+ ['G2','บอก DiDi ว่า "ฉันรออยู่หน้าประตู"','我在门口等你','wǒ zài mén kǒu děng nǐ','หว่อ จ้าย เหมิน โข่ว เติ่ง หนี่','我等你在门口','wǒ děng nǐ zài mén kǒu','ที่อยู่หน้ากริยา'],
+ ['G3','ขอ "โค้กเย็นขวดนึง"','来一瓶冰可乐','lái yì píng bīng kě lè','ไหล อี้ ผิง ปิง เข่อ เล่อ','来一瓶可乐冰','lái yì píng kě lè bīng','คำขยายอยู่หน้าคำนาม'],
+ ['G3','ถามหา "สีอื่น"','有别的颜色吗？','yǒu bié de yán sè ma','โหย่ว เปี๋ย เตอะ เหยียน เซ่อ มะ','有颜色别的吗？','yǒu yán sè bié de ma','คำขยายอยู่หน้าคำนาม'],
+ ['G3','ขอ "อันใหญ่กว่านี้หน่อย"','有大一点的吗？','yǒu dà yì diǎn de ma','โหย่ว ต้า อี้ เตี่ยน เตอะ มะ','有一点大的吗？','yǒu yì diǎn dà de ma','คุณศัพท์ + 一点 + 的'],
+ ['G4','ชมว่า "อันนี้อร่อยมาก"','这个很好吃','zhè ge hěn hǎo chī','เจ้อ เกอะ เหิ่น ห่าว ชือ','这个是很好吃','zhè ge shì hěn hǎo chī','คุณศัพท์ไม่ต้องมี 是'],
+ ['G4','บอกว่า "ห้องนี้เล็กไป"','这个房间太小了','zhè ge fáng jiān tài xiǎo le','เจ้อ เกอะ ฝาง เจียน ไท่ เสี่ยว เลอะ','这个房间是太小','zhè ge fáng jiān shì tài xiǎo','คุณศัพท์ไม่ต้องมี 是'],
+ ['G5','ร้านบอกของหมด ทวนว่า "หมดแล้วเหรอ"','没有了吗？','méi yǒu le ma','เหมย โหย่ว เลอะ มะ','不有了吗？','bù yǒu le ma','ไม่มี = 没有 (ห้ามใช้ 不有)'],
+ ['G5','สั่งว่า "ไม่เอาเผ็ด"','不要辣','bú yào là','ปู๋ เย่า ล่า','没要辣','méi yào là','ไม่เอา = 不要'],
+ ['G5','บอกแคชเชียร์ว่า "ฉันยังไม่ได้จ่าย"','我还没付','wǒ hái méi fù','หว่อ ไห เหมย ฟู่','我还不付','wǒ hái bú fù','ยังไม่ได้ทำ = 还没 (还不付 = ยังไม่ยอมจ่าย)'],
+ ['G5','บอกว่า "ฉันไม่กินหมู"','我不吃猪肉','wǒ bù chī zhū ròu','หว่อ ปู้ ชือ จู โร่ว','我没吃猪肉','wǒ méi chī zhū ròu','ไม่กินเป็นปกติ = 不 · 没吃 = ยังไม่ได้กิน'],
+ ['G6','บอกว่า "ฉันพูดจีนไม่ค่อยเป็น"','我不太会说中文','wǒ bú tài huì shuō Zhōng wén','หว่อ ปู๋ ไท่ ฮุ่ย ซัว จง เหวิน','我不太可以说中文','wǒ bú tài kě yǐ shuō Zhōng wén','ทักษะที่เรียนมา = 会 (可以 = ได้รับอนุญาต)'],
+ ['G6','ถามร้านว่า "สแกนจ่ายได้ไหม"','可以扫码吗？','kě yǐ sǎo mǎ ma','เข่อ อี่ เส่า หม่า มะ','会扫码吗？','huì sǎo mǎ ma','อนุญาต/ทำได้ = 可以 · 会 = ทำเป็นไหม'],
+ ['G7','ถามเพื่อนว่า "เอาเย็นหรือร้อน"','冰的还是热的？','bīng de hái shi rè de','ปิง เตอะ ไห ซือ เร่อ เตอะ','冰的或者热的？','bīng de huò zhě rè de','คำถามให้เลือก ใช้ 还是'],
+ ['G7','ถามราคาอันนี้','这个多少钱？','zhè ge duō shao qián','เจ้อ เกอะ ตัว เส่า เฉียน','这个多少钱吗？','zhè ge duō shao qián ma','มีคำถามอยู่แล้ว ไม่ต้องเติม 吗'],
+ ['G8','ซื้อ "ตั๋วสองใบ"','两张票','liǎng zhāng piào','เหลี่ยง จาง เพี่ยว','二张票','èr zhāng piào','สอง + ลักษณนาม = 两'],
+ ['G8','ตอบว่า "มาสองคน"','两个人','liǎng ge rén','เหลี่ยง เกอะ เหริน','二个人','èr ge rén','สอง + ลักษณนาม = 两'],
+ ['G9','บ่นว่า "แพงไปนิด"','有点贵','yǒu diǎn guì','โหย่ว เตี่ยน กุ้ย','一点贵','yì diǎn guì','บ่น = 有点 + คุณศัพท์'],
+ ['G9','ขอให้ "ถูกลงหน่อย"','便宜一点','pián yi yì diǎn','เผียน อี๋ อี้ เตี่ยน','有点便宜','yǒu diǎn pián yi','ขอให้…ขึ้น = คุณศัพท์ + 一点 (有点便宜 = มันค่อนข้างถูก)']
+];
+function gramLine(g, open){
+  const G=GRAMMAR[g]; if(!G) return '';
+  const ex=G.ex.map(e=>'<div>'+(S.settings.pyFirst?pyHTML(e[1])+' <span class="zh small muted">'+esc(e[0])+'</span>':esc(e[0])+' <span class="small muted">'+esc(e[1])+'</span>')+' — '+esc(e[2])+'</div>').join('');
+  return '<details class="gcard"'+(open?' open':'')+'><summary>📖 <b>'+esc(G.name)+'</b> — '+esc(G.rule)+'</summary><div class="gbody">'+ex+'<div class="gtrap">⚠️ '+esc(G.trap)+'</div></div></details>';
+}
+function contrastItem(i){
+  const c=CONTRAST[i];
+  return {kind:'core', contrast:i, key:'C:'+i, store:'srx', src:'contrast', g:c[0], hanzi:c[2], pinyin:c[3], thaiRead:c[4], meaning:c[1], wrong:c[5], wrongPy:c[6], why:c[7], ok:[], alt:[], note:''};
+}
+/* 2–3 ข้อต่อรอบ: ข้อที่ถึงรอบทวนก่อน · ข้อใหม่ไม่เกิน 2 · กฎที่คนไทยพลาดบ่อย (⚠️) มาก่อน */
+function contrastPick(n){
+  const now=Date.now(), X=S.srx||{};
+  const due=CONTRAST.map((c,i)=>i).filter(i=>X['C:'+i] && (X['C:'+i].next||0)<=now).sort(()=>Math.random()-0.5);
+  const fresh=CONTRAST.map((c,i)=>i).filter(i=>!X['C:'+i]).sort((a,b)=>(GRAMMAR[CONTRAST[b][0]].hot?1:0)-(GRAMMAR[CONTRAST[a][0]].hot?1:0) || a-b);
+  const out=due.slice(0,n); fresh.slice(0,Math.min(2, n-out.length)).forEach(i=>out.push(i));
+  return out.map(contrastItem);
+}
+function contrastDecor(it){
+  setTimeout(()=>{ if(cur()===it && !/^📖/.test($('#pKind').textContent)) $('#pKind').textContent='📖 ไวยากรณ์ · พูดให้ถูกลำดับคำ'; }, 0);
+  if(!(manualMode || !HAS_SR)) return;                        // ไม่มีไมค์: แตะเลือก 2 ตัวเลือก (โชว์ตัวลวงเฉพาะโหมดนี้)
+  const opts=[[it.hanzi,it.pinyin,1],[it.wrong,it.wrongPy,0]].sort(()=>Math.random()-0.5);
+  $('#pMean').insertAdjacentHTML('beforeend','<div class="fdchoices" style="margin-top:.5rem">'+opts.map(o=>'<button class="fdc ctc" data-ok="'+o[2]+'">'+pyHTML(o[1])+'<div class="zh small muted">'+esc(o[0])+'</div></button>').join('')+'</div>');
+}
+document.addEventListener('click', e=>{
+  const b=e.target.closest('#pMean .ctc'); if(!b) return;
+  const it=cur(); if(!it || it.contrast===undefined || it.cdone) return;
+  $$('#pMean .ctc').forEach(x=>{ x.disabled=true; x.classList.add(x.dataset.ok==='1'?'ok':(x===b?'bad':'')); });
+  contrastResult(it, b.dataset.ok==='1', b.dataset.ok==='1'?it.hanzi:it.wrong, 'แตะเลือก');
+});
+function judgeContrast(alts){
+  const it=cur(); if(!it || it.cdone) return;
+  const r=scoreAll(it.hanzi, alts), w=scoreAll(it.wrong, alts);
+  const ok = r.score>=80 && r.score>w.score;                  // ใกล้ตัวลวงมากกว่า = ไม่ผ่าน
+  it.ctries=(it.ctries||0)+1;
+  dlog('ไวยากรณ์', it.key+' '+it.hanzi+' → '+(ok?'ถูก':'ไม่ผ่าน')+' (ถูก '+r.score+'% · ผิด '+w.score+'% · ได้ยิน '+(r.heard||'—')+')');
+  if(!ok && it.ctries<2 && w.score<r.score){                  // เพี้ยนเฉยๆ ไม่ได้พูดแบบผิดไวยากรณ์ → ลองอีกครั้ง
+    $('#heard').innerHTML='<div class="lab">ได้ยินว่า</div>'+heardBox(r.heard)+'<div class="nearTip">ยังไม่ชัด — ลองพูดอีกครั้ง</div>';
+    micState(''); vib(140); setTimeout(()=>{ if(playing && cur()===it) armMic(); }, 600); return;
+  }
+  contrastResult(it, ok, r.heard||w.heard, w.score>=r.score && w.score>=70 ? 'wrong' : '');
+}
+function contrastResult(it, ok, heard, how){
+  it.cdone=true;
+  const st=ok?3:0, rec=srsUpdate(it.key, st, false, S.srx); rec.src='contrast'; rec.g=it.g;
+  sessUtter++; S.stats.utter++; if(ok){ sessStars+=3; S.stats.stars+=3; }
+  if(COACH.active) coachLog({h:it.key, tgt:it.hanzi, st:st, heard:heard||'', g:it.g, how:how||''});
+  else S.log.push(logEnrich({t:'contrast', h:it.key, tgt:it.hanzi, st:st, heard:heard||'', g:it.g, ts:Date.now()}));
+  save();
+  const right='<div class="py" style="font-size:1.25rem;font-weight:700">'+pyHTML(it.pinyin)+'</div><div class="zh small muted">'+esc(it.hanzi)+'</div>';
+  $('#heard').innerHTML=(how==='แตะเลือก'?'':'<div class="lab">ได้ยินว่า</div>'+heardBox(heard))+
+    '<div class="stars" style="color:var(--'+(ok?'ok':'bad')+')">'+(ok?'✓ ถูกต้อง':'✗ ยังไม่ใช่')+'</div>'+
+    (ok ? '' : (how==='wrong' ? '<div class="nearTip">พูดเป็นแบบผิด: '+esc(it.wrongPy)+' — '+esc(it.why)+'</div>' : '')+'<div class="lab" style="margin-top:.4rem">ที่ถูกคือ</div>'+right)+
+    gramLine(it.g, !ok);
+  micState(ok?'ok':''); vib(ok?[30,40,30]:140);
+  if(!ok) speak(it.hanzi, null, 0.85);
+  if(ok) setTimeout(()=>{ if(playing && cur()===it) next(); }, 1800); else waitNext('ฟังแบบที่ถูกแล้วพูดตามในใจ — ข้อนี้จะกลับมาอีกตามรอบทวน');
+}
+function renderGramBook(){
+  $('#gramBody').innerHTML='<p class="sub">ไม่ต้องท่องชื่อกฎ — ดูตัวอย่างแล้วพูดตาม · ⚠️ = 4 เรื่องที่คนไทยพลาดบ่อยที่สุด</p>'+
+    Object.keys(GRAMMAR).map(g=>{ const G=GRAMMAR[g], n=CONTRAST.filter(c=>c[0]===g).length, done=CONTRAST.map((c,i)=>i).filter(i=>CONTRAST[i][0]===g && ((S.srx||{})['C:'+i]||{}).box>=2).length;
+      return '<div class="card" style="margin:.5rem 0">'+(G.hot?'⚠️ ':'')+gramLine(g, false)+(n?'<div class="small muted" style="margin-top:.3rem">ฝึกแยกคู่แล้ว '+done+'/'+n+' ข้อ</div>':'')+'</div>'; }).join('');
+}
+/* ============================================================
    📚 ท่องศัพท์ 300 คำ (คู่มือ) — 15 ชุด × 20 คำ
    ชุดหนึ่ง = ท่องคำ 1–10 → ท่องคำ 11–20 → 📝 สอบแต่งประโยค 10 ข้อ (ผ่าน 8/10 → ปลดล็อกชุดถัดไป)
    ท่องคำ: ทีละ 5 คำ ดู+ฟัง+พูดตาม → นึกเองจากความหมายไทย (คำ "ดูออก/ฟังออก" ใช้เลือกคำตอบ ไม่ต้องพูด)
@@ -10614,7 +10730,11 @@ function pronItems(n){
 }
 COACH_RUN.FR=blk=>{
   const warm0=pronItems(3);
-  const rev=buildTreeReview(30), revH=new Set(rev.map(x=>norm(x.hanzi||'')));
+  const rev=buildTreeReview(30);
+  const ct=contrastPick(rev.length>=6 ? 3 : 2);                       // R-9: ข้อแยกคู่ที่สับสน 2–3 ข้อต่อรอบ สลับกับข้อทวน
+  ct.forEach((c,j)=>rev.splice(Math.min(rev.length, 2+j*5), 0, c));
+  if(ct.length) dlog('coach','FR แทรกข้อไวยากรณ์ '+ct.map(c=>c.key+' '+c.g).join(' · '));
+  const revH=new Set(rev.map(x=>norm(x.hanzi||'')));
   const warm=warm0.filter(x=>!revH.has(norm(x.hanzi||'')));          // วอร์มอัพไม่ซ้ำกับคำที่จะทวน
   if(warm.length<warm0.length) dlog('coach','FR ตัดวอร์มอัพที่ซ้ำกับคิวทวน '+(warm0.length-warm.length)+' ข้อ');
   if(!rev.length && !warm.length) return false;
