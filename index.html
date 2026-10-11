@@ -3373,7 +3373,7 @@ const MILESTONES = [
 /* ============================================================
    2.5 บันทึกปัญหา (diagnostics) — ไว้ส่งให้ผู้พัฒนาดูเวลาไมค์มีปัญหา
    ============================================================ */
-const BUILD='2026-10-11c';                     // เปลี่ยนทุกครั้งที่แก้ไฟล์ จะได้รู้ว่า log มาจากรุ่นไหน
+const BUILD='2026-10-11d';                     // เปลี่ยนทุกครั้งที่แก้ไฟล์ จะได้รู้ว่า log มาจากรุ่นไหน
 const DIAG=[], STUCK={}, T0=Date.now();
 /* log ปัญหาเก็บลงเครื่องด้วย: iPhone ปิดแอปหรือรีเฟรชแล้ว log เก่ายังอยู่ ส่งย้อนหลังได้ */
 const DKEY='zhgame-diag', DIAG_MAX=2500;
@@ -7108,7 +7108,8 @@ function judgeShadow(alts){
   shRounds++; sessUtter++; sessStars+=st; S.stats.utter++; S.stats.stars+=st;
   bestPer[qi]=Math.max(bestPer[qi]||0, r.score);
   coachLog({h:it.learnWord||it.pronKey||it.hanzi, st:st, lat:null, heard:r.heard, score:r.score, rate:rt});
-  if(it.pronKey && st>=2 && S.pron && S.pron[it.pronKey]){ S.pron[it.pronKey]--; if(S.pron[it.pronKey]<=0) delete S.pron[it.pronKey]; }
+  if(it.pronKey && st>=2 && S.pron && S.pron[it.pronKey]){ S.pron[it.pronKey]--; if(S.pron[it.pronKey]<=0){ delete S.pron[it.pronKey];
+    const tr=S.tree&&S.tree[it.pronKey]; if(tr && tr.parked){ tr.parked=false; tr.stuckN=0; dlog('tree','วอร์มอัพออกเสียงผ่าน → ปลดพัก '+it.pronKey+' กลับมาเรียนได้'); } } }
   save();
   dlog('coach','B1 '+it.hanzi+' @'+rt+' -> '+r.score+'% (ได้ยิน: '+(r.heard||'—')+')');
   $('#pHan').innerHTML='<span class="zh">'+markedHTML(it.hanzi, norm(r.heard,false))+'</span>';
@@ -7359,12 +7360,12 @@ const TREE_FRAMES=[
    zh:'有{n}吗？', tp:'yǒu {p} ma', tt:'โหย่ว {t} มะ', tm:'มี{m}ไหม', ok:['有没有{n}？'], ex:'菜单', st:2, where:'ร้านอาหาร/ร้านค้า',
    note:'ขอเมนูพูด 有菜单吗？ เป็นธรรมชาติกว่า 请给我菜单'},
   {id:'F6', f:'我想去＿',  py:'wǒ xiǎng qù …',  th:'หวอ เสี่ยง ชวี่ …',   mean:'อยากไป…',           tags:['place'],
-   zh:'我想去{n}', tp:'wǒ xiǎng qù {p}', tt:'หวอ เสี่ยง ชวี่ {t}', tm:'อยากไป{m}', ok:['我要去{n}'], ex:'熊猫基地', st:2, where:'คุยกับคน/ถามทาง'},
+   zh:'我想去{n}', tp:'wǒ xiǎng qù {p}', tt:'หวอ เสี่ยง ชวี่ {t}', tm:'อยากไป{m}', ok:['我要去{n}'], ex:'机场', st:2, where:'คุยกับคน/ถามทาง'},
   {id:'F7', f:'＿可以吗？', py:'… kě yǐ ma',      th:'… เขอ อี่ มะ',        mean:'…ได้ไหม',            tags:['action','money'],
    zh:'{n}可以吗？', tp:'{p} kě yǐ ma', tt:'{t} เขอ อี่ มะ', tm:'{m}ได้ไหม', ok:['能{n}吗？','可以{n}吗？'], ex:'扫码', st:2, where:'จ่ายเงิน/ต่อราคา',
    note:'扫码可以吗？ กับ 能扫码吗？ พูดได้ทั้งสองแบบ'},
   {id:'F13',f:'师傅，去＿', py:'shī fu, qù …',    th:'ซือ ฟู่, ชวี่ …',     mean:'พี่ ไป… (บอกแท็กซี่)', tags:['place'],
-   zh:'师傅，去{n}', tp:'shī fu, qù {p}', tt:'ซือ ฟู่, ชวี่ {t}', tm:'พี่ ไป{m}', ok:['去{n}','师傅，到{n}'], alt:['我要去{n}','请带我去{n}'], ex:'熊猫基地', st:2, where:'แท็กซี่/DiDi',
+   zh:'师傅，去{n}', tp:'shī fu, qù {p}', tt:'ซือ ฟู่, ชวี่ {t}', tm:'พี่ ไป{m}', ok:['去{n}','师傅，到{n}'], alt:['我要去{n}','请带我去{n}'], ex:'酒店', st:2, where:'แท็กซี่/DiDi',
    note:'เรียกคนขับว่า 师傅 · บอกแค่ 去…  ก็พอ ไม่ต้องใช้ 请带我去'}
 ];
 // ลักษณนามสำหรับ 来＿ : [จีน, พินอิน, คำอ่าน, ไทย]
@@ -8127,6 +8128,16 @@ function treeScore(it, alts){
   if(hit) return Object.assign({}, hit.x, {okForm:hit.f});
   let best=r;
   (it.ok||[]).forEach(f=>{ const x=scoreAll(f, alts); if(x.score>best.score) best=x; });
+  const T=TREE[it.k||it.key];
+  if(T && T.kind==='frame' && best.score<90){                 // R-2: โครงถูกครบ → ผ่าน · คำนามคิดเป็นโบนัส
+    const F=T.frame, bits=String(F.zh).replace('{mw}','').split('{n}').map(x=>norm(x,false)).filter(Boolean);
+    if(bits.length && bits.every(b=>scoreAll(b, alts).score>=90)){
+      const nk=F.ex, nw=TREE[nk];
+      dlog('tree','โครง '+F.id+' ถูกครบ ('+bits.join('…')+') → ผ่าน · คำนาม '+nk+' เพี้ยน → ฝึกออกเสียงแยก');
+      return Object.assign({}, best, {score:Math.max(best.score,80), nearFull:true, frameOnly:nk,
+        hints:['โครง '+bits.map(b=>toPinyin(b)).join(' … ')+' ถูกแล้ว ✓ — คำ '+(nw?nw.pinyin:nk)+' ยังเพี้ยน (ไปฝึกออกเสียงแยก)']});
+    }
+  }
   return best;
 }
 function treeNaturalHTML(it, r, noNote){
@@ -8198,7 +8209,7 @@ function treeNewLeft(){ return Math.max(0, treeQuota() - treeDayRec().n); }
 function treePickChunk(n, force){
   n=n||4;
   const out=[];
-  const parked=k=>!!(TL && TL.miss && TL.miss[k]>=8);              // พักไว้ในรอบนี้แล้ว (ติดวน) → รอบหน้าค่อยกลับมา
+  const parked=k=>!!(TL && TL.miss && TL.miss[k]>=8) || !!(S.tree[k] && S.tree[k].parked);   // พักในรอบนี้ / ติดวน 2 session (R-2)
   const pending=Object.keys(S.tree||{}).filter(k=>TREE[k] && (S.tree[k].stage||0)<5 && !parked(k)).sort((a,b)=>(S.tree[a].first||0)-(S.tree[b].first||0));
   pending.forEach(k=>{ const it=TREE[k]; if(it.kind==='frame' && !treePartsReady(it.frame)) return; if(out.length<n) out.push(k); });   // ประโยคที่ค้าง: รอให้คำประกอบผ่านก่อน
   let quota=treeNewLeft();
@@ -8553,7 +8564,7 @@ function judgeTree(alts){
   }
   // recall / use / quiz — ต้องได้ 3 ดาว (หรือพูดแบบหนังสือเรียนถูก = ผ่าน 2★ พร้อมบอกแบบธรรมชาติ)
   if(st>=3 || r.altHit || r.nearFull){
-    if(r.nearFull){ treePron(it.k); dlog('tree','นึกออกแต่เสียงเพี้ยน → ผ่าน + จดไว้ฝึกออกเสียง: '+it.k); }
+    if(r.nearFull){ const pk=r.frameOnly && TREE[r.frameOnly] ? r.frameOnly : it.k; treePron(pk); dlog('tree','นึกออกแต่เสียงเพี้ยน → ผ่าน + จดไว้ฝึกออกเสียง: '+pk); }
     treeReveal(it, norm(r.heard,false), !r.altHit && !r.nearFull);
     TL.noted=TL.noted||{}; const showNote=!!it.note && !TL.noted[it.k]; if(showNote) TL.noted[it.k]=true;   // หมายเหตุโชว์ครั้งเดียวต่อรอบ
     $('#heard').innerHTML=heardHTML+treeNaturalHTML(it, r, !showNote);
@@ -8622,7 +8633,7 @@ function treePark(it, heardHTML){
   TL.fail[k]=true;
   for(let i=Q.length-1;i>qi;i--) if(Q[i].k===k) Q.splice(i,1);
   const r=treeRec(k); if(r){ r.next=Date.now(); }
-  treePron(k); save();
+  treePron(k); treeStuck(k); save();
   dlog('tree','พักคำ '+k+' (พลาด '+TL.miss[k]+' ครั้งในรอบนี้) → ไปฝึกออกเสียงตอนวอร์มอัพ รอบหน้าเรียนใหม่');
   treeReveal(it, '', true);
   $('#heard').innerHTML=heardHTML+'<div class="nearTip">😮‍💨 พักคำนี้ไว้ก่อนนะ — ระบบฟังไม่ออกหลายครั้งแล้ว รอบหน้าจะกลับมาให้ฝึกออกเสียงใหม่'+(PRON_TIP[k]?'<br>🗣️ '+esc(PRON_TIP[k]):'')+'</div>';
@@ -8630,6 +8641,13 @@ function treePark(it, heardHTML){
   waitNext();
 }
 function treePron(k){ S.pron=S.pron||{}; S.pron[k]=(S.pron[k]||0)+1; }
+function treeStuck(k){                              // นับ session ที่ติดวน (session ละครั้ง) · ครบ 2 → พักไว้ในคิวออกเสียง
+  const r=treeRec(k); if(!r || !TL) return;
+  TL.sid=TL.sid||Date.now();
+  if(r.stuckSid===TL.sid) return;
+  r.stuckSid=TL.sid; r.stuckN=(r.stuckN||0)+1;
+  if(r.stuckN>=2 && !r.parked){ r.parked=true; treePron(k); dlog('tree','ติดวน 2 session: '+k+' → พักไว้ในคิวฝึกออกเสียง ไม่ดึงกลับมาวนจนกว่าวอร์มอัพจะผ่าน'); }
+}
 function treeSuccess(it){
   const k=it.k;
   if(it.t==='recall'){
@@ -8661,6 +8679,7 @@ function treeFail(it){
     for(let i=Q.length-1;i>qi;i--) if(Q[i].k===k) Q.splice(i,1);
     const r=treeRec(k); if(r){ r.next=Date.now(); }
     dlog('tree','พลาดเกิน 2 วน '+k+' → ค้างไว้เรียนใหม่รอบหน้า');
+    treeStuck(k);
   }
 }
 function treeComplete(k){
