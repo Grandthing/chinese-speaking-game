@@ -397,6 +397,12 @@ td.r,th.r{text-align:right}
 
   <!-- ==================== HOME ==================== -->
   <section id="scr-home" class="screen on">
+    <div class="card" id="hwCard" hidden style="border:2px solid var(--t1)">
+      <div class="row"><b class="grow">📝 การบ้านจากครู</b><span class="small muted" id="hwSub"></span></div>
+      <div id="hwNote" style="margin-top:.3rem;line-height:1.5"></div>
+      <div class="small" id="hwFocus" style="margin-top:.3rem;line-height:1.6"></div>
+      <div class="small muted" style="margin-top:.3rem">คำที่เน้นจะขึ้นก่อนในบล็อกทวนของ 🎯 โค้ชทุกวันจนครบ</div>
+    </div>
     <div class="card treecard" id="foundCard" hidden>
       <div class="row"><b class="grow">🧱 วางเสาเข็ม · ตัวเลข</b><span class="small muted" id="fcHead"></span></div>
       <div class="small" id="fcToday" style="margin-top:.3rem"></div>
@@ -878,6 +884,14 @@ td.r,th.r{text-align:right}
       <p class="small muted" style="margin:.4rem 0 .6rem">รายงานฉบับเต็ม (ทุกตารางทบทวน + สรุปรายวัน + log 14 วัน) สำหรับให้ Claude ตรวจ · หรือคัดลอกสรุปสั้นไปวางในแชท</p>
       <button class="btn" id="btnTeacher">📤 รายงานสำหรับครู (.json)</button>
       <button class="btn ghost" id="btnTeacherMd" style="margin-top:.5rem">📋 คัดลอกสรุป 7 วัน</button>
+      <div style="margin-top:.75rem"><b>📝 นำเข้าการบ้านจากครู</b></div>
+      <textarea id="hwIn" placeholder='วาง JSON การบ้านที่ครูให้มา {"from":"teacher", …}' style="width:100%;min-height:6rem;margin-top:.4rem;font:inherit;font-size:.8rem"></textarea>
+      <div class="row" style="margin-top:.4rem">
+        <button class="btn" id="btnHwImport" style="flex:2">นำเข้า</button>
+        <label class="btn ghost" style="flex:1;text-align:center">📂 ไฟล์<input type="file" id="hwFile" accept=".json,application/json,text/plain" hidden></label>
+        <button class="btn ghost" id="btnHwClear" style="flex:1">ลบ</button>
+      </div>
+      <div class="small" id="hwMsg" style="margin-top:.4rem;line-height:1.5"></div>
       <textarea id="mdOut" hidden readonly style="width:100%;min-height:12rem;margin-top:.5rem;font:inherit;font-size:.8rem"></textarea>
     </div>
     <div class="card" style="margin-top:.75rem">
@@ -3380,7 +3394,7 @@ const MILESTONES = [
 /* ============================================================
    2.5 บันทึกปัญหา (diagnostics) — ไว้ส่งให้ผู้พัฒนาดูเวลาไมค์มีปัญหา
    ============================================================ */
-const BUILD='2026-10-12b';                     // เปลี่ยนทุกครั้งที่แก้ไฟล์ จะได้รู้ว่า log มาจากรุ่นไหน
+const BUILD='2026-10-12c';                     // เปลี่ยนทุกครั้งที่แก้ไฟล์ จะได้รู้ว่า log มาจากรุ่นไหน
 const DIAG=[], STUCK={}, T0=Date.now();
 /* log ปัญหาเก็บลงเครื่องด้วย: iPhone ปิดแอปหรือรีเฟรชแล้ว log เก่ายังอยู่ ส่งย้อนหลังได้ */
 const DKEY='zhgame-diag', DIAG_MAX=2500;
@@ -8250,7 +8264,7 @@ function treeNewLeft(){ return Math.max(0, treeQuota() - treeDayRec().n); }
 function treePickChunk(n, force){
   n=n||4;
   const out=[];
-  const parked=k=>!!(TL && TL.miss && TL.miss[k]>=8) || !!(S.tree[k] && S.tree[k].parked);   // พักในรอบนี้ / ติดวน 2 session (R-2)
+  const parked=k=>!!(TL && TL.miss && TL.miss[k]>=8) || !!(S.tree[k] && (S.tree[k].parked || S.tree[k].hwSkip));   // พักในรอบนี้ / ติดวน 2 session (R-2)
   const pending=Object.keys(S.tree||{}).filter(k=>TREE[k] && (S.tree[k].stage||0)<5 && !parked(k)).sort((a,b)=>(S.tree[a].first||0)-(S.tree[b].first||0));
   pending.forEach(k=>{ const it=TREE[k]; if(it.kind==='frame' && !treePartsReady(it.frame)) return; if(out.length<n) out.push(k); });   // ประโยคที่ค้าง: รอให้คำประกอบผ่านก่อน
   let quota=treeNewLeft();
@@ -8294,6 +8308,8 @@ function treePickChunk(n, force){
     if(core8 || turn%2===0) k=s1.shift()||nextBranch(); else k=nextBranch()||s1.shift();
     turn++;
     if(!k) break;
+    const hs=(typeof hwActive==='function' && hwActive()) ? hwActive().skip : [];
+    if(hs.indexOf(k)>=0){ dlog('การบ้าน','ครูสั่งพัก → ข้ามคำใหม่ '+k); continue; }
     if(out.indexOf(k)<0){ out.push(k); quota--; }
   }
   return out;
@@ -8332,7 +8348,8 @@ function treeItem(k, allowSent){
 }
 function buildTreeReview(nMax){
   const seen=new Set();
-  const due=treeDueList().sort(()=>Math.random()-0.5).map(k=>treeItem(k,true)).filter(Boolean)
+  const hw=(typeof hwReviewItems==='function') ? hwReviewItems() : [];
+  const due=hw.concat(treeDueList().filter(k=>!(S.tree[k]&&S.tree[k].hwSkip)).sort(()=>Math.random()-0.5).map(k=>treeItem(k,true))).filter(Boolean)
     .filter(it=>{ const h=norm(it.hanzi||''); if(!h || seen.has(h)) return false; seen.add(h); return true; });
   const core=[];                                  // ผู้ใช้เลือก: โฟกัสเที่ยวไม่เอาคำชุดเก่า (CORE100 จากหนังสือเรียน) มาทวน
   const out=[]; let a=0, b=0;
@@ -10060,6 +10077,91 @@ function copyTeacherMd(){
 }
 setTimeout(()=>{ try{ dailyRoll(); save(); }catch(e){ dlog('daily','สรุปรายวันไม่สำเร็จ: '+(e&&e.message)); } }, 3000);
 /* ============================================================
+   📝 R-6: การบ้านจากครู — วาง JSON ที่ Claude ให้มา → โค้ชเน้นตามนั้นจนครบวัน
+   {from:'teacher', date, days, focus:[…], pron:[[a,b]…], add:[{hanzi,pinyin,thaiRead,meaning,tag}], skip:[…], note}
+   ตรวจ schema เอง · JSON.parse เท่านั้น (ห้าม eval) · field ที่ไม่รู้จักข้ามไป
+   ============================================================ */
+function hwKey(h){
+  h=String(h||'').trim(); if(!h) return null;
+  if(TREE[h]) return h;
+  const n=norm(h,false);
+  const k=Object.keys(TREE).find(x=>norm(TREE[x].hanzi,false)===n || (TREE[x].car && norm(TREE[x].car.hanzi,false)===n));
+  return k||null;
+}
+function hwActive(){ const h=S.homework; return !!h && h.until>=today() ? h : null; }
+function hwParse(text){
+  let o; try{ o=JSON.parse(String(text||'').trim().replace(/^```(?:json)?\s*|\s*```$/g,'')); }catch(e){ return {err:'อ่าน JSON ไม่ได้: '+e.message}; }
+  if(!o || typeof o!=='object' || Array.isArray(o)) return {err:'ต้องเป็น JSON object { … }'};
+  if(o.from!=='teacher') return {err:'ไม่ใช่ไฟล์การบ้าน (ต้องมี "from":"teacher")'};
+  const str=(x,max)=>typeof x==='string' && x.trim() && x.length<=(max||40) ? x.trim() : null;
+  const arr=(x,max)=>Array.isArray(x) ? x.slice(0,max||30) : [];
+  const days=Math.max(1, Math.min(14, Math.round(+o.days||3)));
+  const start=/^\d{4}-\d{2}-\d{2}$/.test(o.date||'') ? o.date : today();
+  const until=(()=>{ const d=new Date(start+'T00:00:00Z'); d.setUTCDate(d.getUTCDate()+days-1); return d.toISOString().slice(0,10); })();
+  const warn=[];
+  const known=['from','date','days','focus','pron','add','skip','note'];
+  Object.keys(o).forEach(k=>{ if(known.indexOf(k)<0) warn.push('ข้าม field ที่ไม่รู้จัก: '+k); });
+  const add=arr(o.add,20).map(c=>{
+    if(!c || typeof c!=='object') return null;
+    const hz=str(c.hanzi,20); if(!hz || !/[\u4e00-\u9fff]/.test(hz)){ warn.push('การ์ดเพิ่มไม่มี hanzi — ข้าม'); return null; }
+    return {hanzi:hz, pinyin:str(c.pinyin,80)||toPinyin(hz), thaiRead:str(c.thaiRead,80)||'', meaning:str(c.meaning,80)||'', tag:str(c.tag,20)||''};
+  }).filter(Boolean);
+  const addH=add.map(c=>c.hanzi);
+  const focus=arr(o.focus,15).map(x=>str(x,30)).filter(Boolean).map(h=>{
+    if(hwKey(h) || addH.indexOf(h)>=0 || (S.srx||{})[h]) return h;
+    if(!/[一-鿿]/.test(h)){ warn.push('focus ไม่ใช่ตัวจีน: '+h); return null; }
+    const c=CARRIER[h], hz=c ? c.raw : h;                  // คำตัวเดียว ใช้วลีพา (ระบบฟังคำโดดไม่ออก)
+    if(addH.indexOf(hz)<0){ add.push({hanzi:hz, pinyin:c?c.py:toPinyin(hz), thaiRead:c?c.th:'', meaning:c?c.mean:(WORD_TH[hz]||CHAR_TH[hz]||''), tag:'focus'}); addH.push(hz); }
+    warn.push('focus '+h+' ไม่มีในต้นไม้ → สร้างการ์ด '+hz+' ให้');
+    return hz;
+  }).filter(Boolean);
+  const skip=arr(o.skip,15).map(x=>str(x,30)).filter(Boolean).map(h=>{ const k=hwKey(h); if(!k) warn.push('skip ไม่พบคำ: '+h); return k; }).filter(Boolean);
+  const pron=arr(o.pron,10).filter(p=>Array.isArray(p) && p.length===2 && str(p[0],20) && str(p[1],20)).map(p=>[p[0].trim(), p[1].trim()]);
+  const note=str(o.note,300)||'';
+  return {hw:{date:start, days:days, until:until, focus:focus, skip:skip, pron:pron, add:addH, note:note, at:Date.now()}, add:add, warn:warn};
+}
+function hwApply(text){
+  const r=hwParse(text);
+  if(r.err){ dlog('การบ้าน','นำเข้าไม่สำเร็จ: '+r.err); return r; }
+  if(S.homework) hwClear(true);
+  S.homework=r.hw;
+  S.srx=S.srx||{};
+  r.add.forEach(c=>{ const x=S.srx[c.hanzi]||(S.srx[c.hanzi]={box:0, next:0, tries:0, ok:0}); Object.assign(x, {src:'teacher', pinyin:c.pinyin, thaiRead:c.thaiRead, meaning:c.meaning, tag:c.tag}); });
+  r.hw.skip.forEach(k=>{ const t=S.tree[k]; if(t){ t.hwSkip=true; } });
+  r.hw.pron.forEach(([a])=>{ const k=hwKey(a); if(k) treePron(k); });
+  dlog('การบ้าน','นำเข้าแล้ว: focus '+r.hw.focus.length+' · เพิ่ม '+r.add.length+' · พัก '+r.hw.skip.length+' · คู่เสียง '+r.hw.pron.length+' · ถึง '+r.hw.until+(r.warn.length?' · เตือน: '+r.warn.join(' / '):''));
+  save(); renderHome();
+  return r;
+}
+function hwClear(quiet){
+  const h=S.homework; if(!h) return;
+  (h.skip||[]).forEach(k=>{ const t=S.tree[k]; if(t) delete t.hwSkip; });
+  delete S.homework; save();
+  if(!quiet){ dlog('การบ้าน','ลบการบ้านแล้ว'); renderHome(); }
+}
+/* ข้อทวนจากการบ้าน: focus ก่อน (ทุกวันจนครบ) + การ์ดใหม่ของครูที่ถึงรอบ */
+function hwReviewItems(){
+  const h=hwActive(); if(!h) return [];
+  const out=[], now=Date.now();
+  h.focus.forEach(x=>{
+    const k=hwKey(x);
+    if(k){ const it=treeItem(k,false); if(it) out.push(Object.assign(it, {hw:true})); return; }
+    const c=(S.srx||{})[x]; if(c) out.push({kind:'core', key:x, store:'srx', src:'teacher', hanzi:x, pinyin:c.pinyin, thaiRead:c.thaiRead, meaning:c.meaning, ok:[], alt:[], note:'', hw:true});
+  });
+  Object.keys(S.srx||{}).forEach(x=>{ const c=S.srx[x]; if(c.src==='teacher' && (c.next||0)<=now && h.focus.indexOf(x)<0)
+    out.push({kind:'core', key:x, store:'srx', src:'teacher', hanzi:x, pinyin:c.pinyin, thaiRead:c.thaiRead, meaning:c.meaning, ok:[], alt:[], note:'', hw:true}); });
+  return out;
+}
+function renderHwCard(){
+  const el=$('#hwCard'); if(!el) return;
+  const h=hwActive(); el.hidden=!h; if(!h) return;
+  const left=Math.max(0, Math.round((new Date(h.until+'T00:00:00Z')-new Date(today()+'T00:00:00Z'))/86400000)+1);
+  const fp=h.focus.map(x=>{ const k=hwKey(x); return k ? TREE[k].pinyin : ((S.srx[x]||{}).pinyin||x); });
+  $('#hwNote').textContent=h.note||'(ไม่มีข้อความ)';
+  $('#hwSub').textContent='เหลือ '+left+' วัน';
+  $('#hwFocus').innerHTML=(fp.length?'🎯 เน้น: '+fp.map(esc).join(' · '):'')+(h.add.length?'<br>➕ คำใหม่จากครู '+h.add.length+' คำ':'')+(h.skip.length?'<br>⏸ พักไว้ '+h.skip.length+' คำ':'');
+}
+/* ============================================================
    📚 ท่องศัพท์ 300 คำ (คู่มือ) — 15 ชุด × 20 คำ
    ชุดหนึ่ง = ท่องคำ 1–10 → ท่องคำ 11–20 → 📝 สอบแต่งประโยค 10 ข้อ (ผ่าน 8/10 → ปลดล็อกชุดถัดไป)
    ท่องคำ: ทีละ 5 คำ ดู+ฟัง+พูดตาม → นึกเองจากความหมายไทย (คำ "ดูออก/ฟังออก" ใช้เลือกคำตอบ ไม่ต้องพูด)
@@ -11707,6 +11809,16 @@ function shareLogs(){
 $('#btnShareLogs').onclick=shareLogs;
 $('#btnTeacher').onclick=shareTeacherReport;
 $('#btnTeacherMd').onclick=copyTeacherMd;
+function hwShow(r){
+  if(r.err){ $('#hwMsg').innerHTML='<span style="color:var(--bad)">✗ '+esc(r.err)+'</span>'; return; }
+  const h=r.hw; $('#hwMsg').innerHTML='<span style="color:var(--ok)">✓ นำเข้าแล้ว ใช้ถึง '+esc(h.until)+'</span> · เน้น '+h.focus.length+' · คำใหม่ '+h.add.length+' · พัก '+h.skip.length+' · คู่เสียง '+h.pron.length+
+    (r.warn.length?'<div class="muted">⚠️ '+r.warn.map(esc).join('<br>⚠️ ')+'</div>':'');
+  $('#hwIn').value='';
+}
+$('#btnHwImport').onclick=()=>hwShow(hwApply($('#hwIn').value));
+$('#hwFile').onchange=e=>{ const f=e.target.files&&e.target.files[0]; if(!f) return; if(f.size>200000){ hwShow({err:'ไฟล์ใหญ่เกินไป'}); return; }
+  const rd=new FileReader(); rd.onload=()=>hwShow(hwApply(String(rd.result||''))); rd.readAsText(f); e.target.value=''; };
+$('#btnHwClear').onclick=()=>{ if(!S.homework){ $('#hwMsg').textContent='ยังไม่มีการบ้าน'; return; } if(confirm('ลบการบ้านจากครู?')){ hwClear(); $('#hwMsg').textContent='ลบแล้ว'; } };
 $('#diagClear').onclick=()=>{
   if(!confirm('ล้างบันทึกปัญหาเก่าทั้งหมด? (log การฝึกไม่หาย)')) return;
   DIAG.length=0; DIAG.push({ts:Date.now(), sep:true, tag:'────', msg:'ล้าง log '+new Date().toLocaleString('th-TH')});
@@ -11843,6 +11955,7 @@ function renderFocusHome(){
   $('#ccLevel').hidden=f;
   $('#btnCoach25').className = f ? 'btn ghost' : 'btn';
   $('#btnCoach25').textContent = f ? 'โหมดเต็ม 25 นาที' : '▶ เริ่ม 25 นาที';
+  renderHwCard();
   renderFoundCard();
   renderV3Card();
   rpCard();
