@@ -3402,7 +3402,7 @@ const MILESTONES = [
 /* ============================================================
    2.5 บันทึกปัญหา (diagnostics) — ไว้ส่งให้ผู้พัฒนาดูเวลาไมค์มีปัญหา
    ============================================================ */
-const BUILD='2026-10-13b';                     // เปลี่ยนทุกครั้งที่แก้ไฟล์ จะได้รู้ว่า log มาจากรุ่นไหน
+const BUILD='2026-10-13c';                     // เปลี่ยนทุกครั้งที่แก้ไฟล์ จะได้รู้ว่า log มาจากรุ่นไหน
 const DIAG=[], STUCK={}, T0=Date.now();
 /* log ปัญหาเก็บลงเครื่องด้วย: iPhone ปิดแอปหรือรีเฟรชแล้ว log เก่ายังอยู่ ส่งย้อนหลังได้ */
 const DKEY='zhgame-diag', DIAG_MAX=2500;
@@ -4966,6 +4966,7 @@ function instantJudge(extra){
 }
 function judgeFn(){ const f=judgeFn0(); return alts=>{ LAST_ALTS=(alts||[]).slice(0,5); CARD.n++; return f(alts); }; }
 function judgeFn0(){ if(MODE==='prod' && typeof cur==='function' && cur() && cur().contrast!==undefined) return judgeContrast;
+  if(MODE==='tree' && typeof cur==='function' && cur() && cur().kind==='sub') return judgeSub;
   return MODE==='talk' ? judgeTalk : MODE==='shadow' ? judgeShadow : MODE==='pair' ? judgePair : MODE==='tree' ? judgeTree : MODE==='fdnum' ? judgeFdNum : MODE==='v300' ? judgeV300 : MODE==='retell' ? judgeRetell
   : MODE==='pretest' ? judgePretest : MODE==='exam' ? judgeExam : judge; }
 let lastStopAt=0;
@@ -5083,7 +5084,7 @@ function renderItem(autoPlay){
   if(MODE==='prod' || MODE==='pattern'){ renderProd(it); if(it.contrast!==undefined) contrastDecor(it); return; }
   if(MODE==='shadow'){ renderShadow(it); return; }
   if(MODE==='pair'){ renderPair(it); return; }
-  if(MODE==='tree'){ renderTree(it); return; }
+  if(MODE==='tree'){ if(it.kind==='sub'){ renderSub(it); return; } renderTree(it); return; }
   if(MODE==='fdnum'){ renderFdNum(it); return; }
   if(MODE==='v300'){ renderV300(it); return; }
   if(MODE==='retell'){ renderRetell(it); return; }
@@ -8888,10 +8889,7 @@ function treeSuccess(it){
     const n=TL.rc[k];
     if(n===1) treeInsert(qi+3, treeStep('recall',k));        // นึกซ้ำหลังผ่านไป 2 ข้อ
     else if(n===2) treeInsert(qi+6, treeStep('recall',k));   // และหลังผ่านไป 5 ข้อ
-    else{
-      const u=treeStep('use',k);
-      if(u) treeInsert(qi+2, u); else treeComplete(k);
-    }
+    else treeComplete(k);                                    // R-10: ขั้น "ใช้ในประโยค" ย้ายไปเป็นชุดเปลี่ยนคำตอนจบก้อน
   }else if(it.t==='use') treeComplete(k);
   else if(it.t==='quiz'){ const r=treeRec(k); if(r) r.quizOk=(r.quizOk||0)+1; }
 }
@@ -8938,6 +8936,11 @@ function finishTree(){
       toast('🌳 ด่านรวม', 'ถามคำที่เพิ่งเรียน '+qz.length+' + ประโยค '+sents.length, 1500);
       renderItem(true); return;
     }
+  }
+  if(TL && TL.quiz && !TL.subDone && !TL.drill && Object.keys(TL.done).length && !coachTimeUp()){
+    TL.subDone=true;
+    const c=subPick();
+    if(c){ subQueue(c).forEach(x=>Q.push(x)); dlog('sub','ปิดก้อนด้วยชุดเปลี่ยนคำ '+c.id+' '+c.name); toast('🔁 เปลี่ยนคำในประโยค', c.name+' · '+c.steps.length+' ข้อ', 1500); renderItem(true); return; }
   }
   if(COACH.active && !coachTimeUp() && (treeNextChunk() || (!(TL&&TL.drill) && treeStartDrill('โค้ช','หมดคำใหม่ในรอบนี้')))) return;   // เวลาเหลือ: ก้อนถัดไป หรือฝึกให้คล่อง
   if(COACH.active) return coachNextBlock();
@@ -10120,7 +10123,7 @@ const V300_SENT=[
   for(const k in addC) if(!CHAR_TH[k]) CHAR_TH[k]=addC[k];
   WORD_TH['鸳鸯']=addW['鸳鸯'];
   Object.assign(WORD_TH,{'锅盔':'แป้งอบกัวขุย (เฉิงตู)','混着':'ปนกัน','加起来':'รวมกัน','汤里':'ในซุป'});
-  Object.assign(CHAR_TH,{'盔':'(กัวขุย)','混':'ปน','装':'ใส่','加':'เพิ่ม/บวก'}); CHAR_TH['鸳']=addC['鸳']; CHAR_TH['鸯']=addC['鸯'];
+  Object.assign(CHAR_TH,{'根':'ลักษณนามของยาว (ลูก/แท่ง)','盔':'(กัวขุย)','混':'ปน','装':'ใส่','加':'เพิ่ม/บวก'}); CHAR_TH['鸳']=addC['鸳']; CHAR_TH['鸯']=addC['鸯'];
 })();
 /* ============================================================
    📤 R-5: log สำหรับครู — เวลานึก (lat) ทุกโหมดที่ให้นึกเอง · S.daily (ไม่ถูกตัด) · รายงาน v2 · สรุป markdown
@@ -10446,6 +10449,94 @@ function renderGramBook(){
   $('#gramBody').innerHTML='<p class="sub">ไม่ต้องท่องชื่อกฎ — ดูตัวอย่างแล้วพูดตาม · ⚠️ = 4 เรื่องที่คนไทยพลาดบ่อยที่สุด</p>'+
     Object.keys(GRAMMAR).map(g=>{ const G=GRAMMAR[g], n=CONTRAST.filter(c=>c[0]===g).length, done=CONTRAST.map((c,i)=>i).filter(i=>CONTRAST[i][0]===g && ((S.srx||{})['C:'+i]||{}).box>=2).length;
       return '<div class="card" style="margin:.5rem 0">'+(G.hot?'⚠️ ':'')+gramLine(g, false)+(n?'<div class="small muted" style="margin-top:.3rem">ฝึกแยกคู่แล้ว '+done+'/'+n+' ข้อ</div>':'')+'</div>'; }).join('');
+}
+/* ============================================================
+   🔁 R-10: ฝึกเปลี่ยนคำในโครง (Substitution drill) — แทนขั้น "ใช้ในประโยค" ของต้นไม้ · ปิดท้ายก้อนคำใหม่ 1 ชุด
+   ประโยคเริ่ม (พูดตาม) → เห็นคำไทยสั้นๆ ที่ต้องเปลี่ยน → พูดประโยคใหม่ทั้งประโยค · ตัดสินจาก key (ส่วนที่เปลี่ยน) ≥80 + ทั้งประโยค ≥60
+   start: [จีน, พินอิน, คำอ่าน, ความหมาย] · step: [คำไทยที่บอก, จีน, พินอิน, คำอ่าน, key]
+   ============================================================ */
+const SUB_CHAINS=[
+ {"id":"S1","name":"🍜 ร้านอาหาร","start":["我想吃牛肉面","wǒ xiǎng chī niú ròu miàn","หว่อ เสี่ยง ชือ หนิว โร่ว เมี่ยน","อยากกินบะหมี่เนื้อ"],"steps":[["ไก่","我想吃鸡肉","wǒ xiǎng chī jī ròu","หว่อ เสี่ยง ชือ จี โร่ว","鸡"],["ไม่เผ็ด","我想吃不辣的","wǒ xiǎng chī bú là de","หว่อ เสี่ยง ชือ ปู๋ ล่า เตอะ","不辣"],["ถามว่ามีไหม","有不辣的吗？","yǒu bú là de ma","โหย่ว ปู๋ ล่า เตอะ มะ","有"],["ขอชามนึง","来一碗牛肉面","lái yì wǎn niú ròu miàn","ไหล อี้ หว่าน หนิว โร่ว เมี่ยน","一碗"],["สองชาม","来两碗牛肉面","lái liǎng wǎn niú ròu miàn","ไหล เหลี่ยง หว่าน หนิว โร่ว เมี่ยน","两碗"]]},
+ {"id":"S2","name":"🚇 ถามทาง","start":["洗手间在哪里？","xǐ shǒu jiān zài nǎ lǐ","สี่ โส่ว เจียน จ้าย หน่า หลี่","ห้องน้ำอยู่ไหน"],"steps":[["สถานีรถไฟใต้ดิน","地铁站在哪里？","dì tiě zhàn zài nǎ lǐ","ตี้ เถี่ย จ้าน จ้าย หน่า หลี่","地铁站"],["ถามว่าไปยังไง","地铁站怎么走？","dì tiě zhàn zěn me zǒu","ตี้ เถี่ย จ้าน เจิ่น เมอะ โจ่ว","怎么走"],["บอกแท็กซี่ไปสนามบิน","师傅，去机场","shī fu, qù jī chǎng","ซือ ฟู่ ชวี่ จี ฉ่าง","去机场"],["จอดตรงนี้","就这儿停","jiù zhèr tíng","จิ้ว เจ้อร์ ถิง","停"]]},
+ {"id":"S3","name":"🧺 ตลาดผลไม้","start":["苹果多少钱一斤？","píng guǒ duō shao qián yì jīn","ผิง กั่ว ตัว เส่า เฉียน อี้ จิน","แอปเปิลจินละเท่าไหร่"],"steps":[["ส้ม","橘子多少钱一斤？","jú zi duō shao qián yì jīn","จฺวี๋ จึ ตัว เส่า เฉียน อี้ จิน","橘子"],["แพงไปนิด","有点贵","yǒu diǎn guì","โหย่ว เตี่ยน กุ้ย","有点"],["ขอถูกลงหน่อย","便宜一点","pián yi yì diǎn","เผียน อี๋ อี้ เตี่ยน","便宜"],["เอาจินนึง","来一斤","lái yì jīn","ไหล อี้ จิน","一斤"],["ไม่เอาถุง","不用袋子","bú yòng dài zi","ปู๋ ย่ง ต้าย จึ","不用"]]},
+ {"id":"S4","name":"🧋 ร้านชานม","start":["来一杯奶茶","lái yì bēi nǎi chá","ไหล อี้ เปย หน่าย ฉา","ขอชานมแก้วนึง"],"steps":[["ไม่ใส่น้ำแข็ง","奶茶去冰","nǎi chá qù bīng","หน่าย ฉา ชวี่ ปิง","去冰"],["หวานครึ่งเดียว","奶茶半糖","nǎi chá bàn táng","หน่าย ฉา ปั้น ถาง","半糖"],["แก้วใหญ่","要大杯的","yào dà bēi de","เย่า ต้า เปย เตอะ","大杯"],["แบบร้อน","要热的","yào rè de","เย่า เร่อ เตอะ","热的"],["สองแก้ว","来两杯奶茶","lái liǎng bēi nǎi chá","ไหล เหลี่ยง เปย หน่าย ฉา","两杯"]]},
+ {"id":"S5","name":"🏨 โรงแรม","start":["我订了房间","wǒ dìng le fáng jiān","หว่อ ติ้ง เลอะ ฝาง เจียน","ฉันจองห้องไว้แล้ว"],"steps":[["ถามว่ามีอาหารเช้าไหม","有早餐吗？","yǒu zǎo cān ma","โหย่ว เจ่า ชาน มะ","早餐"],["อาหารเช้ากี่โมง","早餐几点？","zǎo cān jǐ diǎn","เจ่า ชาน จี่ เตี่ยน","几点"],["ไม่มีน้ำร้อน","没有热水","méi yǒu rè shuǐ","เหมย โหย่ว เร่อ สุ่ย","没有"],["แอร์เสีย","空调坏了","kōng tiáo huài le","คง เถียว ไฮว่ เลอะ","空调"],["จะเช็กเอาต์","我要退房","wǒ yào tuì fáng","หว่อ เย่า ทุ่ย ฝาง","退房"]]},
+ {"id":"S6","name":"🚖 DiDi","start":["去机场","qù jī chǎng","ชวี่ จี ฉ่าง","ไปสนามบิน"],"steps":[["ไปโรงแรม","去酒店","qù jiǔ diàn","ชวี่ จิ่ว เตี้ยน","酒店"],["จอดตรงนี้","就这儿停","jiù zhèr tíng","จิ้ว เจ้อร์ ถิง","停"],["ถึงหรือยัง","到了吗？","dào le ma","เต้า เลอะ มะ","到了"],["อีกกี่นาที","还要几分钟？","hái yào jǐ fēn zhōng","ไห เย่า จี่ เฟิน จง","几分钟"],["ได้เลย ขอบคุณ","好的，谢谢","hǎo de, xiè xie","ห่าว เตอะ เซี่ย เสียะ","谢谢"]]},
+ {"id":"S7","name":"🏔️ อุทยาน","start":["门票多少钱？","mén piào duō shao qián","เหมิน เพี่ยว ตัว เส่า เฉียน","ตั๋วเข้าชมเท่าไหร่"],"steps":[["ตั๋วสองใบ","两张门票","liǎng zhāng mén piào","เหลี่ยง จาง เหมิน เพี่ยว","两张"],["รถชมวิวอยู่ไหน","观光车在哪里？","guān guāng chē zài nǎ lǐ","กวาน กวาง เชอ จ้าย หน่า หลี่","观光车"],["ห้องน้ำอยู่ไหน","洗手间在哪里？","xǐ shǒu jiān zài nǎ lǐ","สี่ โส่ว เจียน จ้าย หน่า หลี่","洗手间"],["ถ่ายรูปได้ไหม","可以拍照吗？","kě yǐ pāi zhào ma","เข่อ อี่ ไพ เจ้า มะ","拍照"],["ที่นั่นไกลไหม","那里远吗？","nà lǐ yuǎn ma","น่า หลี่ หย่วน มะ","远"]]},
+ {"id":"S8","name":"🏸 ร้านแบด","start":["有羽毛球吗？","yǒu yǔ máo qiú ma","โหย่ว หยวี่ เหมา ฉิว มะ","มีลูกแบดไหม"],"steps":[["ไม้แบด","有球拍吗？","yǒu qiú pāi ma","โหย่ว ฉิว ไพ มะ","球拍"],["ถามราคา","球拍多少钱？","qiú pāi duō shao qián","ฉิว ไพ ตัว เส่า เฉียน","多少钱"],["แพงไปนิด","有点贵","yǒu diǎn guì","โหย่ว เตี่ยน กุ้ย","有点"],["ขอถูกลงหน่อย","便宜一点","pián yi yì diǎn","เผียน อี๋ อี้ เตี่ยน","便宜"],["เอาอันนี้","我要这个","wǒ yào zhè ge","หว่อ เย่า เจ้อ เกอะ","这个"]]}
+];
+function subWords(c){                                   // คำในต้นไม้ที่ชุดนี้ใช้ (≥2 ตัว) — วัดว่าผู้เรียนรู้จักกี่คำ
+  const txt=[c.start[0]].concat(c.steps.map(x=>x[1])).join('|');
+  return Object.keys(TREE).filter(k=>TREE[k].kind!=='frame' && [...TREE[k].hanzi].length>=2 && txt.indexOf(TREE[k].hanzi)>=0);
+}
+function subPick(){
+  const st=S.subStat||{}, known=k=>treeLearned(k)||treeGreen(k);
+  const rows=SUB_CHAINS.map(c=>{ const ws=subWords(c), kn=ws.filter(known).length; return {c:c, ratio:ws.length?kn/ws.length:0, unknown:ws.length-kn, last:(st[c.id]||{}).last||0}; });
+  const ok=rows.filter(r=>r.unknown<=1 || r.ratio>=0.6);   // ใช้คำที่รู้แล้วเป็นหลัก · คำใหม่ไม่เกิน 1
+  const pool=(ok.length?ok:rows).sort((a,b)=>a.last-b.last || b.ratio-a.ratio);
+  return pool.length ? pool[0].c : null;
+}
+function subQueue(c){
+  const fast=!!((S.subStat||{})[c.id]||{}).fast, q=[];
+  if(!fast) q.push({kind:'sub', chain:c.id, i:0, echo:true, hanzi:c.start[0], pinyin:c.start[1], thaiRead:c.start[2], meaning:c.start[3], n:c.steps.length});
+  c.steps.forEach((x,i)=>q.push({kind:'sub', chain:c.id, i:i+1, cue:x[0], hanzi:x[1], pinyin:x[2], thaiRead:x[3], key:x[4], base:i?c.steps[i-1][2]:c.start[1], baseMean:i?c.steps[i-1][0]:c.start[3], n:c.steps.length, fast:fast}));
+  return q;
+}
+function renderSub(it){
+  tries=0; hideAllBoxes(); it.stries=0;
+  const c=SUB_CHAINS.find(x=>x.id===it.chain)||{name:''};
+  $('#pKind').textContent='🔁 เปลี่ยนคำในประโยค · '+c.name+' · '+(it.echo?'พูดตามประโยคเริ่ม':'ข้อ '+it.i+'/'+it.n)+(it.fast?' · ⚡ เร็ว':'');
+  $('#playBar').style.width=(qi/Q.length*100)+'%'; $('#playCount').textContent=(qi+1)+'/'+Q.length;
+  $('#btnSkip').style.visibility='visible'; $('#btnSelfPass').style.visibility='hidden';
+  $('#heard').innerHTML=''; micState('');
+  if(it.echo){
+    $('#pHan').className='han'+(S.settings.pyFirst?'':' zh'); $('#pHan').innerHTML=bigWordHTML(it.hanzi, it.pinyin);
+    $('#pPy').innerHTML=S.settings.pyFirst?'':pyHTML(it.pinyin); $('#pThai').textContent=it.thaiRead||'';
+    $('#pMean').innerHTML=esc(it.meaning)+'<div class="pairVs">🔁 ประโยคตั้งต้น — เดี๋ยวจะบอกคำไทยสั้นๆ ให้เปลี่ยนทีละจุด</div>';
+    speak(it.hanzi, armMic, 0.9); return;
+  }
+  $('#pHan').className='han';
+  $('#pHan').innerHTML='<span id="subCue" style="font-size:1.7rem;line-height:1.35">➡️ '+esc(it.cue)+'</span>';
+  $('#pPy').innerHTML=''; $('#pThai').textContent='';
+  $('#pMean').innerHTML='<div class="small muted">ประโยคก่อนหน้า: '+pyHTML(it.base)+' <span class="muted">('+esc(it.baseMean)+')</span></div><div class="small" style="margin-top:.35rem">พูดประโยคใหม่ทั้งประโยค</div>';
+  if(it.fast) setTimeout(()=>{ if(cur()===it && !it.done){ const e=$('#subCue'); if(e) e.textContent='➡️ …'; } }, 2000);   // ⚡ ซ่อนคำไทยหลัง 2 วิ
+  armMic();
+}
+function judgeSub(alts){
+  const it=cur(); if(!it || it.kind!=='sub' || it.done) return;
+  const r=scoreAll(it.hanzi, alts), kr=it.key ? scoreAll(it.key, alts) : {score:100};
+  const ok = it.echo ? r.score>=70 : (kr.score>=80 && r.score>=60);
+  it.stries=(it.stries||0)+1; tries++;
+  const st = ok ? (r.score>=90?3:2) : starsOf(Math.min(r.score, kr.score));
+  sessUtter++; S.stats.utter++; sessStars+=st; S.stats.stars+=st;
+  const row={t:'sub', h:'S:'+it.chain+':'+it.i, tgt:it.hanzi, key:it.key||'', step:'sub', st:st, score:r.score, keyScore:kr.score, heard:r.heard||'', lat:it.echo?'n/a':null};
+  if(COACH.active) coachLog(row); else { S.log.push(logEnrich(Object.assign({ts:Date.now()}, row))); if(S.log.length>2000) S.log=S.log.slice(-1500); }
+  dlog('sub', it.chain+' '+(it.echo?'ตั้งต้น':it.i)+' '+it.hanzi+' → '+(ok?'ผ่าน':'ไม่ผ่าน')+' (ทั้งประโยค '+r.score+'% · key '+(it.key||'—')+' '+kr.score+'% · ได้ยิน '+(r.heard||'—')+')');
+  if(!it.echo){ S.subRun=S.subRun||{}; const R=S.subRun[it.chain]||(S.subRun[it.chain]={first:0, n:0, lat:[]}); if(it.stries===1){ R.n++; if(ok) R.first++; const l=uniLat(); if(typeof l==='number') R.lat.push(l); } }
+  $('#heard').innerHTML='<div class="lab">ได้ยินว่า</div>'+heardBox(r.heard)+'<div class="stars" style="color:var(--'+(ok?'ok':st>=1?'warn':'bad')+')">'+starStr(st)+' <span class="small">'+r.score+'%</span></div>'+
+    (!ok && !it.echo && kr.score<80 ? '<div class="nearTip">ส่วนที่ต้องเปลี่ยน <b>'+esc(toPinyin(it.key))+'</b> ยังไม่ได้ยิน</div>' : '')+
+    (r.hints&&r.hints.length&&!ok ? '<div class="nearTip">'+r.hints.map(esc).join('<br>')+'</div>' : '');
+  if(ok || it.stries>=2){
+    it.done=true;
+    $('#pHan').className='han'+(S.settings.pyFirst?'':' zh'); $('#pHan').innerHTML=bigWordHTML(it.hanzi, it.pinyin, markedHTML(it.hanzi, norm(r.heard||'',false)));
+    $('#pThai').textContent=it.thaiRead||'';
+    micState(ok?'ok':''); vib(ok?[30,40,30]:140);
+    if(it.i===it.n) subFinish(it.chain);
+    if(ok) setTimeout(()=>{ if(playing && cur()===it) next(); }, 1300);
+    else { speak(it.hanzi, null, 0.85); waitNext('ฟังแบบที่ถูกแล้วพูดตามในใจ'); }
+    save(); return;
+  }
+  micState(''); vib(140);
+  $('#heard').insertAdjacentHTML('beforeend','<div class="nearTip">ลองอีกครั้ง — ฟังตัวอย่างแล้วพูดทั้งประโยค</div>');
+  setTimeout(()=>{ if(playing && cur()===it) speak(it.hanzi, armMic, 0.85); }, 600);
+}
+function subFinish(id){
+  const R=(S.subRun||{})[id]||{first:0,n:0,lat:[]};
+  const lat=R.lat.length ? R.lat.slice().sort((a,b)=>a-b)[Math.floor(R.lat.length/2)] : null;
+  const fast = R.n>0 && R.first===R.n && lat!==null && lat<=3000;     // ผ่านครบตั้งแต่ครั้งแรกและเร็ว → รอบหน้าเพิ่มความเร็ว
+  S.subStat=S.subStat||{}; S.subStat[id]={last:Date.now(), fast:fast, first:R.first, n:R.n, lat:lat, runs:((S.subStat[id]||{}).runs||0)+1};
+  delete S.subRun[id];
+  dlog('sub','จบชุด '+id+' · ผ่านครั้งแรก '+R.first+'/'+R.n+' · เวลานึก '+(lat===null?'—':(lat/1000).toFixed(1)+' วิ')+(fast?' → รอบหน้า ⚡ เร็วขึ้น':''));
 }
 /* ============================================================
    📚 ท่องศัพท์ 300 คำ (คู่มือ) — 15 ชุด × 20 คำ
