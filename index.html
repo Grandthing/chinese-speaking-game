@@ -3398,7 +3398,7 @@ const MILESTONES = [
 /* ============================================================
    2.5 บันทึกปัญหา (diagnostics) — ไว้ส่งให้ผู้พัฒนาดูเวลาไมค์มีปัญหา
    ============================================================ */
-const BUILD='2026-10-12d';                     // เปลี่ยนทุกครั้งที่แก้ไฟล์ จะได้รู้ว่า log มาจากรุ่นไหน
+const BUILD='2026-10-12e';                     // เปลี่ยนทุกครั้งที่แก้ไฟล์ จะได้รู้ว่า log มาจากรุ่นไหน
 const DIAG=[], STUCK={}, T0=Date.now();
 /* log ปัญหาเก็บลงเครื่องด้วย: iPhone ปิดแอปหรือรีเฟรชแล้ว log เก่ายังอยู่ ส่งย้อนหลังได้ */
 const DKEY='zhgame-diag', DIAG_MAX=2500;
@@ -3439,7 +3439,8 @@ function problemSummary(){
   if(self.length){ out.push('🙋 กด "ระบบฟังไม่ออก/ผ่านเอง" '+self.length+' ครั้ง:'); self.slice(-10).forEach(l=>out.push('   '+clk(l.ts)+'  '+l.msg)); }
   if(S0 && S0.log){
     const g={};
-    S0.log.filter(r=>r.ts>=since && typeof r.st==='number' && r.st<3 && r.heard!==undefined && !/^\(/.test(String(r.heard||''))).forEach(r=>{
+    const failRow=r=>r.ok===false || (r.ok===undefined && (r.st<2 || (r.st<3 && r.step!=='see' && (r.score===undefined || r.score<80))));
+    S0.log.filter(r=>r.ts>=since && typeof r.st==='number' && failRow(r) && r.heard!==undefined && !/^\(/.test(String(r.heard||''))).forEach(r=>{
       const t=(typeof rowTgt==='function') ? rowTgt(r) : (r.tgt||r.h||r.hanzi); const x=g[t]||(g[t]={n:0, heard:{}}); x.n++; if(r.heard) x.heard[r.heard]=1; });
     const hard=Object.entries(g).filter(([t,x])=>x.n>=3).sort((a,b)=>b[1].n-a[1].n).slice(0,12);
     if(hard.length){ out.push('🔁 โจทย์ที่พลาด ≥ 3 ครั้ง (3 วัน) — อาจเป็นบัคการตรวจเสียง ถ้าที่ได้ยินดูถูกแล้ว:');
@@ -3449,7 +3450,7 @@ function problemSummary(){
   if(park.length){ out.push('⏸ คำที่ติดวน/ถูกพัก:'); park.slice(-8).forEach(l=>out.push('   '+clk(l.ts)+'  '+l.msg)); }
   const keyErr=D.filter(l=>/เสียงหลักผิด|十 เพี้ยน/.test(l.msg)).length;
   if(keyErr) out.push('🗣️ เสียงหลักผิด (sh/x/q, r/l …) '+keyErr+' ครั้ง');
-  const wd=D.filter(l=>/watchdog/.test(l.msg)).length, merr=D.filter(l=>l.tag==='mic' && /onerror/.test(l.msg) && !/aborted|no-speech/.test(l.msg)), empty=D.filter(l=>/ได้ผล=false/.test(l.msg)).length;
+  const wd=D.filter(l=>/watchdog/.test(l.msg)).length, merr=D.filter(l=>l.tag==='mic' && /onerror/.test(l.msg) && !/aborted|no-speech/.test(l.msg)), empty=D.filter(l=>/ได้ผล=false, ยกเลิก=false/.test(l.msg)).length;
   if(wd || merr.length || empty>=5) out.push('🎤 ไมค์: บังคับหยุด '+wd+' · error '+merr.length+(merr.length?' ('+[...new Set(merr.map(l=>l.msg))].join(', ')+')':'')+' · อัดแล้วไม่ได้ผล '+empty+' ครั้ง');
   return out.length ? out.join('\n') : 'ไม่พบปัญหาที่ตรวจจับได้อัตโนมัติ (3 วันล่าสุด)';
 }
@@ -8224,7 +8225,7 @@ function treeScore(it, alts){
   if(T && T.kind==='frame' && best.score<90){                 // R-2: โครงถูกครบ → ผ่าน · คำนามคิดเป็นโบนัส
     const F=T.frame, bits=String(F.zh).replace('{mw}','').split('{n}').map(x=>norm(x,false)).filter(Boolean);
     if(bits.length && bits.every(b=>scoreAll(b, alts).score>=90)){
-      const nk=F.ex, nw=TREE[nk];
+      const nk=(it.u && it.u.noun && it.u.noun.key) || F.ex, nw=TREE[nk];
       dlog('tree','โครง '+F.id+' ถูกครบ ('+bits.join('…')+') → ผ่าน · คำนาม '+nk+' เพี้ยน → ฝึกออกเสียงแยก');
       return Object.assign({}, best, {score:Math.max(best.score,80), nearFull:true, frameOnly:nk,
         hints:['โครง '+bits.map(b=>toPinyin(b)).join(' … ')+' ถูกแล้ว ✓ — คำ '+(nw?nw.pinyin:nk)+' ยังเพี้ยน (ไปฝึกออกเสียงแยก)']});
@@ -8357,7 +8358,10 @@ function treeUseFor(k, greenOnly){
   const ok=x=>greenOnly ? treeGreen(x) : (treeLearned(x) || treeGreen(x));
   if(it.kind==='frame'){
     const F=it.frame;
-    const ns=Object.values(TREE).filter(w=>w.key!==F.ex && treeFits(F,w) && ok(w.key));
+    const ns0=Object.values(TREE).filter(w=>w.key!==F.ex && treeFits(F,w) && ok(w.key));
+    const hard=w=>!!((S.pron||{})[w.key] || (S.tree[w.key]&&(S.tree[w.key].parked||S.tree[w.key].hwSkip)));
+    const easy=ns0.filter(w=>!hard(w)), green=easy.filter(w=>treeGreen(w.key));
+    const ns=green.length ? green : easy;                      // คำที่ยังออกเสียงไม่ได้ ไม่เอามาประกอบโครง
     if(!ns.length) return null;
     const w=ns[Math.floor(Math.random()*ns.length)];
     return Object.assign(treeCompose(F,w), {frame:F, noun:w});
@@ -8615,7 +8619,7 @@ function treeLog(it, st, r, extra){
   else { S.log.push(Object.assign({t:'tree', ts:Date.now()}, row)); if(S.log.length>2000) S.log=S.log.slice(-1500); }
 }
 function judgeTree(alts){
-  const it=cur(); if(!it || it.kind!=='tstep') return;
+  const it=cur(); if(!it || it.kind!=='tstep' || it.parkedDone) return;
   const r=treeScore(it, alts), st=starsOf(r.score);
   sessUtter++; sessStars+=st; S.stats.utter++; S.stats.stars+=st;
   bestPer[qi]=Math.max(bestPer[qi]||0, r.score);
@@ -8724,7 +8728,7 @@ function waitNext(note){
 }
 /* พักคำที่ติดวนนาน: เอาข้อที่เหลือของคำนี้ออก · ไปฝึกออกเสียงตอนวอร์มอัพ · รอบหน้าเรียนใหม่ */
 function treePark(it, heardHTML){
-  const k=it.k;
+  const k=it.k; it.parkedDone=true;
   TL.fail[k]=true;
   for(let i=Q.length-1;i>qi;i--) if(Q[i].k===k) Q.splice(i,1);
   const r=treeRec(k); if(r){ r.next=Date.now(); }
