@@ -207,6 +207,7 @@ h2{font-size:1.15rem;margin:1.5rem 0 .5rem}
 .v3chip{font:inherit;font-size:.82rem;min-width:2.5rem;padding:.3rem .35rem;border:1px solid var(--rule);border-radius:.5rem;background:var(--card);color:var(--ink);cursor:pointer}
 .v3chip.ok{border-color:var(--ok);color:var(--ok)}.v3chip.on{border-color:var(--t1);color:var(--t1);font-weight:700}.v3chip.lock{opacity:.45}
 .v3chips{display:flex;flex-wrap:wrap;gap:.35rem;justify-content:center;margin-top:.5rem}.v3chips span{border:1px solid var(--rule);border-radius:.5rem;padding:.2rem .5rem;font-weight:600}
+#scr-home.simple:not(.moreopen) #examCard,#scr-home.simple:not(.moreopen) #retellCard,#scr-home.simple:not(.moreopen) #ccFullRow{display:none!important}
 .fdchoices{display:grid;grid-template-columns:1fr 1fr;gap:.45rem}
 .fdc{font:inherit;font-size:1.1rem;font-weight:600;padding:.7rem .4rem;border:1px solid var(--rule);border-radius:.7rem;background:var(--card);color:var(--ink);cursor:pointer;min-height:3rem}
 .fdc.ok{background:#E8F0E4;border-color:var(--ok);color:var(--ok)}.fdc.bad{background:#F8E3E0;border-color:var(--bad);color:var(--bad)}
@@ -488,6 +489,7 @@ td.r,th.r{text-align:right}
     </div>
     </div>
     <div class="row" style="margin-top:.5rem">
+      <button class="btn ghost" id="btnMyCards2" hidden>➕ การ์ดของฉัน</button>
       <button class="btn ghost" id="btnStats">📊 สถิติ</button>
       <button class="btn ghost" id="btnSettings">⚙️ ตั้งค่า</button>
     </div>
@@ -846,6 +848,7 @@ td.r,th.r{text-align:right}
     </div>
     <div class="card">
       <div class="row"><b class="grow">✈️ โฟกัสเที่ยว</b><button class="chip" id="swFocus">เปิด</button></div>
+      <div class="row" style="margin-top:.4rem"><span class="grow small">🧰 หน้าแรกเรียบ (ซ่อนโหมดที่ไม่ได้ใช้ไว้ในห้องฝึกเสริม)</span><button class="chip" id="swSimple">เปิด</button></div>
       <p class="small muted" style="margin:.4rem 0 .5rem">หน้าแรกแสดง 🌳 ต้นไม้คำเที่ยว + โค้ช 15 นาที (ทบทวน · คำใหม่ · ฟัง) ส่วนคอร์ส 52 บทย้ายไปอยู่ใต้ "คอร์สเต็ม" ยังเล่นได้ตามเดิม</p>
       <div class="row"><span class="grow small">คำใหม่ต่อวัน</span><span id="newChips"><button class="chip" data-n="4">4</button> <button class="chip" data-n="8">8</button> <button class="chip" data-n="12">12</button></span></div>
     </div>
@@ -3370,7 +3373,7 @@ const MILESTONES = [
 /* ============================================================
    2.5 บันทึกปัญหา (diagnostics) — ไว้ส่งให้ผู้พัฒนาดูเวลาไมค์มีปัญหา
    ============================================================ */
-const BUILD='2026-10-11a';                     // เปลี่ยนทุกครั้งที่แก้ไฟล์ จะได้รู้ว่า log มาจากรุ่นไหน
+const BUILD='2026-10-11b';                     // เปลี่ยนทุกครั้งที่แก้ไฟล์ จะได้รู้ว่า log มาจากรุ่นไหน
 const DIAG=[], STUCK={}, T0=Date.now();
 /* log ปัญหาเก็บลงเครื่องด้วย: iPhone ปิดแอปหรือรีเฟรชแล้ว log เก่ายังอยู่ ส่งย้อนหลังได้ */
 const DKEY='zhgame-diag', DIAG_MAX=2500;
@@ -7139,7 +7142,6 @@ const PAIR_FAM={
   'ren': {label:'…人 ต้องไม่หาย', tip:'ท้ายคำต้องมี 人 "เหริน" ชัดๆ ม้วนลิ้นแบบ r แล้วลากเสียงขึ้น อย่ากลืนหาย'}
 };
 const PAIRS=[
-  {f:'sh-s', a:['十块','shí kuài','สือ ไคว่','10 หยวน'],        b:['四块','sì kuài','ซื่อ ไคว่','4 หยวน']},
   {f:'sh-s', a:['老师','lǎo shī','หล่าว ซือ','ครู'],             b:['老四','lǎo sì','หล่าว ซื่อ','ลูกคนที่สี่'], oneWay:true},
   {f:'zh-j', a:['找你','zhǎo nǐ','จ่าว หนี่','หาคุณ'],           b:['叫你','jiào nǐ','เจี้ยว หนี่','เรียกคุณ']},
   {f:'zh-j', a:['猪肉','zhū ròu','จู โร่ว','เนื้อหมู'],          b:['鸡肉','jī ròu','จี โร่ว','เนื้อไก่']},
@@ -8264,7 +8266,9 @@ function treeItem(k, allowSent){
   return base;
 }
 function buildTreeReview(nMax){
-  const due=treeDueList().sort(()=>Math.random()-0.5).map(k=>treeItem(k,true)).filter(Boolean);
+  const seen=new Set();
+  const due=treeDueList().sort(()=>Math.random()-0.5).map(k=>treeItem(k,true)).filter(Boolean)
+    .filter(it=>{ const h=norm(it.hanzi||''); if(!h || seen.has(h)) return false; seen.add(h); return true; });
   const core=[];                                  // ผู้ใช้เลือก: โฟกัสเที่ยวไม่เอาคำชุดเก่า (CORE100 จากหนังสือเรียน) มาทวน
   const out=[]; let a=0, b=0;
   while(out.length<(nMax||30) && (a<due.length || b<core.length)){   // สลับ ต้นไม้ 2 : CORE 1
@@ -10120,8 +10124,10 @@ function pronItems(n){
   return out;
 }
 COACH_RUN.FR=blk=>{
-  const rev=buildTreeReview(30);
-  const warm=pronItems(3);
+  const warm0=pronItems(3);
+  const rev=buildTreeReview(30), revH=new Set(rev.map(x=>norm(x.hanzi||'')));
+  const warm=warm0.filter(x=>!revH.has(norm(x.hanzi||'')));          // วอร์มอัพไม่ซ้ำกับคำที่จะทวน
+  if(warm.length<warm0.length) dlog('coach','FR ตัดวอร์มอัพที่ซ้ำกับคิวทวน '+(warm0.length-warm.length)+' ข้อ');
   if(!rev.length && !warm.length) return false;
   COACH.frRev=rev;
   if(warm.length){                                 // วอร์มอัพ: พูดตามคำที่ระบบเคยฟังไม่ออก (ไม่นับคะแนนความจำ)
@@ -11573,6 +11579,7 @@ function renderSettings(){
     : 'เครื่องนี้ยังไม่มีเสียงผู้ชายภาษาจีน ตอนนี้ใช้เสียงผู้หญิงแบบทุ้มลงแทน · ถ้าอยากได้เสียงชายจริงบน iPhone: <b>ตั้งค่า → การช่วยการเข้าถึง → เนื้อหาที่พูด → เสียง → จีน (จีนแผ่นดินใหญ่) → ดาวน์โหลด Li-mu</b> แล้วปิดเปิดแอปใหม่';
   $('#swPy').textContent=S.settings.pyFirst?'เปิด':'ปิด'; $('#swPy').classList.toggle('on',!!S.settings.pyFirst);
   $('#swFocus').textContent=S.settings.focusTravel?'เปิด':'ปิด'; $('#swFocus').classList.toggle('on',!!S.settings.focusTravel);
+  { const on=S.settings.simpleHome!==false; $('#swSimple').textContent=on?'เปิด':'ปิด'; $('#swSimple').classList.toggle('on',on); }
   $$('#newChips .chip').forEach(c=>c.classList.toggle('on', +c.dataset.n===(S.settings.newPerDay||8)));
 }
 $$('#rateChips .chip').forEach(c=>c.onclick=()=>{ S.settings.rate=+c.dataset.rate; save(); renderSettings(); speak('你好'); });
@@ -11599,12 +11606,18 @@ $('#bookNum').addEventListener('keydown', e=>{ if(e.key==='Enter') bookNum(); })
 $('#btnFoundPlace').onclick=()=>foundPlacement();
 $('#btnTreeNext').onclick=$('#btnTreeNext2').onclick=$('#btnCoachLevel').onclick=()=>startTreeLearn('เลเวลต่อไป', true);
 $('#btnCoach15').onclick=()=>coachStart(15);
+$('#swSimple').onclick=()=>{ S.settings.simpleHome=(S.settings.simpleHome===false); save(); renderSettings(); renderHome(); dlog('ตั้งค่า','หน้าแรกเรียบ '+(S.settings.simpleHome?'เปิด':'ปิด')); };
+$('#btnMyCards2').onclick=()=>$('#btnMyCards').onclick();
 let homeMoreOpen=false;
 $('#btnMore').onclick=()=>{ homeMoreOpen=!homeMoreOpen; renderFocusHome(); if(homeMoreOpen) $('#homeMore').scrollIntoView({behavior:'smooth', block:'start'}); };
 function renderFocusHome(){
   const f=!!S.settings.focusTravel;
+  const simple=f && S.settings.simpleHome!==false;
+  $('#scr-home').classList.toggle('simple', simple); $('#scr-home').classList.toggle('moreopen', homeMoreOpen);
+  $('#btnMyCards2').hidden=!simple;
   $('#btnMore').hidden=!f;
-  $('#btnMore').textContent = homeMoreOpen ? '📚 ซ่อนคอร์สเต็ม ▴' : '📚 คอร์สเต็ม 52 บท และโหมดอื่นๆ ▾';
+  $('#btnMore').textContent = simple ? (homeMoreOpen ? '🧰 ซ่อนห้องฝึกเสริม ▴' : '🧰 ห้องฝึกเสริม · 52 บท · โค้ช 25/10 นาที · สอบ · โหมดอื่นๆ ▾')
+    : (homeMoreOpen ? '📚 ซ่อนคอร์สเต็ม ▴' : '📚 คอร์สเต็ม 52 บท และโหมดอื่นๆ ▾');
   $('#homeMore').hidden = f && !homeMoreOpen;
   $('#courseTip').hidden=!f;
   $('#btnCoach15').hidden=!f;
