@@ -3370,7 +3370,7 @@ const MILESTONES = [
 /* ============================================================
    2.5 บันทึกปัญหา (diagnostics) — ไว้ส่งให้ผู้พัฒนาดูเวลาไมค์มีปัญหา
    ============================================================ */
-const BUILD='2026-10-10b';                     // เปลี่ยนทุกครั้งที่แก้ไฟล์ จะได้รู้ว่า log มาจากรุ่นไหน
+const BUILD='2026-10-11a';                     // เปลี่ยนทุกครั้งที่แก้ไฟล์ จะได้รู้ว่า log มาจากรุ่นไหน
 const DIAG=[], STUCK={}, T0=Date.now();
 /* log ปัญหาเก็บลงเครื่องด้วย: iPhone ปิดแอปหรือรีเฟรชแล้ว log เก่ายังอยู่ ส่งย้อนหลังได้ */
 const DKEY='zhgame-diag', DIAG_MAX=2500;
@@ -5384,6 +5384,7 @@ function judgeTalk(alts){
   if(t.timeAccept && vv[t.timeAccept]){                       // เวลา: 9:30 = 九点半 = 九点三十分
     const w=vv[t.timeAccept].th.split(':').map(Number); const wh=w[0]%12, wm=w[1];
     if((alts||[]).some(a=>timesIn(a).some(x=>x[0]===wh && x[1]===wm))){ hit=vv[t.timeAccept].th; score=95; }
+    else { const w0=w[0]; let why=''; (alts||[]).some(a=>(why=timeNear(a, w0, wm))); if(why){ hit=vv[t.timeAccept].th; score=75; nearHit=true; tips=[why==='ke'?KE_TIP:SHI_TIP]; } }
   }
   (alts||[]).forEach(a=>{
     (t.accept||[]).forEach(acc=>{
@@ -9435,6 +9436,22 @@ const FD_DIG_HAN={'0':'零','1':'幺','2':'二','3':'三','4':'四','5':'五','6
 const FD_DIG_PY={'0':'líng','1':'yāo','2':'èr','3':'sān','4':'sì','5':'wǔ','6':'liù','7':'qī','8':'bā','9':'jiǔ'};
 const digHan=d=>[...String(d)].map(c=>FD_DIG_HAN[c]).join(''), digPy=d=>[...String(d)].map(c=>FD_DIG_PY[c]).join(' ');
 /* เลขเรียงตัวจากที่ได้ยิน (3856 · 三八五六 · 幺=1) */
+/* เลขเรียงตัวแบบอ่านจากเสียง: ตัวถอดเสียงเขียน 幺 เป็น 要/药 · 三 เป็น 散 · 六 เป็น 溜 (เสียงเดียวกัน) */
+const DIG_PY={ling:'0',yi:'1',yao:'1',er:'2',e:'2',liang:'2',san:'3',si:'4',wu:'5',liu:'6',qi:'7',ba:'8',jiu:'9'};
+function digitsPy(raw){
+  let out=''; for(const c of String(raw||'')){ if(/\d/.test(c)) out+=c; else if(/[一-鿿]/.test(c)){ const d=DIG_PY[pyBare(c)]; if(d) out+=d; } }
+  return out;
+}
+/* เวลา: 十 ที่ได้ยินเป็น qǔ/xí (去二店取分 = 十二点十分) · 一刻 ที่ได้ยินเป็น 以后/礼盒 → คืน 'shi' / 'ke' ถ้าผ่านแบบเพี้ยน */
+function timeNear(raw, wh, wm){
+  let h=norm(String(raw||''),false).replace(/店|电|垫/g,'点');
+  let why='';
+  if(wm===15 && /以后|礼盒|一后/.test(h)){ h=h.replace(/以后|礼盒|一后/g,'一刻'); why='ke'; }
+  const hh=wh%12, needShi=hh>=10 || hh===0 || wm>=10;          // ชั่วโมงเก็บเป็น %12 → 12 โมง = 0
+  if(needShi){ let k=''; for(const c of h){ k += (!/[零一二两三四五六七八九十点分半刻]/.test(c) && SHI_NEAR[pyBare(c)]) ? '十' : c; } if(k!==h){ h=k; why=why||'shi'; } }
+  return why && timesIn(h).some(x=>x[0]===wh%12 && x[1]===wm) ? why : '';
+}
+const KE_TIP='一刻 = yí kè (15 นาที): kè ออกเสียง "เค่อ" ไม่ใช่ "โฮ่ว" — ระบบได้ยินเป็น 以后 yǐ hòu · ครั้งนี้นับผ่าน';
 function digitsIn(raw){
   const M={'零':'0','〇':'0','幺':'1','一':'1','二':'2','两':'2','三':'3','四':'4','五':'5','六':'6','七':'7','八':'8','九':'9'};
   let out=''; for(const c of String(raw||'')){ if(/\d/.test(c)) out+=c; else if(M[c]) out+=M[c]; }
@@ -9603,8 +9620,9 @@ document.addEventListener('click', e=>{
 function fdSayPass(it, alts){
   const s=it.say;
   return (alts||[]).some(a=>{
-    if(s.digits) return digitsIn(a).indexOf(s.digits)>=0;
-    if(s.time) return timesIn(a).some(x=>x[0]===s.time[0] && x[1]===s.time[1]);
+    if(s.digits) return digitsIn(a).indexOf(s.digits)>=0 || digitsPy(a).indexOf(s.digits)>=0;
+    if(s.time){ if(timesIn(a).some(x=>x[0]===s.time[0] && x[1]===s.time[1])) return true;
+      const w=timeNear(a, s.time[0], s.time[1]); if(w){ NUM_NEAR=w; return true; } return false; }
     if(s.nums) return s.nums.every(n=>numsIn(a,n).indexOf(n)>=0);
     if(s.num!==undefined) return numsIn(a, s.num).indexOf(s.num)>=0;
     return scoreAll(s.zh,[a]).score>=80;
@@ -9621,7 +9639,7 @@ function judgeFdNum(alts){
   save();
   $('#heard').innerHTML='<div class="lab">ได้ยินว่า</div>'+heardBox(heard)+
     '<div class="stars" style="color:var(--'+(ok?'ok':'bad')+')">'+(ok?'✓ พูดผ่าน':'✗ ยังไม่ตรง — ฟังแล้วลองอีกครั้ง')+'</div>'+
-    (shiNear ? '<div class="nearTip">'+esc(SHI_TIP)+'</div>' : '');
+    (shiNear ? '<div class="nearTip">'+esc(NUM_NEAR==='ke' ? KE_TIP : SHI_TIP)+'</div>' : '');
   if(ok){ it.phase='done'; micState('ok'); vib([30,40,30]); waitNext(); return; }
   micState(''); vib(140);
   if(tries>=2){ $('#btnSelfPass').style.visibility='visible'; $('#btnSelfPass').textContent='✅ พูดถูกแล้ว แต่ระบบฟังไม่ออก'; }
