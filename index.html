@@ -3402,7 +3402,7 @@ const MILESTONES = [
 /* ============================================================
    2.5 บันทึกปัญหา (diagnostics) — ไว้ส่งให้ผู้พัฒนาดูเวลาไมค์มีปัญหา
    ============================================================ */
-const BUILD='2026-10-13c';                     // เปลี่ยนทุกครั้งที่แก้ไฟล์ จะได้รู้ว่า log มาจากรุ่นไหน
+const BUILD='2026-10-13d';                     // เปลี่ยนทุกครั้งที่แก้ไฟล์ จะได้รู้ว่า log มาจากรุ่นไหน
 const DIAG=[], STUCK={}, T0=Date.now();
 /* log ปัญหาเก็บลงเครื่องด้วย: iPhone ปิดแอปหรือรีเฟรชแล้ว log เก่ายังอยู่ ส่งย้อนหลังได้ */
 const DKEY='zhgame-diag', DIAG_MAX=2500;
@@ -5559,7 +5559,11 @@ function judgeTalk(alts){
 }
 function nextTurn(){ ti++; if(!TSC||ti>=TSC.turns.length||coachTimeUp()) finishTalk(); else renderTurn(); }
 function finishTalk(){
-  if(COACH.active) return coachNextBlock();
+  if(COACH.active){                                   // ในโค้ชก็เก็บผลฉากด้วย (การ์ด 🎭 จะขึ้น % ล่าสุด)
+    const sc=TSC.turns.map((_,i)=>bestPer[i]||0), avg=Math.round(sc.reduce((a,b)=>a+b,0)/Math.max(1,sc.length));
+    if(TSC && /^rp/.test(String(TSC.id||''))){ S.talk=S.talk||{}; const r=S.talk[TSC.id]||{best:0,plays:0}; S.talk[TSC.id]={best:Math.max(r.best,avg), plays:r.plays+1, last:avg}; COACH.rpDone={title:TSC.title, avg:avg}; save(); }
+    return coachNextBlock();
+  }
   const ms=Date.now()-t0; S.stats.ms+=ms;
   const scores=TSC.turns.map((_,i)=>bestPer[i]||0);
   const avg=Math.round(scores.reduce((a,b)=>a+b,0)/Math.max(1,scores.length));
@@ -6245,8 +6249,37 @@ const COACH_BLOCKS={
   B5:{icon:'🗣️', name:'ภารกิจสั้น', sr:true},
   FR:{icon:'🔁', name:'ทบทวน', sr:true},
   FT:{icon:'🌳', name:'ต้นไม้คำเที่ยว', sr:true},
-  FL:{icon:'👂', name:'ฟังร้านค้า · อุทยาน', sr:false}
+  FL:{icon:'👂', name:'ฟังร้านค้า · อุทยาน', sr:false},
+  FP:{icon:'👅', name:'ซ้อมปาก sh · zh · r', sr:true},
+  FS:{icon:'🎭', name:'ซ้อมสถานการณ์จริง', sr:true},
+  FX:{icon:'📝', name:'สอบประจำสัปดาห์', sr:true}
 };
+/* โค้ช 15 นาทีจัดแผนเองตามสภาพ (รีวิว 11 ต.ค. ข้อ 8):
+   👅 log 3 วันเจอเสียงม้วนลิ้นเพี้ยน (sh/zh/ch/r) ≥ 6 ครั้ง หรือคิวออกเสียง ≥ 3 คำ → ซ้อมปาก 1.5 นาที (ลดต้นไม้ 6 → 4.5)
+   📝 ครบ 7 วันจากสอบครั้งก่อน → บล็อกสุดท้ายเป็นสอบ 10 ข้อ (แทนฟัง · ตัวเลข 3 → 2)
+   🎭 7 วันล่าสุดซ้อมสถานการณ์ในโค้ชไม่ถึง 2 ครั้ง และห่างครั้งก่อน ≥ 2 วัน → ซ้อมสถานการณ์ 3 นาที (แทนฟัง · ตัวเลข 3 → 2) · วันสอบเลื่อนไปวันถัดไป */
+function focusNeedPair(){
+  let n=0; for(let o=-2;o<=0;o++){ const d=(S.daily||{})[dayKey(o)]; if(d && d.conf) Object.entries(d.conf).forEach(([k,v])=>{ if(/^(sh|zh|ch|r)>/.test(k) || /^(x|q|j|s|l)>(sh|zh|ch|r)$/.test(k)) n+=v; }); }
+  const pron=Object.keys(S.pron||{}).filter(k=>S.pron[k]>0).length;
+  return {need: n>=6 || pron>=3, n:n, pron:pron};
+}
+function focusRpDue(){
+  const hist=(S.coach.rpRuns||[]).filter(t=>t>=Date.now()-7*86400000);
+  const last=hist.length ? Math.max(...hist) : 0;
+  return hist.length<2 && Date.now()-last>=2*86400000 - 3*3600000;   // เผื่อเวลา 3 ชม. (เล่นคนละช่วงของวัน)
+}
+function focusPlan(){
+  const P={FR:4, FT:6, FD:3}, why=[];
+  const pr=focusNeedPair();
+  const order=['FR'];
+  if(pr.need){ order.push('FP'); P.FP=1.5; P.FT=4.5; why.push('👅 เสียงม้วนลิ้นเพี้ยน '+pr.n+' ครั้ง/3 วัน · คิวออกเสียง '+pr.pron); }
+  order.push('FT','FD');
+  if(examReady()){ order.push('FX'); P.FX=3; P.FD=2; why.push('📝 ครบ 7 วัน'); }
+  else if(focusRpDue()){ order.push('FS'); P.FS=3; P.FD=2; why.push('🎭 ซ้อมสถานการณ์ (สัปดาห์ละ 2)'); }
+  else { order.push('FL'); P.FL=2; }
+  return {plan:order.map(b=>[b,P[b]]), why:why};
+}
+const FOCUS_LABEL={FR:'ทบทวน', FP:'ซ้อมปาก', FT:'คำใหม่', FD:'ตัวเลข', FL:'ฟัง', FS:'สถานการณ์', FX:'สอบ'};
 // [บล็อก, นาที] — รวมกันได้ 25 / 10 พอดี
 const COACH_PLAN={
   25:[['B0',2],['B1',1],['BP',2],['BL',6],['B3',3],['B2',4],['BR',2],['B4',2],['B5',3]],
@@ -6287,8 +6320,10 @@ async function coachStart(minutes){
     if(st==='denied'){ openM('mMic'); return; }
   }
   S.settings.coachMin=minutes;
-  COACH.active=true; COACH.minutes=minutes; COACH.sessT0=Date.now(); COACH.bi=-1; COACH.items=[];
-  COACH.plan=COACH_PLAN[minutes].map(x=>({b:x[0], ms:Math.round(x[1]*60000), used:0, skipped:false}));
+  COACH.active=true; COACH.minutes=minutes; COACH.sessT0=Date.now(); COACH.bi=-1; COACH.items=[]; COACH.rpDone=null; COACH.examDone=null;
+  const fp=minutes===15 ? focusPlan() : null;
+  COACH.plan=(fp ? fp.plan : COACH_PLAN[minutes]).map(x=>({b:x[0], ms:Math.round(x[1]*60000), used:0, skipped:false}));
+  if(fp && fp.why.length) dlog('coach','แผนวันนี้: '+fp.why.join(' · '));
   COACH.queueB0=buildSleepQueue();
   COACH.queueB2=[]; COACH.lvUps=[]; COACH.lvFail=0; COACH.lvStart=(S.lv&&S.lv.cur)||1;
   const d=today(); if(!S.stats.days.includes(d)) S.stats.days.push(d);
@@ -6401,7 +6436,7 @@ function renderCoachCard(){
   $('#btnCoach25').textContent = resting ? '☕ พักอยู่ อีก '+mmss(S.coach.breakUntil-Date.now()) : '▶ เริ่ม 25 นาที';
   $('#btnCoach25').disabled=!!resting; $('#btnCoach10').disabled=!!resting; $('#btnCoach15').disabled=!!resting;
   if(resting) $('#btnCoach15').textContent='☕ พักอยู่ อีก '+mmss(S.coach.breakUntil-Date.now());
-  else $('#btnCoach15').innerHTML='▶ โฟกัสเที่ยว 15 นาที<small style="font-weight:400;opacity:.8">ทบทวน 4 · คำใหม่ 6 · เสาเข็ม 3 · ฟัง 2</small>';
+  else $('#btnCoach15').innerHTML='▶ โฟกัสเที่ยว 15 นาที<small style="font-weight:400;opacity:.8;display:block">'+esc(focusPlan().plan.map(x=>FOCUS_LABEL[x[0]]+' '+x[1]).join(' · '))+'</small><small hidden>ทบทวน 4 · คำใหม่ 6 · เสาเข็ม 3 · ฟัง 2</small>';
   if(resting && !breakT) breakT=setInterval(breakTick,1000);
   const L=lvCur();
   if(L){
@@ -6481,6 +6516,9 @@ function renderCoachDone(ms){
     '<div class="cdrow"><span>👂 ฟังถูก (รอบนี้)</span><b>'+(lis.length?lisOk+'/'+lis.length:'—')+' · '+S.listen.rate.toFixed(1)+'×</b></div>'+
     (COACH.minutes===15 ? '' : '<div class="cdrow"><span>🎵 วรรณยุกต์ที่ต้องเจาะ</span><b>'+esc(toneTxt)+'</b></div>')+
     pairDoneRow()+treeDoneRow()+
+    (COACH.rpDone ? '<div class="cdrow"><span>🎭 '+esc(COACH.rpDone.title)+'</span><b>'+COACH.rpDone.avg+'%</b></div>' : '')+
+    (COACH.examDone ? '<div class="cdrow"><span>📝 สอบประจำสัปดาห์</span><b>'+COACH.examDone.score+'% ('+COACH.examDone.ok+'/'+COACH.examDone.n+')</b></div>'+
+      (COACH.examDone.miss.length ? '<div class="nearTip">ข้อที่พลาด (กลับไปทวนใหม่): '+COACH.examDone.miss.map(h=>esc(toPinyin(h))).join(' · ')+'</div>' : '') : '')+
     (COACH.minutes===15 ? '' : '<div class="cdrow"><span>🪜 เลเวลคำศัพท์</span><b>'+lvSummary()+'</b></div>');
   if((COACH.lvUps||[]).length){
     $('#cdIcon').textContent='🎉';
@@ -7251,11 +7289,17 @@ const PAIR_FAM={
   'sh-s':{label:'sh ≠ s', tip:'sh = ม้วนปลายลิ้นขึ้นไปใกล้เพดานแข็ง ปากห่อนิดๆ · s = ปลายลิ้นแตะหลังฟันล่าง ยิ้มแบน เหมือน ซ ไทย'},
   'zh-j':{label:'zh ≠ j', tip:'zh = ม้วนลิ้นขึ้นแล้วพ่น "จ" ออกจากกลางปาก · j = ลิ้นแบนแตะฟันล่าง ยิ้มแล้วพูด "จี" ไม่ม้วน'},
   'q-x': {label:'q ≠ x', tip:'q = "ชี" มีลมพ่นแรง เอามือรองหน้าปากต้องรู้สึกลม · x = "ซี" ลมไหลเบาๆ ไม่มีจังหวะระเบิด'},
+  'sh-x':{label:'sh ≠ x / q', tip:'sh = ม้วนปลายลิ้นขึ้นใกล้เพดาน ปากไม่ยิ้ม "ซือ" · x = ยิ้ม ลิ้นแบนแตะฟันล่าง "ซี" · q = ยิ้ม + พ่นลม "ชี" — log: 十→七/西 · 师傅→媳妇 · 是→去'},
   'r-l': {label:'r ≠ l', tip:'r = ม้วนลิ้นขึ้นแต่ไม่แตะเพดาน เสียงครางต่อเนื่อง (ไม่ใช่ ร กลิ้ง ไม่ใช่ ล) · l = ปลายลิ้นแตะเหงือกบน เหมือน ล ไทย'},
   'ren': {label:'…人 ต้องไม่หาย', tip:'ท้ายคำต้องมี 人 "เหริน" ชัดๆ ม้วนลิ้นแบบ r แล้วลากเสียงขึ้น อย่ากลืนหาย'}
 };
 const PAIRS=[
   {f:'sh-s', a:['老师','lǎo shī','หล่าว ซือ','ครู'],             b:['老四','lǎo sì','หล่าว ซื่อ','ลูกคนที่สี่'], oneWay:true},
+  {f:'sh-x', a:['师傅','shī fu','ซือ ฟู่','พี่คนขับ'],           b:['媳妇','xí fu','สี ฟู่','ภรรยา (ลูกสะใภ้)']},
+  {f:'sh-x', a:['十个','shí ge','สือ เกอะ','สิบอัน'],             b:['七个','qī ge','ชี เกอะ','เจ็ดอัน']},
+  {f:'sh-x', a:['少一点','shǎo yì diǎn','ส่าว อี้ เตี่ยน','น้อยลงหน่อย'], b:['小一点','xiǎo yì diǎn','เสี่ยว อี้ เตี่ยน','เล็กลงหน่อย']},
+  {f:'sh-x', a:['是的','shì de','ซื่อ เตอะ','ใช่'],              b:['去的','qù de','ชวี่ เตอะ','(ที่) ไป'], oneWay:true},
+  {f:'sh-s', a:['诗人','shī rén','ซือ เหริน','กวี'],              b:['私人','sī rén','ซือ เหริน','ส่วนตัว']},
   {f:'zh-j', a:['找你','zhǎo nǐ','จ่าว หนี่','หาคุณ'],           b:['叫你','jiào nǐ','เจี้ยว หนี่','เรียกคุณ']},
   {f:'zh-j', a:['猪肉','zhū ròu','จู โร่ว','เนื้อหมู'],          b:['鸡肉','jī ròu','จี โร่ว','เนื้อไก่']},
   {f:'zh-j', a:['知道','zhī dào','จือ ต้าว','รู้'],              b:['几道','jǐ dào','จี่ ต้าว','กี่จาน'], oneWay:true},
@@ -7273,7 +7317,8 @@ function pairFamsOf(py, h){
   const out=new Set();
   String(py||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').split(/[\s'·]+/).forEach(sy=>{
     if(!sy) return;
-    if(/^sh/.test(sy) || /^s/.test(sy)) out.add('sh-s');
+    if(/^sh/.test(sy)){ out.add('sh-s'); out.add('sh-x'); }
+    else if(/^s/.test(sy)) out.add('sh-s');
     else if(/^zh/.test(sy) || /^j/.test(sy)) out.add('zh-j');
     else if(/^[qx]/.test(sy)) out.add('q-x');
     else if(/^r/.test(sy)) out.add('r-l');
@@ -7294,6 +7339,8 @@ function pairWeights(){
     const py=(S.words[h]&&S.words[h].py) || (CORE_BY_HANZI[h]&&CORE_BY_HANZI[h].pinyin) || '';
     add(h, py, 0.5);
   });
+  for(let o=-6;o<=0;o++){ const d=(S.daily||{})[dayKey(o)]; if(!d || !d.conf) continue;   // ตาราง "เป้าหมาย>ได้ยิน" รายวัน (R-5)
+    Object.entries(d.conf).forEach(([k,v])=>{ const f = /^sh>(x|q|j)$|^(x|q)>sh$/.test(k)?'sh-x' : /^sh>s$|^s>sh$/.test(k)?'sh-s' : /^(zh|ch)>(j|q|z|c)$|^j>zh$/.test(k)?'zh-j' : /^r>l$|^l>r$/.test(k)?'r-l' : /^q>x$|^x>q$/.test(k)?'q-x' : null; if(f && w[f]!==undefined) w[f]+=v*0.3; }); }
   Object.keys(w).forEach(f=>{
     const hs=pairStat(f).hist, acc=hs.length ? hs.reduce((a,b)=>a+b,0)/hs.length : 0.5;
     w[f]=w[f]*(1.2-acc) + 6*(1-acc);
@@ -7419,11 +7466,12 @@ function treeDoneRow(){
     (nx.length ? '<div class="nearTip">🌱 ต่อไป<br>'+nx.map(esc).join('<br>')+'</div>' : '')+warn;
 }
 function pairDoneRow(){
-  const xs=COACH.items.filter(x=>x.b==='BP'); if(!xs.length) return '';
+  const xs=COACH.items.filter(x=>x.b==='BP'||x.b==='FP'); if(!xs.length) return '';
   const fams=[...new Set(xs.map(x=>x.fam))].map(f=>(PAIR_FAM[f]||{}).label||f).join(', ');
   return '<div class="cdrow"><span>👅 พยัญชนะ ('+esc(fams)+')</span><b>ชัด '+xs.filter(x=>x.st>=2).length+'/'+xs.length+' ครั้ง</b></div>';
 }
 COACH_RUN.BP=blk=>startPair(pairQueue(COACH.minutes===10?6:10, 2), 'โค้ช');
+COACH_RUN.FP=blk=>startPair(pairQueue(6, 2), 'โค้ช · ซ้อมปาก');
 
 /* ============================================================
    🌳 ต้นไม้คำเที่ยว (travel-tree-plan.md) — ลำต้น = โครงประโยค + วลีเอาตัวรอด · กิ่ง = คำนามตามหมวด · ใบ = ประโยคที่ประกอบเอง
@@ -9364,6 +9412,16 @@ function placementDone(){
   toast('📝 ผลวัดระดับ', Object.keys(r).map(g=>lab[g]+' '+(res[g]===null?'—':res[g]+'%')+(f.pass[g]?' ✅':'')).join(' · '), 4200);
 }
 COACH_RUN.FD=blk=>foundStart(20);
+COACH_RUN.FS=blk=>{
+  const last=id=>((S.coach.rpLast||{})[id])||0, best=id=>(S.talk&&S.talk[id]&&S.talk[id].best)||0;
+  const sc=RP_SCENES.slice().sort(()=>Math.random()-0.5).sort((a,b)=>last(a.id)-last(b.id) || best(a.id)-best(b.id))[0];   // ฉากที่ไม่ได้เล่นนานสุด / ทำได้แย่สุด
+  if(!sc) return false;
+  S.coach.rpLast=Object.assign({}, S.coach.rpLast||{}); S.coach.rpLast[sc.id]=Date.now();
+  S.coach.rpRuns=(S.coach.rpRuns||[]).filter(t=>t>=Date.now()-14*86400000).concat([Date.now()]);
+  dlog('coach','🎭 ซ้อมสถานการณ์ '+sc.id+' '+sc.title);
+  startTalk(sc); return true;
+};
+COACH_RUN.FX=blk=>examStartCoach();
 COACH_BLOCKS.FD={icon:'🧱', name:'วางเสาเข็ม', sr:false};
 /* ---------- หน้าฟัง: แสดงข้อพิเศษ (ภาษามือ · ป้าย · เลโก้) ---------- */
 function fdRender(it){
@@ -11691,10 +11749,11 @@ const EXAM_GAP=7*86400000;
 function examPool(){
   const out=[], seen=new Set();
   const add=it=>{ if(!it || !it.hanzi || !it.meaning) return; const k=norm(it.hanzi,false); if(!k||seen.has(k)) return; seen.add(k); out.push(it); };
+  Object.keys(S.tree||{}).forEach(k=>{ const r=S.tree[k]; if(TREE[k] && r && (r.stage||0)>=5 && (r.box||0)>=1 && !r.parked && !r.hwSkip) add(treeItem(k,false)); });   // ต้นไม้คำ = ที่เรียนจริงเกือบทั้งหมด
   CORE100.forEach(w=>{ const r=S.core[w.hanzi]; if(r && (r.box||0)>=1) add(coreItem(w)); });
   Object.keys(S.srx).forEach(h=>{
     const r=S.srx[h], src=String((r&&r.src)||'');
-    if(!r || (r.box||0)<1 || src.indexOf('L:')===0 || src==='ฟัง') return;
+    if(!r || (r.box||0)<1 || src.indexOf('L:')===0 || src==='ฟัง' || src==='contrast') return;
     add(srxItem(h, r));
   });
   return out;
@@ -11704,15 +11763,16 @@ function examReady(){
   if(!S.lastExam) return true;
   return Date.now()-new Date(S.lastExam+'T00:00:00').getTime() >= EXAM_GAP;
 }
-function examBuild(){
+function examBuild(small){
   const shuf=a=>a.slice().sort(()=>Math.random()-0.5);
   const pool=shuf(examPool());
-  const speak=pool.slice(0,14).map(it=>Object.assign({}, it, {exType:'speak'}));
-  const rest=pool.slice(14).concat(pool.slice(0,14));
+  const nS=small?7:14, nL=small?2:4, nT=small?1:2;
+  const speak=pool.slice(0,nS).map(it=>Object.assign({}, it, {exType:'speak'}));
+  const rest=pool.slice(nS).concat(pool.slice(0,nS));
   const listen=[];
   if(pool.length>=4){
     for(const it of shuf(rest)){
-      if(listen.length>=4) break;
+      if(listen.length>=nL) break;
       if(listen.some(x=>x.hanzi===it.hanzi)) continue;
       const others=shuf(pool.filter(x=>x.meaning!==it.meaning)).map(x=>shortMean(x.meaning)).filter((m,i,a)=>m && m!==shortMean(it.meaning) && a.indexOf(m)===i).slice(0,3);
       if(others.length<3) continue;
@@ -11720,10 +11780,11 @@ function examBuild(){
         ans:shortMean(it.meaning), choices:shuf([shortMean(it.meaning)].concat(others))});
     }
   }
-  const talk=shuf(TALK).slice(0,2).map(sc=>{
-    const m=materializeScenario(sc), t=m.turns[Math.floor(Math.random()*m.turns.length)];
+  const talk=shuf(RP_SCENES).slice(0,nT).map(sc=>{                  // ตอบโต้จากฉากเที่ยวจริง (ข้อที่ตอบเป็นคำ ไม่ใช่ทวนตัวเลข)
+    const m=materializeScenario(sc), ts=m.turns.filter(t=>t.accept && t.accept.length && !t.numAccept && !t.timeAccept);
+    const t=ts[Math.floor(Math.random()*ts.length)]; if(!t) return null;
     return {exType:'talk', hanzi:t.model, ask:t.ask, accept:t.accept, meaning:t.askMean, model:t.model, modelPy:t.modelPy};
-  });
+  }).filter(Boolean);
   return shuf(speak.concat(listen, talk));
 }
 function renderExamCard(){
@@ -11824,7 +11885,25 @@ function judgeExam(alts){
   micState('ok');
   setTimeout(()=>{ if(playing && MODE==='exam') next(); }, 800);
 }
+function examStartCoach(){
+  const q=examBuild(true); if(q.length<5){ dlog('coach','สอบ: ข้อยังไม่พอ ('+q.length+')'); return false; }
+  EX={guess:null, res:{}, t0:Date.now(), coach:true};
+  MODE='exam'; levelId='exam'; Q=q; qi=0; tries=0; sessUtter=0; sessStars=0; bestPer=[];
+  playing=true; t0=Date.now(); show('scr-play'); renderMode();
+  dlog('recall','📝 เริ่มสอบประจำสัปดาห์ (โค้ช) '+q.length+' ข้อ');
+  toast('📝 สอบประจำสัปดาห์', q.length+' ข้อ · ห้ามใบ้ · เฉลยตอนจบ', 1800);
+  renderItem(true); return true;
+}
 function finishExam(){
+  if(COACH.active && EX && EX.coach){                 // สอบในโค้ช: เก็บผล แล้วไปสรุปของโค้ช
+    const n=Q.length, ok=Q.filter((_,i)=>EX.res[i]&&EX.res[i].ok).length, score=n?Math.round(ok/n*100):0;
+    Q.forEach((it,i)=>{ if(EX.res[i]&&EX.res[i].ok) return; if(it.exType==='talk') return;
+      const store=storeOf(it), key=skeyOf(it); if(store[key]){ const r=srsUpdate(key, 0, false, store); r.miss=(r.miss||0)+1; } });
+    S.exams=(S.exams||[]).concat({d:today(), n:n, score:score, guess:null, coach:true}); S.lastExam=today();
+    COACH.examDone={score:score, ok:ok, n:n, miss:Q.filter((_,i)=>!(EX.res[i]&&EX.res[i].ok)).map(it=>it.exType==='talk'?it.model:it.hanzi).slice(0,6)};
+    save(true); dlog('recall','📝 จบสอบประจำสัปดาห์ (โค้ช): '+score+'% ('+ok+'/'+n+')');
+    return coachNextBlock();
+  }
   playing=false; abortRec(); releaseWake(); hideAllBoxes(); MODE='lesson';
   const n=Q.length, ok=Q.filter((_,i)=>EX.res[i]&&EX.res[i].ok).length;
   const score=n ? Math.round(ok/n*100) : 0, guess=EX.guess;
