@@ -3402,7 +3402,7 @@ const MILESTONES = [
 /* ============================================================
    2.5 บันทึกปัญหา (diagnostics) — ไว้ส่งให้ผู้พัฒนาดูเวลาไมค์มีปัญหา
    ============================================================ */
-const BUILD='2026-10-13d';                     // เปลี่ยนทุกครั้งที่แก้ไฟล์ จะได้รู้ว่า log มาจากรุ่นไหน
+const BUILD='2026-10-13e';                     // เปลี่ยนทุกครั้งที่แก้ไฟล์ จะได้รู้ว่า log มาจากรุ่นไหน
 const DIAG=[], STUCK={}, T0=Date.now();
 /* log ปัญหาเก็บลงเครื่องด้วย: iPhone ปิดแอปหรือรีเฟรชแล้ว log เก่ายังอยู่ ส่งย้อนหลังได้ */
 const DKEY='zhgame-diag', DIAG_MAX=2500;
@@ -6275,7 +6275,7 @@ function focusPlan(){
   if(pr.need){ order.push('FP'); P.FP=1.5; P.FT=4.5; why.push('👅 เสียงม้วนลิ้นเพี้ยน '+pr.n+' ครั้ง/3 วัน · คิวออกเสียง '+pr.pron); }
   order.push('FT','FD');
   if(examReady()){ order.push('FX'); P.FX=3; P.FD=2; why.push('📝 ครบ 7 วัน'); }
-  else if(focusRpDue()){ order.push('FS'); P.FS=3; P.FD=2; why.push('🎭 ซ้อมสถานการณ์ (สัปดาห์ละ 2)'); }
+  else if(focusRpDue() && S.lastExam!==today()){ order.push('FS'); P.FS=3; P.FD=2; why.push('🎭 ซ้อมสถานการณ์ (สัปดาห์ละ 2)'); }
   else { order.push('FL'); P.FL=2; }
   return {plan:order.map(b=>[b,P[b]]), why:why};
 }
@@ -7299,7 +7299,6 @@ const PAIRS=[
   {f:'sh-x', a:['十个','shí ge','สือ เกอะ','สิบอัน'],             b:['七个','qī ge','ชี เกอะ','เจ็ดอัน']},
   {f:'sh-x', a:['少一点','shǎo yì diǎn','ส่าว อี้ เตี่ยน','น้อยลงหน่อย'], b:['小一点','xiǎo yì diǎn','เสี่ยว อี้ เตี่ยน','เล็กลงหน่อย']},
   {f:'sh-x', a:['是的','shì de','ซื่อ เตอะ','ใช่'],              b:['去的','qù de','ชวี่ เตอะ','(ที่) ไป'], oneWay:true},
-  {f:'sh-s', a:['诗人','shī rén','ซือ เหริน','กวี'],              b:['私人','sī rén','ซือ เหริน','ส่วนตัว']},
   {f:'zh-j', a:['找你','zhǎo nǐ','จ่าว หนี่','หาคุณ'],           b:['叫你','jiào nǐ','เจี้ยว หนี่','เรียกคุณ']},
   {f:'zh-j', a:['猪肉','zhū ròu','จู โร่ว','เนื้อหมู'],          b:['鸡肉','jī ròu','จี โร่ว','เนื้อไก่']},
   {f:'zh-j', a:['知道','zhī dào','จือ ต้าว','รู้'],              b:['几道','jǐ dào','จี่ ต้าว','กี่จาน'], oneWay:true},
@@ -8943,7 +8942,8 @@ function treeSuccess(it){
 }
 function treeFail(it){
   const k=it.k;
-  if(it.t==='quiz'){                                 // ด่านรวมพลาด: กลับมาทวนเร็วขึ้น
+  if(it.t==='quiz'){                                 // ด่านรวมพลาด: กลับมาทวนเร็วขึ้น (ครั้งเดียวต่อข้อ)
+    if(it.quizFailed) return; it.quizFailed=true;
     const r=treeRec(k); if(r){ r.next=Date.now()+SRS_MS[0]; }
     dlog('tree','ด่านรวมพลาด '+k+' → ทวนอีก 10 นาที');
     return;
@@ -11748,8 +11748,13 @@ let EX=null;
 const EXAM_GAP=7*86400000;
 function examPool(){
   const out=[], seen=new Set();
-  const add=it=>{ if(!it || !it.hanzi || !it.meaning) return; const k=norm(it.hanzi,false); if(!k||seen.has(k)) return; seen.add(k); out.push(it); };
+  const add=it=>{ if(!it || !it.hanzi || !it.meaning) return; const k=norm(it.hanzi,false); if(!k||seen.has(k)) return;
+    if([...k].length<2 && !carrierOf(it)) return;                      // คำตัวเดียว (我 · 看) ระบบฟังไม่ออก + ง่ายเกินไป
+    seen.add(k); out.push(it); };
+  const nTree=()=>out.filter(x=>x.store==='tree').length;
   Object.keys(S.tree||{}).forEach(k=>{ const r=S.tree[k]; if(TREE[k] && r && (r.stage||0)>=5 && (r.box||0)>=1 && !r.parked && !r.hwSkip) add(treeItem(k,false)); });   // ต้นไม้คำ = ที่เรียนจริงเกือบทั้งหมด
+  Object.keys(S.srx).forEach(h=>{ const r=S.srx[h]; if(r && r.src==='teacher' && (r.box||0)>=1) add(srxItem(h, r)); });   // การ์ดจากครู
+  if(nTree()>=14) return out;                                              // ต้นไม้คำพอแล้ว ไม่ต้องดึงคำบทเรียนเก่า
   CORE100.forEach(w=>{ const r=S.core[w.hanzi]; if(r && (r.box||0)>=1) add(coreItem(w)); });
   Object.keys(S.srx).forEach(h=>{
     const r=S.srx[h], src=String((r&&r.src)||'');
@@ -11765,7 +11770,7 @@ function examReady(){
 }
 function examBuild(small){
   const shuf=a=>a.slice().sort(()=>Math.random()-0.5);
-  const pool=shuf(examPool());
+  const pool0=shuf(examPool()), pool=pool0.filter(x=>x.store==='tree').concat(pool0.filter(x=>x.store!=='tree'));   // ข้อพูดจากต้นไม้คำก่อน
   const nS=small?7:14, nL=small?2:4, nT=small?1:2;
   const speak=pool.slice(0,nS).map(it=>Object.assign({}, it, {exType:'speak'}));
   const rest=pool.slice(nS).concat(pool.slice(0,nS));
