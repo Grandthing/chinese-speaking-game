@@ -3402,7 +3402,7 @@ const MILESTONES = [
 /* ============================================================
    2.5 บันทึกปัญหา (diagnostics) — ไว้ส่งให้ผู้พัฒนาดูเวลาไมค์มีปัญหา
    ============================================================ */
-const BUILD='2026-10-13e';                     // เปลี่ยนทุกครั้งที่แก้ไฟล์ จะได้รู้ว่า log มาจากรุ่นไหน
+const BUILD='2026-10-14a';                     // เปลี่ยนทุกครั้งที่แก้ไฟล์ จะได้รู้ว่า log มาจากรุ่นไหน
 const DIAG=[], STUCK={}, T0=Date.now();
 /* log ปัญหาเก็บลงเครื่องด้วย: iPhone ปิดแอปหรือรีเฟรชแล้ว log เก่ายังอยู่ ส่งย้อนหลังได้ */
 const DKEY='zhgame-diag', DIAG_MAX=2500;
@@ -8370,10 +8370,16 @@ function treeCompose(F, n){
     note:[F.note, n.note].filter(Boolean).join(' · ')
   };
 }
+/* คำหลักในประโยค: ตัวถอดเสียงมักเขียนเป็นตัวพ้องเสียง (太咸了 → 太闲了 · xián เหมือนกันเป๊ะ)
+   → เทียบหลังแทนตัวพ้องเสียงด้วยตัวในประโยคเป้าหมายแล้ว (log 13 ต.ค.: คำหลัก 咸 ได้ 0% ทั้งที่พูดถูก 6 ครั้ง) */
+function keyScore(kw, sentence, alts){
+  const t=norm(sentence,false), more=(alts||[]).map(a=>homoFix(norm(a,false), t).text).filter(Boolean);
+  return scoreAll(kw, (alts||[]).concat(more));
+}
 function treeScore(it, alts){
   const r0=treeScore0(it, alts), T=TREE[it.k||it.key];
   if(T && T.kw && T.car && norm(it.hanzi,false)===norm(T.car.hanzi,false) && r0.score>60){
-    const kr=scoreAll(T.kw, alts);
+    const kr=keyScore(T.kw, T.car.hanzi, alts);
     if(kr.score<80){ dlog('tree','คำหลัก '+T.kw+' ไม่ชัด ('+kr.score+'%) → สูงสุด 1★'); return Object.assign({}, r0, {score:60, nearFull:false, frameOnly:null, hints:['คำหลัก '+T.pinyin+' ยังไม่ชัด — ประโยคถูกแต่คำที่ต้องจำยังไม่ผ่าน'].concat(kr.hints||[])}); }
   }
   return r0;
@@ -10562,7 +10568,7 @@ function renderSub(it){
 }
 function judgeSub(alts){
   const it=cur(); if(!it || it.kind!=='sub' || it.done) return;
-  const r=scoreAll(it.hanzi, alts), kr=it.key ? scoreAll(it.key, alts) : {score:100};
+  const r=scoreAll(it.hanzi, alts), kr=it.key ? keyScore(it.key, it.hanzi, alts) : {score:100};
   const ok = it.echo ? r.score>=70 : (kr.score>=80 && r.score>=60);
   it.stries=(it.stries||0)+1; tries++;
   const st = ok ? (r.score>=90?3:2) : starsOf(Math.min(r.score, kr.score));
