@@ -3402,7 +3402,7 @@ const MILESTONES = [
 /* ============================================================
    2.5 บันทึกปัญหา (diagnostics) — ไว้ส่งให้ผู้พัฒนาดูเวลาไมค์มีปัญหา
    ============================================================ */
-const BUILD='2026-10-14b';                     // เปลี่ยนทุกครั้งที่แก้ไฟล์ จะได้รู้ว่า log มาจากรุ่นไหน
+const BUILD='2026-10-14c';                     // เปลี่ยนทุกครั้งที่แก้ไฟล์ จะได้รู้ว่า log มาจากรุ่นไหน
 const DIAG=[], STUCK={}, T0=Date.now();
 /* log ปัญหาเก็บลงเครื่องด้วย: iPhone ปิดแอปหรือรีเฟรชแล้ว log เก่ายังอยู่ ส่งย้อนหลังได้ */
 const DKEY='zhgame-diag', DIAG_MAX=2500;
@@ -9617,8 +9617,19 @@ const RP_SCENES=[
 /* ดึงตัวเลขทุกตัวจากที่ได้ยิน (25 · 二十五 · 两 · 一刻) → ค่า */
 const SHI_NEAR={shi:1,si:1,xi:1,qi:1,qu:1,xu:1,chi:1,ci:1,shu:1,ju:1,xue:1,qie:1};
 let NUM_NEAR=false;                                   // ผ่านเพราะยอมเสียง 十 เพี้ยน → ให้ผู้เล่นเห็นคำแนะนำ
+/* ตัวถอดเสียงได้ยิน yī เป็น 亿 (yì) แล้วเขียนเป็นเลขยักษ์: 一百一十七 → "10,000,000,000 17" (log 13 ต.ค.)
+   → แปลงเลข ≥ 1 ร้อยล้านกลับเป็นคำอ่าน (X亿 Y万 Z) แล้วให้ 亿 = 一 ถ้าโจทย์ไม่ได้ใหญ่ขนาดนั้น */
+function bigNumFix(raw, want){
+  if(want>=1e8) return raw;
+  return String(raw||'').replace(/\d{1,3}(?:,\d{3}){2,}|\d{9,}/g, m=>{
+    const n=+m.replace(/,/g,''); if(!(n>=1e8)) return m;
+    const yi=Math.floor(n/1e8), rest=n%1e8, wan=Math.floor(rest/1e4), r=rest%1e4;
+    return numToHan(yi)+'一'+(wan?numToHan(wan)+'万':'')+(r?numToHan(r):'');
+  }).replace(/亿/g,'一');
+}
 function numsIn(raw, want){
   const tgt=numToHan(want);
+  raw=bigNumFix(raw, want);
   let h=applyAlias(norm(String(raw||''),false), tgt);
   const grab=x=>{ const o=[]; (x.match(/[零一二两三四五六七八九十百千万]+/g)||[]).forEach(run=>{ const v=hanToNum(run); if(v!==null) o.push(v); }); return o; };
   const out=grab(h);
