@@ -3402,7 +3402,7 @@ const MILESTONES = [
 /* ============================================================
    2.5 บันทึกปัญหา (diagnostics) — ไว้ส่งให้ผู้พัฒนาดูเวลาไมค์มีปัญหา
    ============================================================ */
-const BUILD='2026-10-15a';                     // เปลี่ยนทุกครั้งที่แก้ไฟล์ จะได้รู้ว่า log มาจากรุ่นไหน
+const BUILD='2026-10-15b';                     // เปลี่ยนทุกครั้งที่แก้ไฟล์ จะได้รู้ว่า log มาจากรุ่นไหน
 const DIAG=[], STUCK={}, T0=Date.now();
 /* log ปัญหาเก็บลงเครื่องด้วย: iPhone ปิดแอปหรือรีเฟรชแล้ว log เก่ายังอยู่ ส่งย้อนหลังได้ */
 const DKEY='zhgame-diag', DIAG_MAX=2500;
@@ -6273,6 +6273,10 @@ function focusPlan(){
   const pr=focusNeedPair();
   const order=['FR'];
   if(pr.need){ order.push('FP'); P.FP=1.5; P.FT=4.5; why.push('👅 เสียงม้วนลิ้นเพี้ยน '+pr.n+' ครั้ง/3 วัน · คิวออกเสียง '+pr.pron); }
+  /* ค้างทวนเยอะ → ย้ายเวลาจากคำใหม่ไปทวน (log 15 ต.ค.: ค้าง 11 → 19 → 31 → 48 ใน 4 วัน · ลำต้นเขียว 88% → 80%) */
+  const due=treeDueList().length;
+  if(due>=40){ const mv=P.FT-2; P.FR+=mv; P.FT=2; why.push('🔁 ค้างทวน '+due+' คำ → ทวนก่อน (คำใหม่เหลือ 2 นาที)'); }
+  else if(due>=20){ const mv=Math.min(2, P.FT-2.5); P.FR+=mv; P.FT-=mv; why.push('🔁 ค้างทวน '+due+' คำ → ทวนเพิ่ม '+mv+' นาที'); }
   order.push('FT','FD');
   if(examReady()){ order.push('FX'); P.FX=3; P.FD=2; why.push('📝 ครบ 7 วัน'); }
   else if(focusRpDue() && S.lastExam!==today()){ order.push('FS'); P.FS=3; P.FD=2; why.push('🎭 ซ้อมสถานการณ์ (สัปดาห์ละ 2)'); }
@@ -10913,7 +10917,7 @@ function pronItems(n){
 }
 COACH_RUN.FR=blk=>{
   const warm0=pronItems(3);
-  const rev=buildTreeReview(30);
+  const rev=buildTreeReview(Math.max(30, Math.round(blk.ms/60000*8)));
   const ct=contrastPick(rev.length>=6 ? 3 : 2);                       // R-9: ข้อแยกคู่ที่สับสน 2–3 ข้อต่อรอบ สลับกับข้อทวน
   ct.forEach((c,j)=>rev.splice(Math.min(rev.length, 2+j*5), 0, c));
   if(ct.length) dlog('coach','FR แทรกข้อไวยากรณ์ '+ct.map(c=>c.key+' '+c.g).join(' · '));
