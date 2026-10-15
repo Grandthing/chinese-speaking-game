@@ -3402,7 +3402,7 @@ const MILESTONES = [
 /* ============================================================
    2.5 บันทึกปัญหา (diagnostics) — ไว้ส่งให้ผู้พัฒนาดูเวลาไมค์มีปัญหา
    ============================================================ */
-const BUILD='2026-10-14c';                     // เปลี่ยนทุกครั้งที่แก้ไฟล์ จะได้รู้ว่า log มาจากรุ่นไหน
+const BUILD='2026-10-15a';                     // เปลี่ยนทุกครั้งที่แก้ไฟล์ จะได้รู้ว่า log มาจากรุ่นไหน
 const DIAG=[], STUCK={}, T0=Date.now();
 /* log ปัญหาเก็บลงเครื่องด้วย: iPhone ปิดแอปหรือรีเฟรชแล้ว log เก่ายังอยู่ ส่งย้อนหลังได้ */
 const DKEY='zhgame-diag', DIAG_MAX=2500;
@@ -9992,6 +9992,7 @@ function fdSayOne(s, a){
 }
 function judgeFdNum(alts){
   const it=cur(); if(!it) return;
+  if(it.phase==='done'){ echoFeedback(it.say.zh, alts, 'ข้อนี้ผ่านแล้ว · กดถัดไปได้เลย'); return; }
   if(it.phase!=='say'){ toast('เลือกคำตอบก่อน','ฟังแล้วแตะตัวเลือก แล้วค่อยพูด',1500); return; }
   NUM_NEAR=false;
   const ok=fdSayPass(it, alts), heard=(ok&&MATCHED)||(alts&&alts[0])||'', shiNear = ok ? NUM_NEAR==='ke' : !!NUM_NEAR;   // ผ่าน: โชว์แค่คำแนะนำ 一刻 · ไม่ผ่าน: โชว์ 十/一刻 · B6: แสดงตัวที่ใช้ตัดสินจริง
@@ -10425,6 +10426,17 @@ function renderHwCard(){
   $('#hwSub').textContent='เหลือ '+left+' วัน';
   $('#hwFocus').innerHTML=(fp.length?'🎯 เน้น: '+fp.map(esc).join(' · '):'')+(h.add.length?'<br>➕ คำใหม่จากครู '+h.add.length+' คำ':'')+(h.skip.length?'<br>⏸ พักไว้ '+h.skip.length+' คำ':'');
 }
+/* พูดตามหลังเฉลยแล้ว (ข้อจบไปแล้ว): บอกผลให้เห็น แต่ไม่นับคะแนน — เดิมระบบเงียบ ผู้ใช้นึกว่าค้าง (log 14 ต.ค. 00:04) */
+function echoFeedback(target, alts, note){
+  const r=scoreAll(target, alts), ok=r.score>=80;
+  dlog('พูดตาม', target+' → '+r.score+'% (หลังเฉลย ไม่นับคะแนน · ได้ยิน '+(r.heard||'—')+')');
+  const box=$('#heard'); if(!box) return;
+  const old=box.querySelector('.echofb'); if(old) old.remove();
+  const nx=box.querySelector('.nextbox');
+  const html='<div class="echofb nearTip" style="margin-top:.4rem">🔁 พูดตาม: '+pyHTML(toPinyin(r.heard||''))+' — '+(ok?'✓ ชัดแล้ว 👍':'ยังไม่ชัด ลองอีกครั้งได้')+' <span class="small muted">('+(note||'ไม่นับคะแนน')+')</span></div>';
+  if(nx) nx.insertAdjacentHTML('beforebegin', html); else box.insertAdjacentHTML('beforeend', html);
+  micState(ok?'ok':''); vib(ok?[30,40,30]:60);
+}
 /* ============================================================
    📖 R-9: การ์ดไวยากรณ์ 10 ใบ + ข้อแยกคู่ที่สับสน (CONTRAST)
    ไม่สอนก่อน — โชว์หลังตอบข้อที่เกี่ยวข้อง (1 บรรทัด แตะดูเพิ่ม) · CONTRAST แทรกในบล็อกทวน FR 2–3 ข้อ/รอบ · SRS ใน S.srx key 'C:'+i
@@ -10496,7 +10508,8 @@ document.addEventListener('click', e=>{
   contrastResult(it, b.dataset.ok==='1', b.dataset.ok==='1'?it.hanzi:it.wrong, 'แตะเลือก');
 });
 function judgeContrast(alts){
-  const it=cur(); if(!it || it.cdone) return;
+  const it=cur(); if(!it) return;
+  if(it.cdone){ echoFeedback(it.hanzi, alts); return; }
   const r=scoreAll(it.hanzi, alts), w=scoreAll(it.wrong, alts);
   const ok = r.score>=80 && r.score>w.score;                  // ใกล้ตัวลวงมากกว่า = ไม่ผ่าน
   it.ctries=(it.ctries||0)+1;
@@ -10581,7 +10594,8 @@ function renderSub(it){
   armMic();
 }
 function judgeSub(alts){
-  const it=cur(); if(!it || it.kind!=='sub' || it.done) return;
+  const it=cur(); if(!it || it.kind!=='sub') return;
+  if(it.done){ echoFeedback(it.hanzi, alts); return; }
   const r=scoreAll(it.hanzi, alts), kr=it.key ? keyScore(it.key, it.hanzi, alts) : {score:100};
   const ok = it.echo ? r.score>=70 : (kr.score>=80 && r.score>=60);
   it.stries=(it.stries||0)+1; tries++;
