@@ -3402,7 +3402,7 @@ const MILESTONES = [
 /* ============================================================
    2.5 บันทึกปัญหา (diagnostics) — ไว้ส่งให้ผู้พัฒนาดูเวลาไมค์มีปัญหา
    ============================================================ */
-const BUILD='2026-10-15b';                     // เปลี่ยนทุกครั้งที่แก้ไฟล์ จะได้รู้ว่า log มาจากรุ่นไหน
+const BUILD='2026-10-15c';                     // เปลี่ยนทุกครั้งที่แก้ไฟล์ จะได้รู้ว่า log มาจากรุ่นไหน
 const DIAG=[], STUCK={}, T0=Date.now();
 /* log ปัญหาเก็บลงเครื่องด้วย: iPhone ปิดแอปหรือรีเฟรชแล้ว log เก่ายังอยู่ ส่งย้อนหลังได้ */
 const DKEY='zhgame-diag', DIAG_MAX=2500;
@@ -5536,7 +5536,7 @@ function judgeTalk(alts){
     '<div class="stars" style="color:var(--'+(st>=3?'ok':st>=2?'warn':'bad')+')">'+
       (st>=2?'✓ ตอบเป็นเรื่องแล้ว ':'✗ ยังไม่ตรงคำถาม ')+starStr(st)+'</div>'+
     (nearHit&&tips.length ? '<div class="nearTip">ตอบถูกเรื่องแล้ว แต่เสียงยังเพี้ยน — '+esc(tips[0])+'</div>' : '')+
-    (!hit&&NUM_NEAR==='shi' ? '<div class="nearTip">'+esc(SHI_TIP)+'</div>' :
+    (!hit&&(NUM_NEAR==='shi'||NUM_NEAR==='jiu') ? '<div class="nearTip">'+esc(NUM_NEAR==='jiu'?JIU_TIP:SHI_TIP)+'</div>' :
      !hit&&(t.numAccept||t.timeAccept) ? '<div class="nearTip">ต้องพูด'+(t.timeAccept?'เวลา':'ตัวเลข')+'ที่ได้ยินให้ตรง — ฟังเฉลยแล้วลองใหม่</div>' :
      !hit&&t.hint&&(t.accept||[]).length ? '<div class="nearTip">คำตอบนี้ต้องมีคำว่า <b>'+esc((t.accept||[]).slice(0,3).map(x=>toPinyin(x)).join(' / '))+'</b></div>' : '');
 
@@ -9637,6 +9637,7 @@ function numsIn(raw, want){
   let h=applyAlias(norm(String(raw||''),false), tgt);
   const grab=x=>{ const o=[]; (x.match(/[零一二两三四五六七八九十百千万]+/g)||[]).forEach(run=>{ const v=hanToNum(run); if(v!==null) o.push(v); }); return o; };
   const out=grab(h);
+  if(out.indexOf(want)<0 && tgt.indexOf('九')>=0 && /第五|第5/.test(String(raw||''))){ NUM_NEAR='jiu'; dlog('found','九 เพี้ยนเป็น 第五 (ได้ยิน '+raw+') → ไม่นับผ่าน'); }
   if(out.indexOf(want)<0 && tgt.indexOf('十')>=0){    // 十二 → 企鹅 / 取恶 / 去耳 · 十五 → 媳妇
     let k='';
     for(const c of h){
@@ -9813,6 +9814,7 @@ function timeNear(raw, wh, wm){
   if(needShi){ let k=''; for(const c of h){ k += (!/[零一二两三四五六七八九十点分半刻]/.test(c) && SHI_NEAR[pyBare(c)]) ? '十' : c; } if(k!==h){ h=k; why=why||'shi'; } }
   return why && timesIn(h).some(x=>x[0]===wh%12 && x[1]===wm) ? why : '';
 }
+const JIU_TIP='九 = jiǔ พยางค์เดียว "จิ่ว" (จ + อิ่ว รวบเป็นเสียงเดียว ปากห่อท้ายเสียง) — ระบบได้ยินเป็น dì wǔ (第五 = ที่ห้า) · ยังไม่นับผ่าน';
 const KE_TIP='一刻 = yí kè (15 นาที): kè ออกเสียง "เค่อ" ไม่ใช่ "โฮ่ว" — ระบบได้ยินเป็น 以后 yǐ hòu · ครั้งนี้นับผ่าน';
 function digitsIn(raw){
   const M={'零':'0','〇':'0','幺':'1','一':'1','二':'2','两':'2','三':'3','四':'4','五':'5','六':'6','七':'7','八':'8','九':'9'};
@@ -9986,7 +9988,7 @@ function fdSayPass(it, alts){
 }
 function fdSayOne(s, a){
   return [a].some(a=>{
-    if(s.digits) return digitsIn(a).indexOf(s.digits)>=0 || digitsPy(a).indexOf(s.digits)>=0;
+    if(s.digits){ const ok=digitsIn(a).indexOf(s.digits)>=0 || digitsPy(a).indexOf(s.digits)>=0; if(!ok && s.digits.indexOf('9')>=0 && /第五|第5/.test(a)) NUM_NEAR='jiu'; return ok; }
     if(s.time){ if(timesIn(a).some(x=>x[0]===s.time[0] && x[1]===s.time[1])) return true;
       const w=timeNear(a, s.time[0], s.time[1]); if(w){ NUM_NEAR=w; MATCHED=a; return w==='ke'; } return false; }
     if(s.nums) return s.nums.every(n=>numsIn(a,n).indexOf(n)>=0);
@@ -10007,7 +10009,7 @@ function judgeFdNum(alts){
   save();
   $('#heard').innerHTML='<div class="lab">ได้ยินว่า</div>'+heardBox(heard)+
     '<div class="stars" style="color:var(--'+(ok?'ok':'bad')+')">'+(ok?'✓ พูดผ่าน':'✗ ยังไม่ตรง — ฟังแล้วลองอีกครั้ง')+'</div>'+
-    (shiNear ? '<div class="nearTip">'+esc(NUM_NEAR==='ke' ? KE_TIP : SHI_TIP)+'</div>' : '');
+    (shiNear ? '<div class="nearTip">'+esc(NUM_NEAR==='ke' ? KE_TIP : NUM_NEAR==='jiu' ? JIU_TIP : SHI_TIP)+'</div>' : '');
   if(ok){ it.phase='done'; micState('ok'); vib([30,40,30]); waitNext(); return; }
   micState(''); vib(140);
   if(tries>=2){ $('#btnSelfPass').style.visibility='visible'; $('#btnSelfPass').textContent='✅ พูดถูกแล้ว แต่ระบบฟังไม่ออก'; }
