@@ -3402,7 +3402,7 @@ const MILESTONES = [
 /* ============================================================
    2.5 บันทึกปัญหา (diagnostics) — ไว้ส่งให้ผู้พัฒนาดูเวลาไมค์มีปัญหา
    ============================================================ */
-const BUILD='2026-10-15c';                     // เปลี่ยนทุกครั้งที่แก้ไฟล์ จะได้รู้ว่า log มาจากรุ่นไหน
+const BUILD='2026-10-16a';                     // เปลี่ยนทุกครั้งที่แก้ไฟล์ จะได้รู้ว่า log มาจากรุ่นไหน
 const DIAG=[], STUCK={}, T0=Date.now();
 /* log ปัญหาเก็บลงเครื่องด้วย: iPhone ปิดแอปหรือรีเฟรชแล้ว log เก่ายังอยู่ ส่งย้อนหลังได้ */
 const DKEY='zhgame-diag', DIAG_MAX=2500;
@@ -5282,11 +5282,14 @@ function judge(alts){
   }else if(st>=3){
     vib([30,40,30]); micState('ok');
     setTimeout(()=>{ if(playing) next(); }, AUTO_NEXT_MS);
+  }else if(prod && st>=2){                          // 2 ดาว = นึกออกแล้ว เสียงยังไม่เป๊ะ → ไปต่อ (รอบทวนนับจากครั้งแรกอยู่แล้ว)
+    vib(30); micState('ok');
+    setTimeout(()=>{ if(playing) next(); }, 1800);
   }else{
     vib(140); micState('');
-    if(tries>=MAX_TRY){
+    if(tries>=(prod ? 2 : MAX_TRY)){                 // นึกเอง: 2 ครั้งพอ (log: พูดซ้ำ 4–5 ครั้งต่อข้อ กินเวลาโค้ชครึ่งหนึ่ง)
       $('#btnSkip').style.visibility='visible';
-      waitNext('พอก่อนได้ ข้อนี้จะกลับมาให้ทบทวนอีกครั้ง');
+      waitNext(prod ? 'ฟังเฉลยแล้วไปต่อ — ข้อนี้กลับมาใหม่ในอีก 10 นาที' : 'พอก่อนได้ ข้อนี้จะกลับมาให้ทบทวนอีกครั้ง');
       return;
     }
     if(tries>=2){
@@ -8570,12 +8573,21 @@ function treeItem(k, allowSent){
   }
   return base;
 }
+function stuckToday(){
+  const t0=new Date(today()+'T00:00:00Z').getTime(), cnt={};
+  (S.log||[]).forEach(r=>{ if(r.ts<t0 || typeof r.st!=='number' || r.st>=2 || r.lat==='n/a') return;
+    const k=r.h||r.hanzi||r.tgt; if(k) cnt[k]=(cnt[k]||0)+1; const t=r.tgt; if(t && t!==k) cnt[t]=(cnt[t]||0)+1; });
+  return cnt;
+}
+function isStuckToday(k, cnt){ cnt=cnt||stuckToday(); const T=TREE[k]; return (cnt[k]||0)>=4 || (T && (cnt[treeSay(T)]||0)>=4); }
 function buildTreeReview(nMax){
   const seen=new Set();
   const hw=(typeof hwReviewItems==='function') ? hwReviewItems() : [];
-  const due=hw.concat(treeDueList().filter(k=>!(S.tree[k]&&S.tree[k].hwSkip)).sort(()=>Math.random()-0.5).map(k=>treeItem(k,true))).filter(Boolean)
+  const stc=stuckToday(), skipped=[];
+  const due=hw.concat(treeDueList().filter(k=>!(S.tree[k]&&S.tree[k].hwSkip)).filter(k=>{ if(isStuckToday(k,stc)){ skipped.push(k); return false; } return true; }).sort(()=>Math.random()-0.5).map(k=>treeItem(k,true))).filter(Boolean)
     .filter(it=>{ const h=norm(it.hanzi||''); if(!h || seen.has(h)) return false; seen.add(h); return true; });
   const core=[];                                  // ผู้ใช้เลือก: โฟกัสเที่ยวไม่เอาคำชุดเก่า (CORE100 จากหนังสือเรียน) มาทวน
+  if(skipped.length) dlog('coach','พักคำที่พลาดครบ 4 ครั้งวันนี้ไว้ถึงพรุ่งนี้: '+skipped.join(' · '));
   const out=[]; let a=0, b=0;
   while(out.length<(nMax||30) && (a<due.length || b<core.length)){   // สลับ ต้นไม้ 2 : CORE 1
     if(a<due.length) out.push(due[a++]);
@@ -8621,7 +8633,8 @@ function treeNextLevelHTML(){
 /* คำเก่ามาผสม: คำที่เรียนผ่านแล้ว (ไม่ใช่วันนี้) ที่ไม่ได้ถูกหยิบมาทวนนานที่สุด / ยังไม่แน่นมาก่อน */
 function treeOldPick(n, exclude){
   const td=today();
-  const ks=Object.keys(S.tree||{}).filter(k=>TREE[k] && treeLearned(k) && (exclude||[]).indexOf(k)<0 && S.tree[k].firstDay!==td);
+  const stc=stuckToday();
+  const ks=Object.keys(S.tree||{}).filter(k=>TREE[k] && treeLearned(k) && (exclude||[]).indexOf(k)<0 && S.tree[k].firstDay!==td && !S.tree[k].parked && !isStuckToday(k,stc));
   ks.sort((a,b)=>((S.tree[a].oldAt||0)-(S.tree[b].oldAt||0)) || ((S.tree[a].box||0)-(S.tree[b].box||0)) || (Math.random()-0.5));
   const out=[];
   ks.forEach(k=>{ if(out.length>=n) return; const st=treeStep('quiz',k,{old:true}); if(st){ S.tree[k].oldAt=Date.now(); out.push(st); } });
@@ -8822,7 +8835,7 @@ function judgeTree(alts){
     (it.t==='see' ? (r.altHit ? treeNaturalHTML(it, r) : '') : '');
   if(st<2 && !r.nearFull && !r.altHit && !it.drill && (it.t==='see' || it.t==='recall' || it.t==='use') && TL){
     TL.miss=TL.miss||{}; TL.miss[it.k]=(TL.miss[it.k]||0)+1;
-    if(TL.miss[it.k]>=8){ treePark(it, heardHTML); return; }
+    if(TL.miss[it.k]>=5){ treePark(it, heardHTML); return; }
   }
   if(it.t==='see'){
     $('#pHan').innerHTML=bigWordHTML(it.hanzi, it.pinyin, markedHTML(it.hanzi, norm(r.heard,false)));
@@ -8928,7 +8941,7 @@ function treePark(it, heardHTML){
   for(let i=Q.length-1;i>qi;i--) if(Q[i].k===k) Q.splice(i,1);
   const r=treeRec(k); if(r){ r.next=Date.now(); }
   treePron(k); treeStuck(k); save();
-  dlog('tree','พักคำ '+k+' (พลาด '+TL.miss[k]+' ครั้งในรอบนี้) → ไปฝึกออกเสียงตอนวอร์มอัพ รอบหน้าเรียนใหม่');
+  dlog('tree','พักคำ '+k+' (พลาด '+TL.miss[k]+' ครั้งในรอบนี้ · เกณฑ์ 5) → ไปฝึกออกเสียงตอนวอร์มอัพ รอบหน้าเรียนใหม่');
   treeReveal(it, '', true);
   $('#heard').innerHTML=heardHTML+'<div class="nearTip">😮‍💨 พักคำนี้ไว้ก่อนนะ — ระบบฟังไม่ออกหลายครั้งแล้ว รอบหน้าจะกลับมาให้ฝึกออกเสียงใหม่'+(PRON_TIP[k]?'<br>🗣️ '+esc(PRON_TIP[k]):'')+'</div>';
   micState(''); vib(140);
@@ -8988,7 +9001,8 @@ function finishTree(){
     const done=Object.keys(TL.done);
     const qz=done.map(k=>treeStep('quiz',k)).filter(Boolean);
     const sents=[];
-    const pool=Object.keys(S.tree||{}).filter(k=>TREE[k] && treeLearned(k) && (TREE[k].kind==='noun' || TREE[k].kind==='frame'));
+    const stc=stuckToday();
+    const pool=Object.keys(S.tree||{}).filter(k=>TREE[k] && treeLearned(k) && (TREE[k].kind==='noun' || TREE[k].kind==='frame') && !S.tree[k].parked && !isStuckToday(k,stc));
     pool.sort(()=>Math.random()-0.5).forEach(k=>{ if(sents.length<2){ const s=treeStep('quiz',k,{sent:true}); if(s && !sents.some(x=>x.hanzi===s.hanzi)) sents.push(s); } });
     const all=qz.concat(sents, treeOldPick(1, done)).sort(()=>Math.random()-0.5);
     if(done.length && all.length && !coachTimeUp()){
