@@ -3402,7 +3402,7 @@ const MILESTONES = [
 /* ============================================================
    2.5 บันทึกปัญหา (diagnostics) — ไว้ส่งให้ผู้พัฒนาดูเวลาไมค์มีปัญหา
    ============================================================ */
-const BUILD='2026-10-16a';                     // เปลี่ยนทุกครั้งที่แก้ไฟล์ จะได้รู้ว่า log มาจากรุ่นไหน
+const BUILD='2026-10-16b';                     // เปลี่ยนทุกครั้งที่แก้ไฟล์ จะได้รู้ว่า log มาจากรุ่นไหน
 const DIAG=[], STUCK={}, T0=Date.now();
 /* log ปัญหาเก็บลงเครื่องด้วย: iPhone ปิดแอปหรือรีเฟรชแล้ว log เก่ายังอยู่ ส่งย้อนหลังได้ */
 const DKEY='zhgame-diag', DIAG_MAX=2500;
@@ -4825,6 +4825,7 @@ function startRec(keepHeard){
 
   recStarting=true; micState('wait');
   dlog('mic','start() — ขอเริ่มฟัง');
+  if(COACH.active) coachTouch();
   if(CARD.t0 && !CARD.press) CARD.press=Date.now();
   // ไม่บอกให้พูดจนกว่าไมค์จะเริ่มอัดจริง (onaudiostart) — ต้นเหตุของอาการ "พูดแล้วระบบไม่ได้ยิน"
   const goLive=()=>{
@@ -5175,6 +5176,7 @@ function judge(alts){
   const it=cur(); if(!it) return;
   const prod = (MODE==='prod' || MODE==='pattern');
   if(prod && gaveUp) return judgeRepeat(it, alts);     // นึกไม่ออกแล้ว: รอบนี้คือพูดตาม ไม่นับคะแนน
+  if(prod && it._lock){ echoFeedback(it.hanzi, alts, 'ครบ 2 ครั้งแล้ว ไม่นับคะแนน · กดถัดไปได้เลย'); return; }
   const r0 = (it.store==='tree' && typeof treeScore==='function') ? treeScore(it, alts) : scoreAll(it.hanzi, alts);   // เครื่องคิดคะแนนตัวเดียวกันทุกโหมด (ต้นไม้: รับแบบธรรมชาติอื่น/แบบหนังสือเรียน)
   const heard=r0.heard, target=r0.target, hints=r0.hints;
   const nearOk = prod && it.store==='tree' && !!r0.nearFull;   // คำถูก แต่พยัญชนะเพี้ยน → นับว่านึกออก + จดไว้ฝึกออกเสียง
@@ -5288,6 +5290,7 @@ function judge(alts){
   }else{
     vib(140); micState('');
     if(tries>=(prod ? 2 : MAX_TRY)){                 // นึกเอง: 2 ครั้งพอ (log: พูดซ้ำ 4–5 ครั้งต่อข้อ กินเวลาโค้ชครึ่งหนึ่ง)
+      if(prod) it._lock=true;
       $('#btnSkip').style.visibility='visible';
       waitNext(prod ? 'ฟังเฉลยแล้วไปต่อ — ข้อนี้กลับมาใหม่ในอีก 10 นาที' : 'พอก่อนได้ ข้อนี้จะกลับมาให้ทบทวนอีกครั้ง');
       return;
@@ -6328,6 +6331,7 @@ async function coachStart(minutes){
   }
   S.settings.coachMin=minutes;
   COACH.active=true; COACH.minutes=minutes; COACH.sessT0=Date.now(); COACH.bi=-1; COACH.items=[]; COACH.rpDone=null; COACH.examDone=null;
+  COACH.lastAct=Date.now(); COACH.idle=false; COACH.pausedMs=0; COACH.hiddenAt=0;
   const fp=minutes===15 ? focusPlan() : null;
   COACH.plan=(fp ? fp.plan : COACH_PLAN[minutes]).map(x=>({b:x[0], ms:Math.round(x[1]*60000), used:0, skipped:false}));
   if(fp && fp.why.length) dlog('coach','แผนวันนี้: '+fp.why.join(' · '));
@@ -6341,12 +6345,27 @@ async function coachStart(minutes){
   save();
   coachNextBlock();
 }
+const COACH_IDLE_MS=45000;
+function coachTouch(){ COACH.lastAct=Date.now(); if(COACH.idle){ COACH.idle=false; dlog('coach','▶ กลับมาเล่นต่อ · หยุดเวลาไป '+Math.round((COACH.pausedMs||0)/1000)+' วิ'); } }
+function coachShift(ms){ if(!COACH.active || ms<=0) return; COACH.sessT0+=ms; if(COACH.blockEnd) COACH.blockEnd+=ms; if(COACH.blockT0) COACH.blockT0+=ms; COACH.pausedMs=(COACH.pausedMs||0)+ms; }
+['pointerdown','keydown','touchstart'].forEach(ev=>document.addEventListener(ev, ()=>{ if(COACH.active) coachTouch(); }, {passive:true, capture:true}));
+document.addEventListener('visibilitychange', ()=>{
+  if(!COACH.active) return;
+  if(document.visibilityState==='hidden'){ COACH.hiddenAt=Date.now(); }
+  else if(COACH.hiddenAt){ const ms=Date.now()-COACH.hiddenAt; COACH.hiddenAt=0; coachShift(ms); dlog('coach','⏸ แอปอยู่เบื้องหลัง '+Math.round(ms/1000)+' วิ → ไม่นับเวลา'); coachTouch(); }
+});
 function coachHud(){
   if(!COACH.active) return;
+  const busy = recActive || recStarting || (window.speechSynthesis && speechSynthesis.speaking);
+  if(busy) COACH.lastAct=Date.now();
+  if(!document.hidden && COACH.lastAct && !busy && Date.now()-COACH.lastAct>COACH_IDLE_MS){   // ไม่ได้กด/พูดเกิน 45 วิ → หยุดนาฬิกา
+    if(!COACH.idle){ COACH.idle=true; dlog('coach','⏸ ไม่มีการกด/พูดเกิน 45 วิ → หยุดนาฬิกาโค้ช'); }
+    coachShift(1000);
+  }
   const left=COACH.minutes*60000-(Date.now()-COACH.sessT0);
   const blk=coachBlock(), info=blk?COACH_BLOCKS[blk.b]:null;
   $('#cbBlock').textContent='🎯 '+(COACH.bi+1)+'/'+COACH.plan.length+(info?' '+info.icon+' '+info.name:'');
-  $('#cbTime').textContent=mmss(left);
+  $('#cbTime').textContent=(COACH.idle?'⏸ ':'')+mmss(left);
 }
 /* ปิดของที่โหมดก่อนหน้าเปิดค้างไว้ ก่อนเริ่มบล็อกถัดไป */
 function coachHaltTone(){
