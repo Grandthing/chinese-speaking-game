@@ -3402,7 +3402,7 @@ const MILESTONES = [
 /* ============================================================
    2.5 บันทึกปัญหา (diagnostics) — ไว้ส่งให้ผู้พัฒนาดูเวลาไมค์มีปัญหา
    ============================================================ */
-const BUILD='2026-10-16b';                     // เปลี่ยนทุกครั้งที่แก้ไฟล์ จะได้รู้ว่า log มาจากรุ่นไหน
+const BUILD='2026-10-17a';                     // เปลี่ยนทุกครั้งที่แก้ไฟล์ จะได้รู้ว่า log มาจากรุ่นไหน
 const DIAG=[], STUCK={}, T0=Date.now();
 /* log ปัญหาเก็บลงเครื่องด้วย: iPhone ปิดแอปหรือรีเฟรชแล้ว log เก่ายังอยู่ ส่งย้อนหลังได้ */
 const DKEY='zhgame-diag', DIAG_MAX=2500;
@@ -4187,7 +4187,24 @@ function scoreOne(target, heard){
   return best;
 }
 /* เอาคะแนนสูงสุดจาก "ทุก alternative" และจากทั้งโหมดแปลงเลข/ตัดเลข */
+/* log 17 ต.ค.: 咸 (การ์ดบอกให้พูดวลี 太咸了) ได้ยิน 太闲了 → 0% เพราะคำตัวเดียวต้องได้ยินเสียงนั้นล้วน
+   → ไม่ผ่านด้วยคำเดี่ยว ลองเทียบกับวลีพา: วลีถูก ≥ 90 และคำหลักชัด (แทนตัวพ้องเสียงด้วยตัวในวลีแล้ว) = ผ่าน */
 function scoreAll(targetRaw, alts){
+  const r=scoreAll0(targetRaw, alts);
+  const t1=norm(targetRaw,false);
+  const c=(r.score<90 && t1.length===1 && canonNum(t1)===null && typeof CARRIER!=='undefined') ? CARRIER[t1] : null;
+  if(!c || !c.raw || norm(c.raw,false)===t1) return r;
+  const rc=scoreAll0(c.raw, alts);
+  if(rc.score<90) return r;
+  const ct=norm(c.raw,false), more=(alts||[]).map(a=>homoFix(norm(a,false), ct).text).filter(Boolean);
+  if(scoreAll0(t1, (alts||[]).concat(more)).score<90) return r;
+  return Object.assign({}, rc, {target:t1, carHit:c.raw});
+}
+function scoreAll0(targetRaw, alts){
+  // เสียง 这儿/那儿: ตัวถอดเสียงตัด 儿 ทิ้ง (在这儿吃 → 在这吃 · log 17 ต.ค. พูดตามได้ 50–75%) หรือพูด 这里 ก็ถูก
+  if(/[这那]儿/.test(String(targetRaw)) && alts && alts.length){
+    alts=alts.concat(alts.map(a=>String(a).replace(/([这那])里/g,'$1儿').replace(/([这那])(?![儿里个些样么])/g,'$1儿')));
+  }
   // เสียง儿: ตัวถอดเสียงมักตัดทิ้ง (在哪儿 → 在哪) หรือพูดแบบ 在哪里 ก็ถูก — เติมทางเลือกที่แปลงเป็น 哪儿 ให้เทียบด้วย
   if(/哪儿/.test(String(targetRaw)) && alts && alts.length){
     alts=alts.concat(alts.map(a=>String(a).replace(/哪里/g,'哪儿').replace(/哪(?!儿)/g,'哪儿')));
@@ -8845,7 +8862,7 @@ function judgeTree(alts){
   sessUtter++; sessStars+=st; S.stats.utter++; S.stats.stars+=st;
   bestPer[qi]=Math.max(bestPer[qi]||0, r.score);
   const rec=treeRec(it.k); if(rec) rec.tries=(rec.tries||0)+1;
-  dlog('tree', TSTEP_LABEL[it.t]+' '+it.k+' ('+it.hanzi+') -> '+r.score+'% (ตัดสินจาก: '+(r.heard||'—')+(r.heard?' = '+toPinyin(r.heard):'')+((alts||[]).length>1?' · ทั้งหมด: '+alts.slice(0,5).join(' / '):'')+')');
+  dlog('tree', (it.t!=='see' && it.tries>=2 ? 'พูดตามเฉลย ('+TSTEP_LABEL[it.t]+')' : TSTEP_LABEL[it.t])+' '+it.k+' ('+it.hanzi+') -> '+r.score+'% (ตัดสินจาก: '+(r.heard||'—')+(r.heard?' = '+toPinyin(r.heard):'')+((alts||[]).length>1?' · ทั้งหมด: '+alts.slice(0,5).join(' / '):'')+')');
   treeLog(it, st, r);
   save();
   const heardHTML='<div class="lab">ได้ยินว่า</div>'+heardBox(r.heard)+
@@ -8993,6 +9010,7 @@ function treeFail(it){
     dlog('tree','ด่านรวมพลาด '+k+' → ทวนอีก 10 นาที');
     return;
   }
+  if(it._tfail) return; it._tfail=true;              // การ์ดละครั้ง (log 17 ต.ค.: พูดซ้ำหลังเฉลย = นับพลาดซ้ำ)
   TL.loops[k]=(TL.loops[k]||0)+1;
   if(TL.loops[k]<=2){                                // กลับไปพูดตามใหม่ แล้วค่อยถามขั้นเดิมอีกครั้ง
     treeInsert(qi+1, treeStep('see',k,{again:true}));
@@ -10033,6 +10051,7 @@ function judgeFdNum(alts){
   const it=cur(); if(!it) return;
   if(it.phase==='done'){ echoFeedback(it.say.zh, alts, 'ข้อนี้ผ่านแล้ว · กดถัดไปได้เลย'); return; }
   if(it.phase!=='say'){ toast('เลือกคำตอบก่อน','ฟังแล้วแตะตัวเลือก แล้วค่อยพูด',1500); return; }
+  if(it.sayLock){ echoFeedback(it.say.zh, alts, 'ครบ 3 ครั้งแล้ว ไม่นับคะแนน · กดถัดไปได้เลย'); return; }
   NUM_NEAR=false;
   const ok=fdSayPass(it, alts), heard=(ok&&MATCHED)||(alts&&alts[0])||'', shiNear = ok ? NUM_NEAR==='ke' : !!NUM_NEAR;   // ผ่าน: โชว์แค่คำแนะนำ 一刻 · ไม่ผ่าน: โชว์ 十/一刻 · B6: แสดงตัวที่ใช้ตัดสินจริง
   tries++; sessUtter++; S.stats.utter++; if(ok){ sessStars+=3; S.stats.stars+=3; }
@@ -10046,7 +10065,7 @@ function judgeFdNum(alts){
   if(ok){ it.phase='done'; micState('ok'); vib([30,40,30]); waitNext(); return; }
   micState(''); vib(140);
   if(tries>=2){ $('#btnSelfPass').style.visibility='visible'; $('#btnSelfPass').textContent='✅ พูดถูกแล้ว แต่ระบบฟังไม่ออก'; }
-  if(tries>=3){ waitNext('ไม่เป็นไร ไปข้อต่อไปได้'); return; }
+  if(tries>=3){ it.sayLock=true; waitNext('ไม่เป็นไร ไปข้อต่อไปได้'); return; }
   setTimeout(()=>{ if(playing && cur()===it) speak(it.say.zh, armMic, 0.75); }, 700);
 }
 function fdNumSelfPass(){
