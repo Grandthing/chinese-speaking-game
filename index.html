@@ -3402,7 +3402,7 @@ const MILESTONES = [
 /* ============================================================
    2.5 บันทึกปัญหา (diagnostics) — ไว้ส่งให้ผู้พัฒนาดูเวลาไมค์มีปัญหา
    ============================================================ */
-const BUILD='2026-10-17a';                     // เปลี่ยนทุกครั้งที่แก้ไฟล์ จะได้รู้ว่า log มาจากรุ่นไหน
+const BUILD='2026-10-18a';                     // เปลี่ยนทุกครั้งที่แก้ไฟล์ จะได้รู้ว่า log มาจากรุ่นไหน
 const DIAG=[], STUCK={}, T0=Date.now();
 /* log ปัญหาเก็บลงเครื่องด้วย: iPhone ปิดแอปหรือรีเฟรชแล้ว log เก่ายังอยู่ ส่งย้อนหลังได้ */
 const DKEY='zhgame-diag', DIAG_MAX=2500;
@@ -3602,11 +3602,13 @@ function srsUpdate(h, stars, neutral, store){
   const prev=SRS_SEEN.m.get(h);
   if(prev && prev.store===store){
     r.tries=(r.tries||0)+1; r.last=stars;
-    if(prev.fail){ r.box=1; r.next=Date.now()+SRS_MS[0]; }
-    dlog('ทบทวน', h+' -> ครั้งที่ '+(++prev.n)+' ในการ์ดเดิม: '+(prev.fail?'ครั้งแรกผิด → box 1 (10 นาที)':'ใช้ผลครั้งแรก ไม่เลื่อนซ้ำ'));
+    const soft = prev.fail && stars>=3 && (prev.box0||0)>=3;   // ลืมแวบเดียวแล้วแก้ได้ทันที = ยังจำได้อยู่ (ไม่ต้องเริ่มใหม่ทั้งหมด)
+    if(soft && r.box<=2){ r.box=2; r.next=Date.now()+SRS_MS[1]; }
+    else if(prev.fail){ r.box=1; r.next=Date.now()+SRS_MS[0]; }
+    dlog('ทบทวน', h+' -> ครั้งที่ '+(++prev.n)+' ในการ์ดเดิม: '+(soft?'ครั้งแรกผิด แต่แก้ถูกทันที (เคย box '+prev.box0+') → box 2 (1 วัน)':prev.fail?'ครั้งแรกผิด → box 1 (10 นาที)':'ใช้ผลครั้งแรก ไม่เลื่อนซ้ำ'));
     return r;
   }
-  SRS_SEEN.m.set(h, {store:store, fail:!neutral && stars<3, n:1});
+  SRS_SEEN.m.set(h, {store:store, fail:!neutral && stars<3, n:1, box0:r.box||0});
   r.tries=(r.tries||0)+1;
   r.last=stars;
   if(neutral==='keep'){                        // ถูกแต่ยังช้า: คงกล่อง นัดรอบถัดไปตามระยะของกล่องนั้น
@@ -4217,12 +4219,12 @@ function scoreAll0(targetRaw, alts){
   const segs = /[A-Za-z]/.test(targetRaw)
     ? targetRaw.split(/[A-Za-z]+/).map(s=>norm(s,false)).filter(s=>s.length) : null;
   const tNum=canonNum(t1);                     // โจทย์เป็นตัวเลขไหม
-  let best=0, bestHeard=(alts&&alts[0])||'', bestHints=null;   // ถึงได้ 0% ก็ยังต้องโชว์ว่าพูดออกมาเป็นอะไร
+  let best=0, bestHeard=(alts&&alts[0])||'', bestHints=null, bestTone=false;   // ถึงได้ 0% ก็ยังต้องโชว์ว่าพูดออกมาเป็นอะไร
   (alts||[]).forEach(a=>{
     const aFix=latinFix(a,t1);
     const h1=applyAlias(phraseFix(norm(aFix,false),t1),t1), h2=norm(aFix,true);
     const a1=h1, a2=applyAlias(h2,t2);   // ยอมรับตัวพ้องเสียง/วลีที่เดาผิด เฉพาะตัวที่เป้าหมายมีจริง
-    let sc, hints=null;
+    let sc, hints=null, tOnly=false;
     if(tNum!==null){
       sc=Math.max(numScore(t1,tNum,h1), numScore(t1,tNum,a1));
       if(repeatedNum(a,tNum)) sc=100;          // "111" = พูด 一 สามครั้ง ไม่ใช่เลข 111
@@ -4234,8 +4236,10 @@ function scoreAll0(targetRaw, alts){
       sc=Math.max(scoreOne(t1,dedupe(h1,t1)), scoreOne(t2,h2), scoreOne(t1,dedupe(a1,t1)), scoreOne(t2,a2));
       if(sc<100){                                // เสียงตรงแต่ตัวอักษรคนละตัว: นับให้ · วรรณยุกต์ต่างได้ครึ่งตัว
         const hf=homoFix(a1,t1);                 // คำตัวเดียว: ต้องได้ยินเสียงนั้นล้วน (กัน 麻 ผ่านเพราะมี 吗 ในประโยคอื่น)
-        if(hf.n && (t1.length>1 || hf.text===t1.repeat(hf.text.length)))
-          sc=Math.max(sc, Math.round(scoreOne(t1,dedupe(hf.text,t1)) - 50*hf.tone/t1.length));
+        if(hf.n && (t1.length>1 || hf.text===t1.repeat(hf.text.length))){
+          const hb=scoreOne(t1,dedupe(hf.text,t1)), hs=Math.round(hb - 50*hf.tone/t1.length);
+          if(hs>sc){ sc=hs; tOnly = hb===100 && hf.tone>0; }
+        }
       }
       if(segs && segs.length>1){
         let tot=0,len=0;
@@ -4248,18 +4252,18 @@ function scoreAll0(targetRaw, alts){
       const nf=nearFix(a1,t1);
       if(nf.hints.length){
         const ns=(tNum!==null) ? numScore(t1,tNum,nf.text) : scoreOne(t1,dedupe(nf.text,t1));
-        if(ns>sc){ sc=Math.min(NEAR_CAP, ns); hints=nf.hints; if(ns>=90) hints.full=true; }
+        if(ns>sc){ sc=Math.min(NEAR_CAP, ns); hints=nf.hints; tOnly=false; if(ns>=90) hints.full=true; }
       }
     }
     if(sc>60){                                  // R-3: เสียงหลักผิด → สูงสุด 1★ (60) ไม่ว่าจะแก้ด้วย NEAR/ALIAS/พ้องเสียงได้เท่าไหร่
       const ke=keyErrs(t1, norm(aFix,false));
-      if(ke.length){ sc=60; hints=[keyErrTip(ke)]; }
+      if(ke.length){ sc=60; hints=[keyErrTip(ke)]; tOnly=false; }
     }
     const better = sc>best || (sc===best && /[A-Za-z]/.test(bestHeard) && !/[A-Za-z]/.test(a))
       || (sc===best && !!(hints && hints.full) && !(bestHints && bestHints.full));   // คะแนนเท่ากัน: เลือกแบบที่แก้พยัญชนะแล้วตรงเป๊ะ (เช่น 在哪 → 在哪儿)
-    if(better){ best=sc; bestHeard=a; bestHints=hints; }
+    if(better){ best=sc; bestHeard=a; bestHints=hints; bestTone=tOnly; }
   });
-  return {score:best, heard:bestHeard, target:t1, hints:bestHints, nearFull:!!(bestHints && bestHints.full)};
+  return {score:best, heard:bestHeard, target:t1, hints:bestHints, nearFull:!!(bestHints && bestHints.full), toneOnly:bestTone && best<90};
 }
 const starsOf = s => s>=90?3 : s>=70?2 : s>=50?1 : 0;
 
@@ -4521,9 +4525,11 @@ function pickVoice(){
   const cn = vs.filter(v=>/^zh[-_]?CN/i.test(v.lang));
   const zh = cn.length ? cn : vs.filter(v=>/^zh/i.test(v.lang) && !/HK|TW|yue/i.test(v.lang+v.name));
   zhVoiceList = zh.map(v=>v.name+' ('+v.lang+')'+(MALE_RE.test(v.name)?' ♂':''));
-  const fem = zh.filter(v=>!MALE_RE.test(v.name));
+  const HQ=v=>/enhanced|premium|neural|natural|高品质|优化/i.test(v.name+' '+(v.voiceURI||'')) ? 0 : 1;   // แบบคุณภาพสูงก่อน
+  const byQ=a=>a.slice().sort((x,y)=>HQ(x)-HQ(y));
+  const fem = byQ(zh.filter(v=>!MALE_RE.test(v.name)));
   zhVoice = fem[0] || zh[0] || vs.find(v=>/^zh/i.test(v.lang)) || null;
-  zhVoiceM = zh.find(v=>MALE_RE.test(v.name)) || null;
+  zhVoiceM = byQ(zh.filter(v=>MALE_RE.test(v.name)))[0] || null;
   return zhVoice;
 }
 /* เสียงสลับ: ข้อความใหม่ = สลับคนพูด · ข้อความเดิม (ฟังซ้ำ/พูดตามรอบสอง) = คนเดิม */
@@ -8426,7 +8432,11 @@ function treeScore(it, alts){
   const r0=treeScore0(it, alts), T=TREE[it.k||it.key];
   if(T && T.kw && T.car && norm(it.hanzi,false)===norm(T.car.hanzi,false) && r0.score>60){
     const kr=keyScore(T.kw, T.car.hanzi, alts);
-    if(kr.score<80){ dlog('tree','คำหลัก '+T.kw+' ไม่ชัด ('+kr.score+'%) → สูงสุด 1★'); return Object.assign({}, r0, {score:60, nearFull:false, frameOnly:null, hints:['คำหลัก '+T.pinyin+' ยังไม่ชัด — ประโยคถูกแต่คำที่ต้องจำยังไม่ผ่าน'].concat(kr.hints||[])}); }
+    if(kr.score<80){ r0.toneOnly=false; dlog('tree','คำหลัก '+T.kw+' ไม่ชัด ('+kr.score+'%) → สูงสุด 1★'); return Object.assign({}, r0, {score:60, nearFull:false, frameOnly:null, hints:['คำหลัก '+T.pinyin+' ยังไม่ชัด — ประโยคถูกแต่คำที่ต้องจำยังไม่ผ่าน'].concat(kr.hints||[])}); }
+  }
+  if(r0.toneOnly && r0.score>=70 && !r0.nearFull && it.t!=='see'){
+    dlog('tree','ต่างแค่วรรณยุกต์ ('+r0.score+'%) → นับนึกออก + จดฝึกออกเสียง');
+    return Object.assign({}, r0, {nearFull:true, hints:['พยางค์ถูกครบ ✓ — วรรณยุกต์ยังไม่ตรง ฟังเฉลย '+(T?T.pinyin:toPinyin(it.hanzi))+' แล้วพูดตามอีกที']});
   }
   return r0;
 }
