@@ -3402,7 +3402,7 @@ const MILESTONES = [
 /* ============================================================
    2.5 บันทึกปัญหา (diagnostics) — ไว้ส่งให้ผู้พัฒนาดูเวลาไมค์มีปัญหา
    ============================================================ */
-const BUILD='2026-10-19a';                     // เปลี่ยนทุกครั้งที่แก้ไฟล์ จะได้รู้ว่า log มาจากรุ่นไหน
+const BUILD='2026-10-19b';                     // เปลี่ยนทุกครั้งที่แก้ไฟล์ จะได้รู้ว่า log มาจากรุ่นไหน
 const DIAG=[], STUCK={}, T0=Date.now();
 /* log ปัญหาเก็บลงเครื่องด้วย: iPhone ปิดแอปหรือรีเฟรชแล้ว log เก่ายังอยู่ ส่งย้อนหลังได้ */
 const DKEY='zhgame-diag', DIAG_MAX=2500;
@@ -6804,7 +6804,7 @@ function buildCoachQueue(nMax){
   const due=[];
   CORE100.forEach(w=>{ const r=S.core[w.hanzi]; if(r && r.next<=now) due.push({it:coreItem(w), over:now-r.next}); });
   Object.keys(S.srx).forEach(h=>{
-    const r=S.srx[h]; if(!r || r.next>now) return;
+    const r=S.srx[h]; if(!r || r.next>now || tripOffText(h) || tripOff(String(h).replace(/^ฟัง:/,''))) return;
     const it=srxItem(h,r); if(it) due.push({it:it, over:now-r.next});
   });
   due.sort((a,b)=>b.over-a.over);
@@ -8526,9 +8526,20 @@ function treeReviewRate3(){                        // ทบทวนผ่า�
   for(let o=-2;o<=0;o++){ const d=st[dayKey(o)]; if(d && d.seen){ ok+=d.ok||0; n+=d.n||0; } }   // ข้อมูลแบบเก่า (นับทุกครั้งที่ลองซ้ำ) ไม่เอามาคิด
   return n>=12 ? ok/n : null;
 }
+/* 💤 คำที่ไม่ได้ใช้ในทริปเฉิงตู–จิ่วจ้ายโกว (พ.ย.) — ผู้ใช้ขอ 19 ต.ค.: ไม่เรียนใหม่ ไม่ทวน ไม่วอร์มอัพ ไม่ฟัง ไม่เอาไปประกอบประโยค
+   ข้อมูลที่เรียนไว้ยังเก็บอยู่ · ลบคำออกจากรายการนี้ = กลับมาเหมือนเดิม */
+const TRIP_OFF=new Set([
+  '西红柿','黄瓜','白菜',                          // ผักดิบ (ไม่ได้ทำกับข้าวเอง)
+  '西瓜','桃子','荔枝','芒果','葡萄','草莓',        // ผลไม้ที่ไม่ใช่ฤดู พ.ย.
+  '煎饼果子','肉夹馍','烤冷面',                     // ของกินเล่นทางเหนือ (เฉิงตูหายาก)
+  '糯','嫩',                                        // คำบรรยายรสสัมผัส (ฟังออกพอ ไม่ต้องพูด)
+  '抹个零吧','帮我挑几个','酱分开装','菜市场','手套' // ตลาดสด/ต่อเศษ (จ่ายสแกนไม่มีเศษ)
+]);
+function tripOff(k){ return TRIP_OFF.has(k); }
+function tripOffText(h){ h=String(h||''); for(const k of TRIP_OFF) if(k.length>1 && h.indexOf(k)>=0) return true; return false; }
 function treeDueList(){
   const now=Date.now();
-  return Object.keys(S.tree||{}).filter(k=>{ const r=S.tree[k]; return TREE[k] && r && (r.stage||0)>=5 && r.next<=now; });
+  return Object.keys(S.tree||{}).filter(k=>{ const r=S.tree[k]; return TREE[k] && r && !tripOff(k) && (r.stage||0)>=5 && r.next<=now; });
 }
 function treeGate(){
   const due=treeDueList().length;
@@ -8544,7 +8555,7 @@ function treeNewLeft(){ return Math.max(0, treeQuota() - treeDayRec().n); }
 function treePickChunk(n, force){
   n=n||4;
   const out=[];
-  const parked=k=>!!(TL && TL.miss && TL.miss[k]>=8) || !!(S.tree[k] && (S.tree[k].parked || S.tree[k].hwSkip));   // พักในรอบนี้ / ติดวน 2 session (R-2)
+  const parked=k=>tripOff(k) || !!(TL && TL.miss && TL.miss[k]>=8) || !!(S.tree[k] && (S.tree[k].parked || S.tree[k].hwSkip));   // พักในรอบนี้ / ติดวน 2 session (R-2)
   const pending=Object.keys(S.tree||{}).filter(k=>TREE[k] && (S.tree[k].stage||0)<5 && !parked(k)).sort((a,b)=>(S.tree[a].first||0)-(S.tree[b].first||0));
   pending.forEach(k=>{ const it=TREE[k]; if(it.kind==='frame' && !treePartsReady(it.frame)) return; if(out.length<n) out.push(k); });   // ประโยคที่ค้าง: รอให้คำประกอบผ่านก่อน
   let quota=treeNewLeft();
@@ -8563,7 +8574,7 @@ function treePickChunk(n, force){
   TREE_FRAMES.forEach(F=>{
     if(out.length<n && quota>0 && treeFrameOpen(F) && !treeRec(F.id) && treePartsReady(F)){ out.push(F.id); quota--; }
   });
-  const byCat={}; TREE_BRANCH_ORDER.forEach(c=>byCat[c]=Object.values(TREE).filter(w=>w.cat===c && !treeRec(w.key) && TREE_STAGE1.indexOf(w.key)<0).map(w=>w.key));
+  const byCat={}; TREE_BRANCH_ORDER.forEach(c=>byCat[c]=Object.values(TREE).filter(w=>w.cat===c && !treeRec(w.key) && !tripOff(w.key) && TREE_STAGE1.indexOf(w.key)<0).map(w=>w.key));
   // หมวดที่ได้เรียนน้อยที่สุด (เทียบกับลำดับความสำคัญ) มาก่อน — ทุกหมวดได้ถึงคิว ไม่ใช่วนเริ่มที่อาหารทุกก้อน
   const started={}; Object.keys(S.tree||{}).forEach(k=>{ const it=TREE[k]; if(it) started[it.cat]=(started[it.cat]||0)+1; });
   out.forEach(k=>{ const it=TREE[k]; if(it) started[it.cat]=(started[it.cat]||0)+1; });
@@ -8601,7 +8612,7 @@ function treeUseFor(k, greenOnly){
   if(it.kind==='frame'){
     const F=it.frame;
     const ns0=Object.values(TREE).filter(w=>w.key!==F.ex && treeFits(F,w) && ok(w.key));
-    const hard=w=>!!((S.pron||{})[w.key] || (S.tree[w.key]&&(S.tree[w.key].parked||S.tree[w.key].hwSkip)));
+    const hard=w=>tripOff(w.key) || !!((S.pron||{})[w.key] || (S.tree[w.key]&&(S.tree[w.key].parked||S.tree[w.key].hwSkip)));
     const easy=ns0.filter(w=>!hard(w)), green=easy.filter(w=>treeGreen(w.key));
     const ns=green.length ? green : easy;                      // คำที่ยังออกเสียงไม่ได้ ไม่เอามาประกอบโครง
     if(!ns.length) return null;
@@ -8642,7 +8653,7 @@ function buildTreeReview(nMax){
   const hw=(typeof hwReviewItems==='function') ? hwReviewItems() : [];
   const stc=stuckToday(), skipped=[];
   const due=hw.concat(treeDueList().filter(k=>!(S.tree[k]&&S.tree[k].hwSkip)).filter(k=>{ if(isStuckToday(k,stc)){ skipped.push(k); return false; } return true; }).sort(()=>Math.random()-0.5).map(k=>treeItem(k,true))).filter(Boolean)
-    .filter(it=>{ const h=norm(it.hanzi||''); if(!h || seen.has(h)) return false; seen.add(h); return true; });
+    .filter(it=>{ const h=norm(it.hanzi||''); if(!h || seen.has(h) || tripOffText(h)) return false; seen.add(h); return true; });
   const core=[];                                  // ผู้ใช้เลือก: โฟกัสเที่ยวไม่เอาคำชุดเก่า (CORE100 จากหนังสือเรียน) มาทวน
   if(skipped.length) dlog('coach','พักคำที่พลาดครบ 4 ครั้งวันนี้ไว้ถึงพรุ่งนี้: '+skipped.join(' · '));
   const out=[]; let a=0, b=0;
@@ -8691,7 +8702,7 @@ function treeNextLevelHTML(){
 function treeOldPick(n, exclude){
   const td=today();
   const stc=stuckToday();
-  const ks=Object.keys(S.tree||{}).filter(k=>TREE[k] && treeLearned(k) && (exclude||[]).indexOf(k)<0 && S.tree[k].firstDay!==td && !S.tree[k].parked && !isStuckToday(k,stc));
+  const ks=Object.keys(S.tree||{}).filter(k=>TREE[k] && treeLearned(k) && (exclude||[]).indexOf(k)<0 && S.tree[k].firstDay!==td && !S.tree[k].parked && !tripOff(k) && !isStuckToday(k,stc));
   ks.sort((a,b)=>((S.tree[a].oldAt||0)-(S.tree[b].oldAt||0)) || ((S.tree[a].box||0)-(S.tree[b].box||0)) || (Math.random()-0.5));
   const out=[];
   ks.forEach(k=>{ if(out.length>=n) return; const st=treeStep('quiz',k,{old:true}); if(st){ S.tree[k].oldAt=Date.now(); out.push(st); } });
@@ -9060,7 +9071,7 @@ function finishTree(){
     const qz=done.map(k=>treeStep('quiz',k)).filter(Boolean);
     const sents=[];
     const stc=stuckToday();
-    const pool=Object.keys(S.tree||{}).filter(k=>TREE[k] && treeLearned(k) && (TREE[k].kind==='noun' || TREE[k].kind==='frame') && !S.tree[k].parked && !isStuckToday(k,stc));
+    const pool=Object.keys(S.tree||{}).filter(k=>TREE[k] && treeLearned(k) && (TREE[k].kind==='noun' || TREE[k].kind==='frame') && !S.tree[k].parked && !tripOff(k) && !isStuckToday(k,stc));
     pool.sort(()=>Math.random()-0.5).forEach(k=>{ if(sents.length<2){ const s=treeStep('quiz',k,{sent:true}); if(s && !sents.some(x=>x.hanzi===s.hanzi)) sents.push(s); } });
     const all=qz.concat(sents, treeOldPick(1, done)).sort(()=>Math.random()-0.5);
     if(done.length && all.length && !coachTimeUp()){
@@ -9086,10 +9097,10 @@ function finishTree(){
 /* ---------- หน้าจอต้นไม้ ---------- */
 function treeChip(it){
   const c=treeColor(it.key);
-  const dot=c==='g'?'🟢':c==='o'?'🟠':'⚪';
+  const dot=tripOff(it.key)?'💤':c==='g'?'🟢':c==='o'?'🟠':'⚪';   // 💤 = พักไว้ ไม่ใช้ทริปนี้
   const label=S.settings.pyFirst ? (it.kind==='frame' ? it.frame.py : it.pinyin) : (it.kind==='frame' ? it.frame.f : it.hanzi);
   const mean=it.kind==='frame' ? it.frame.mean : String(it.meaning).split(/[(（/]/)[0];
-  return '<span class="tchip t'+c+'">'+dot+' <b'+(S.settings.pyFirst?'':' class="zh"')+'>'+esc(label)+'</b><i>'+esc(mean)+'</i></span>';
+  return '<span class="tchip t'+c+'"'+(tripOff(it.key)?' style="opacity:.45" title="พักไว้ ไม่ใช้ทริปนี้"':'')+'>'+dot+' <b'+(S.settings.pyFirst?'':' class="zh"')+'>'+esc(label)+'</b><i>'+esc(mean)+'</i></span>';
 }
 function renderTreeScreen(){
   const all=Object.values(TREE);
@@ -11038,7 +11049,7 @@ document.addEventListener('click', e=>{
 });
 /* ---------- โค้ช "โฟกัสเที่ยว" 15 นาที: ทบทวน 4 · ต้นไม้ 6 · เสาเข็ม 3 · ฟัง 2 ---------- */
 function pronItems(n){
-  const ks=Object.keys(S.pron||{}).filter(k=>S.pron[k]>0).sort((a,b)=>S.pron[b]-S.pron[a]);
+  const ks=Object.keys(S.pron||{}).filter(k=>S.pron[k]>0 && !tripOff(k) && !tripOffText(k)).sort((a,b)=>S.pron[b]-S.pron[a]);
   const out=[];
   ks.forEach(k=>{
     if(out.length>=n) return;
@@ -11394,7 +11405,7 @@ function treeKnownFn(){
 }
 function treeListenQueue(n){
   const shortM=m=>String(m||'').split(/[(（/]/)[0].trim();
-  const learned=Object.keys(S.tree||{}).filter(k=>TREE[k] && (treeLearned(k)||treeGreen(k)));
+  const learned=Object.keys(S.tree||{}).filter(k=>TREE[k] && !tripOff(k) && (treeLearned(k)||treeGreen(k)));
   let words=learned.filter(k=>['noun','phrase','chunk','sent'].indexOf(TREE[k].kind)>=0);
   if(words.length<4) words=words.concat(TREE_STAGE1.filter(k=>TREE[k] && words.indexOf(k)<0).slice(0, 6-words.length));
   const allM=[...new Set(Object.values(TREE).filter(x=>x.kind!=='frame').map(x=>shortM(x.meaning)))];
@@ -11413,7 +11424,7 @@ function treeListenQueue(n){
   // ขั้น 2: ประโยคที่ประกอบจากคำที่เรียนแล้ว
   const sents=[];
   TREE_FRAMES.forEach(F=>{ if(!(treeLearned(F.id)||treeGreen(F.id))) return;
-    Object.values(TREE).forEach(w=>{ if(treeFits(F,w) && (treeLearned(w.key)||treeGreen(w.key))) sents.push(treeCompose(F,w)); }); });
+    Object.values(TREE).forEach(w=>{ if(treeFits(F,w) && !tripOff(w.key) && (treeLearned(w.key)||treeGreen(w.key))) sents.push(treeCompose(F,w)); }); });
   const sm=sents.map(x=>x.meaning);
   sents.sort(()=>Math.random()-0.5).slice(0, 4).forEach(c=>{
     q.push({kind:'tword', id:'TS:'+c.hanzi, scene:'ประโยคจากคำที่รู้', zh:c.hanzi, py:c.pinyin, th:c.meaning, q:'ได้ยินประโยคว่าอะไร?', choices:pickChoices(c.meaning, sm), ans:c.meaning});
@@ -11494,7 +11505,7 @@ function lessonToSrs(id){
 function srxDueList(){
   const now=Date.now();
   return Object.keys(S.srx)
-    .filter(h=>{ const r=S.srx[h]; return r && r.next<=now && String(r.src||'').indexOf('L:')!==0; })
+    .filter(h=>{ const r=S.srx[h]; return r && r.next<=now && String(r.src||'').indexOf('L:')!==0 && !tripOffText(h) && !tripOff(String(h).replace(/^ฟัง:/,'')); })
     .sort((a,b)=>S.srx[a].next-S.srx[b].next)
     .map(h=>srxItem(h, S.srx[h])).filter(Boolean);
 }
@@ -12137,7 +12148,7 @@ function renderExamStats(){
 /* ---------- R5 👂 การ์ดฟัง (จีน → ไทย) ----------
    ข้อไหนถึงกล่อง 2 (จำได้แล้ว) จะมีการ์ดฟังคู่กัน: ได้ยินอย่างเดียว นึกความหมาย แล้วให้คะแนนตัวเอง */
 function lcardEnsure(h){
-  if(!h || String(h).indexOf('ฟัง:')===0) return;
+  if(!h || String(h).indexOf('ฟัง:')===0 || tripOff(h) || tripOffText(h)) return;
   const key='ฟัง:'+h;
   if(S.srx[key]) return;
   S.srx[key]={box:0, next:Date.now()+86400000, last:0, tries:0, ok:0, firstDay:today(), src:'ฟัง', base:h};
