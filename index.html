@@ -444,6 +444,7 @@ td.r,th.r{text-align:right}
         <button class="btn ghost" id="btnCoach10" style="flex:1">10 นาที</button>
       </div>
       <button class="btn ghost" id="btnSleep" hidden style="margin-top:.5rem">🌙 ทวนก่อนนอน (2 นาที)</button>
+      <button class="btn ghost" id="btnRetro" style="margin-top:.5rem;white-space:normal;flex-direction:column">🌀 ฝึกลิ้นม้วน zh · ch · sh<small style="font-weight:400;opacity:.8" id="retroSub">ตั้งลิ้น → คำหลัก → คู่เทียบ → ประโยคเที่ยว · ~4 นาที</small></button>
     </div>
 
     <div class="card" id="examCard" hidden style="border:2px solid var(--t3)">
@@ -3402,7 +3403,7 @@ const MILESTONES = [
 /* ============================================================
    2.5 บันทึกปัญหา (diagnostics) — ไว้ส่งให้ผู้พัฒนาดูเวลาไมค์มีปัญหา
    ============================================================ */
-const BUILD='2026-10-19b';                     // เปลี่ยนทุกครั้งที่แก้ไฟล์ จะได้รู้ว่า log มาจากรุ่นไหน
+const BUILD='2026-10-21a';                     // เปลี่ยนทุกครั้งที่แก้ไฟล์ จะได้รู้ว่า log มาจากรุ่นไหน
 const DIAG=[], STUCK={}, T0=Date.now();
 /* log ปัญหาเก็บลงเครื่องด้วย: iPhone ปิดแอปหรือรีเฟรชแล้ว log เก่ายังอยู่ ส่งย้อนหลังได้ */
 const DKEY='zhgame-diag', DIAG_MAX=2500;
@@ -3523,6 +3524,7 @@ function blank(){return{
   treeDay:{d:'', n:0},  // คำใหม่ของต้นไม้ที่เริ่มวันนี้
   treeStats:{},  // วัน -> {ok,n} ทบทวนต้นไม้ (ใช้ประตูกั้นคำใหม่)
   pron:{},       // คำที่ระบบฟังไม่ออก -> จำนวนครั้ง (คิวฝึกออกเสียง ไม่นับคะแนนความจำ)
+  retro:{w:{}, fam:{}},   // 🌀 ลิ้นม้วน: คำ -> {n,ok,hist} · ตระกูล sh/zh/ch -> {hist}
   pair:{},       // ห้องซ้อมพยัญชนะ: ตระกูลเสียง -> {n, ok, hist:[1/0 ล่าสุด 20 ครั้ง]}
   log:[]
 };}
@@ -4610,6 +4612,7 @@ function unlocked(id){
   return !!(prev && prev.best>=PASS_AVG);
 }
 function renderHome(){
+  if($('#retroSub')) $('#retroSub').textContent=retroSubText();
   renderCoachCard();
   if(typeof renderFocusHome==='function') renderFocusHome();
   renderRetellCard();
@@ -4997,7 +5000,7 @@ function instantJudge(extra){
 function judgeFn(){ const f=judgeFn0(); return alts=>{ LAST_ALTS=(alts||[]).slice(0,5); CARD.n++; return f(alts); }; }
 function judgeFn0(){ if(MODE==='prod' && typeof cur==='function' && cur() && cur().contrast!==undefined) return judgeContrast;
   if(MODE==='tree' && typeof cur==='function' && cur() && cur().kind==='sub') return judgeSub;
-  return MODE==='talk' ? judgeTalk : MODE==='shadow' ? judgeShadow : MODE==='pair' ? judgePair : MODE==='tree' ? judgeTree : MODE==='fdnum' ? judgeFdNum : MODE==='v300' ? judgeV300 : MODE==='retell' ? judgeRetell
+  return MODE==='talk' ? judgeTalk : MODE==='shadow' ? judgeShadow : MODE==='pair' ? judgePair : MODE==='retro' ? judgeRetro : MODE==='tree' ? judgeTree : MODE==='fdnum' ? judgeFdNum : MODE==='v300' ? judgeV300 : MODE==='retell' ? judgeRetell
   : MODE==='pretest' ? judgePretest : MODE==='exam' ? judgeExam : judge; }
 let lastStopAt=0;
 function scheduleStop(){
@@ -5114,6 +5117,7 @@ function renderItem(autoPlay){
   if(MODE==='prod' || MODE==='pattern'){ renderProd(it); if(it.contrast!==undefined) contrastDecor(it); return; }
   if(MODE==='shadow'){ renderShadow(it); return; }
   if(MODE==='pair'){ renderPair(it); return; }
+  if(MODE==='retro'){ renderRetro(it); return; }
   if(MODE==='tree'){ if(it.kind==='sub'){ renderSub(it); return; } renderTree(it); return; }
   if(MODE==='fdnum'){ renderFdNum(it); return; }
   if(MODE==='v300'){ renderV300(it); return; }
@@ -5368,6 +5372,7 @@ function finishRun(){
   if(MODE==='v300') return v3Finish();
   if(MODE==='shadow') return finishShadow();
   if(MODE==='pair') return finishPair();
+  if(MODE==='retro') return finishRetro();
   if(MODE==='tree') return finishTree();
   if(MODE==='retell') return retellRoleDone();
   if(MODE==='pretest') return finishPretest();
@@ -7529,7 +7534,206 @@ function pairDoneRow(){
   return '<div class="cdrow"><span>👅 พยัญชนะ ('+esc(fams)+')</span><b>ชัด '+xs.filter(x=>x.st>=2).length+'/'+xs.length+' ครั้ง</b></div>';
 }
 COACH_RUN.BP=blk=>startPair(pairQueue(COACH.minutes===10?6:10, 2), 'โค้ช');
-COACH_RUN.FP=blk=>startPair(pairQueue(6, 2), 'โค้ช · ซ้อมปาก');
+COACH_RUN.FP=blk=>retroNeed() ? startRetro(retroQueue(6, true), 'โค้ช · ลิ้นม้วน') : startPair(pairQueue(6, 2), 'โค้ช · ซ้อมปาก');
+
+/* ============================================================
+   🌀 ห้องลิ้นม้วน zh · ch · sh (ผู้ใช้ขอ 21 ต.ค.)
+   log 3 วัน: sh→x 48 · sh→q 36 · zh→j 33 · ch→x/q 22 = ลิ้นแบนอยู่หน้า + ยิ้ม (ท่า ช/ซ/จ + อี ของไทย)
+   บันได: ตั้งลิ้น (ไม่ใช้ไมค์) → คำหลัก (ช้า 0.7) → คู่เทียบ (ต้องชนะคู่หลอก) → ประโยคเที่ยว (1.0)
+   ผ่าน = คะแนน ≥ 80 + เสียงม้วนลิ้นไม่ถูกได้ยินเป็นเสียงอื่น · ต้องผ่าน 2 ครั้งติดกันถึงไปข้อต่อไป
+   พลาด → บอกสาเหตุจากเสียงที่ได้ยิน (x/q/j = ลิ้นอยู่หน้า+ยิ้ม · s/c/z = แตะฟัน · ลมผิด) แล้วเล่นช้าให้ฟังใหม่
+   ============================================================ */
+const RETRO={
+  sh:{name:'sh', th:'ซ (ม้วนลิ้น)', air:'ลมไหลยาวต่อเนื่อง ไม่ระเบิด',
+    anchor:[['是的','shì de','ซรื่อ เตอะ','ใช่'],['老师','lǎo shī','หล่าว ซรือ','ครู'],['十个','shí ge','ซรื๋อ เกอะ','สิบอัน'],['什么','shén me','เซริ๋น เมอะ','อะไร']],
+    pair:[[['十个','shí ge','ซรื๋อ เกอะ','สิบอัน'],['七个','qī ge','ชี เกอะ','เจ็ดอัน']],[['师傅','shī fu','ซรือ ฟุ','พี่คนขับ'],['媳妇','xí fu','สี ฟุ','ภรรยา']],
+          [['少一点','shǎo yì diǎn','เส่า อี้ เตี่ยน','น้อยลงหน่อย'],['小一点','xiǎo yì diǎn','เสี่ยว อี้ เตี่ยน','เล็กลงหน่อย']],[['老师','lǎo shī','หล่าว ซรือ','ครู'],['老四','lǎo sì','หล่าว ซื่อ','ลูกคนที่สี่']]],
+    phrase:[['十块','shí kuài','ซรื๋อ ไคว่','สิบหยวน'],['师傅，去这里','shī fu, qù zhè lǐ','ซรือ ฟุ, ชวี่ เจ้อ หลี่','พี่ครับ ไปที่นี่'],['我是泰国人','wǒ shì tài guó rén','หว่อ ซรื่อ ไท่ กว๋อ เหริน','ฉันเป็นคนไทย'],
+          ['少一点','shǎo yì diǎn','เส่า อี้ เตี่ยน','น้อยลงหน่อย'],['我手机没电了','wǒ shǒu jī méi diàn le','หว่อ โส่ว จี เหมย เตี้ยน เลอะ','มือถือฉันแบตหมด']]},
+  zh:{name:'zh', th:'จ (ม้วนลิ้น)', air:'ไม่มีลมพ่น เบาๆ เหมือน "จ"',
+    anchor:[['知道','zhī dào','จรือ ต้าว','รู้'],['这个','zhè ge','เจ้อ เกอะ','อันนี้'],['中国','zhōng guó','จง กว๋อ','ประเทศจีน'],['猪肉','zhū ròu','จู โร่ว','หมู']],
+    pair:[[['猪肉','zhū ròu','จู โร่ว','หมู'],['鸡肉','jī ròu','จี โร่ว','ไก่']],[['找你','zhǎo nǐ','จ่าว หนี่','หาคุณ'],['叫你','jiào nǐ','เจี้ยว หนี่','เรียกคุณ']],
+          [['知道','zhī dào','จรือ ต้าว','รู้'],['几道','jǐ dào','จี่ ต้าว','กี่จาน']]],
+    phrase:[['这个多少钱？','zhè ge duō shao qián','เจ้อ เกอะ ตัว เส่า เฉียน','อันนี้เท่าไหร่'],['我不知道','wǒ bù zhī dào','หว่อ ปู้ จรือ ต้าว','ฉันไม่รู้'],
+          ['有猪肉吗？','yǒu zhū ròu ma','โหย่ว จู โร่ว มะ','มีหมูไหม'],['地铁站在哪里？','dì tiě zhàn zài nǎ lǐ','ตี้ เถี่ย จ้าน จ้าย หน่า หลี่','สถานีรถไฟใต้ดินอยู่ไหน']]},
+  ch:{name:'ch', th:'ช (ม้วนลิ้น)', air:'ลมระเบิดแรง (เอามือรองหน้าปากต้องรู้สึกลม)',
+    anchor:[['吃饭','chī fàn','ชรือ ฟ่าน','กินข้าว'],['喝茶','hē chá','เฮอ ฉา','ดื่มชา'],['出口','chū kǒu','ชู โข่ว','ทางออก'],['炒饭','chǎo fàn','เฉ่า ฟ่าน','ข้าวผัด']],
+    pair:[[['尺子','chǐ zi','ชรื่อ จึ','ไม้บรรทัด'],['旗子','qí zi','ฉี จึ','ธง']],[['车子','chē zi','เชอ จึ','รถ'],['茄子','qié zi','เฉีย จึ','มะเขือ']]],
+    phrase:[['我想吃','wǒ xiǎng chī','หว่อ เสี่ยง ชรือ','ฉันอยากกิน'],['在这儿吃','zài zhèr chī','จ้าย เจ้อร์ ชรือ','กินที่นี่'],['不吃辣','bù chī là','ปู้ ชรือ ล่า','ไม่กินเผ็ด'],
+          ['火车站在哪里？','huǒ chē zhàn zài nǎ lǐ','หั่ว เชอ จ้าน จ้าย หน่า หลี่','สถานีรถไฟอยู่ไหน'],['我吃饱了','wǒ chī bǎo le','หว่อ ชรือ เป่า เลอะ','ฉันอิ่มแล้ว']]}
+};
+const RETRO_STEP={anchor:'คำหลัก (ช้า)', pair:'คู่เทียบ', phrase:'ประโยคเที่ยว'};
+const RETRO_RATE={anchor:0.7, pair:0.85, phrase:1.0};
+function retroS(){ S.retro=S.retro||{}; S.retro.w=S.retro.w||{}; S.retro.fam=S.retro.fam||{}; return S.retro; }
+function retroConf(days){                          // ตาราง "เป้า>ได้ยิน" รายวัน (S.daily.conf) → นับต่อตระกูล
+  const c={sh:0, zh:0, ch:0};
+  for(let o=-(days||3)+1;o<=0;o++){ const d=(S.daily||{})[dayKey(o)]; if(d && d.conf) Object.entries(d.conf).forEach(([k,v])=>{ const m=/^(sh|zh|ch)>/.exec(k); if(m) c[m[1]]+=v; }); }
+  return c;
+}
+function retroNeed(){ const c=retroConf(3); return c.sh+c.zh+c.ch>=6; }
+function retroAcc(key){ const h=(retroS().fam[key]||{}).hist||[]; return h.length ? h.reduce((a,b)=>a+b,0)/h.length : 0.5; }
+function retroWAcc(h){ const r=retroS().w[h]; return r && r.hist && r.hist.length ? r.hist.reduce((a,b)=>a+b,0)/r.hist.length : 0.4; }
+/* เลือกตระกูล: เพี้ยนบ่อยใน log + ความแม่นในห้องนี้ต่ำ = มาก่อน · คำในตระกูล: คำที่ยังพลาดบ่อยมาก่อน */
+function retroQueue(n, coach){
+  const c=retroConf(3);
+  const fams=Object.keys(RETRO).map(f=>({f:f, w:c[f]+8*(1-retroAcc(f))+Math.random()})).sort((a,b)=>b.w-a.w).map(x=>x.f);
+  const key=x=>Array.isArray(x[0]) ? x[0][0] : x[0];
+  const pick=arr=>arr.map(x=>({x:x, w:retroWAcc(key(x))+Math.random()*0.3})).sort((a,b)=>a.w-b.w).map(o=>o.x);   // พลาดบ่อยมาก่อน (สุ่มนิดหน่อย)
+  const mk=(f,step,x,p)=>({kind:'retro', fam:f, step:step, hanzi:x[0], pinyin:x[1], thaiRead:x[2], meaning:x[3], partner:p?{hanzi:p[0], pinyin:p[1], thaiRead:p[2], meaning:p[3]}:null, ok:0, tries:0});
+  const ladder=f=>{ const R=RETRO[f], pr=pick(R.pair)[0], ph=pick(R.phrase), an=pick(R.anchor).filter(x=>x[0]!==pr[0][0]);   // คำหลักไม่ซ้ำกับคู่เทียบ
+    return [mk(f,'anchor',an[0]), mk(f,'pair',pr[0],pr[1]), mk(f,'phrase',ph[0]), mk(f,'phrase',ph[1])]; };
+  let out=[];
+  if(coach){                                       // โค้ช 90 วิ: ตระกูลที่แย่สุด 1 บันได + ประโยคของตระกูลรอง
+    const L0=ladder(fams[0]), L1=ladder(fams[1]);
+    out=[L0[0], L0[1], L0[2], L1[2], L0[3]];
+  }else{
+    fams.forEach(f=>{ out=out.concat(ladder(f)); });          // 3 ตระกูล × 4 ขั้น
+    if(!retroIntroToday()) out.unshift({kind:'rintro'});
+  }
+  dlog('ลิ้นม้วน','เลือกลำดับ '+fams.map(f=>f+'(log '+c[f]+' · แม่น '+Math.round(retroAcc(f)*100)+'%)').join(' ')+' · '+out.length+' ข้อ');
+  return out.slice(0, n||out.length);
+}
+function retroIntroToday(){ return retroS().introDay===today(); }
+let rIdx=-1;
+function startRetro(q, label){
+  if(!q.length){ toast('ยังไม่มีข้อ','',1200); return false; }
+  MODE='retro'; levelId='retro'; Q=q; qi=0; tries=0; sessUtter=0; sessStars=0; bestPer=[]; rIdx=-1;
+  playing=true; t0=Date.now();
+  dlog('เกม','เริ่มห้องลิ้นม้วน ('+label+') '+q.length+' ข้อ');
+  show('scr-play'); renderMode(); requestWake();
+  document.body.classList.toggle('hidethai', !S.settings.showThai);
+  renderItem(true);
+  return true;
+}
+const RETRO_SETUP='<b>ตั้งลิ้น 3 ขั้น</b><br>1️⃣ ปลายลิ้นแตะเพดาน "หลังปุ่มเหงือก" (ตรงที่พูด ร เรือ แบบรัวลิ้น) แล้วถอยหลังนิดนึง — ลิ้นห้ามแตะฟัน<br>'+
+  '2️⃣ ปากเฉยๆ <b>ห้ามยิ้ม</b> (ยิ้ม = ลิ้นแบนมาหน้า = กลายเป็น x · q · j)<br>'+
+  '3️⃣ ปล่อยลม: <b>sh</b> ลมไหลยาว "ซ" · <b>ch</b> ลมระเบิด "ช" · <b>zh</b> ไม่มีลม "จ"';
+const RETRO_VOWEL='สระหลัง zhi · chi · shi = เสียง <b>อือ</b> ค้างลิ้นไว้ (ไม่ใช่ อี): 是 = ซรื่อ · 吃 = ชรือ · 知 = จรือ · 十 = ซรื๋อ';
+function retroPyHTML(py){                          // ขีดเส้นใต้พยางค์ที่ต้องม้วนลิ้น
+  return String(py||'').split(/(\s+|,\s*)/).map(x=>{
+    const b=x.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
+    return /^(zh|ch|sh)/.test(b) ? '<b style="color:var(--t1);text-decoration:underline;text-underline-offset:4px">'+esc(x)+'</b>' : esc(x);
+  }).join('');
+}
+function renderRetro(it, quiet){
+  if(rIdx!==qi){ rIdx=qi; }
+  tries=0;
+  hideAllBoxes();
+  $('#playBar').style.width=(qi/Q.length*100)+'%';
+  $('#playCount').textContent=(qi+1)+'/'+Q.length;
+  $('#btnSkip').style.visibility='visible';
+  $('#btnSelfPass').style.visibility='hidden';
+  if(it.kind==='rintro'){
+    $('#pKind').textContent='🌀 ห้องลิ้นม้วน · ตั้งลิ้นก่อนพูด';
+    $('#pHan').className='han'; $('#pHan').innerHTML='🌀';
+    $('#pPy').innerHTML='zhi · chi · shi'; $('#pThai').textContent='จรือ · ชรือ · ซรือ';
+    $('#pMean').innerHTML='<div class="pairTip" style="text-align:left;line-height:1.7">'+RETRO_SETUP+'<br>🗣️ '+RETRO_VOWEL+'<br>🪞 ส่องกระจก: ถ้าเห็นฟันเยอะ = ยิ้ม = ผิด</div>';
+    $('#heard').innerHTML='<div class="row" style="gap:.5rem;margin-top:.4rem"><button class="btn ghost" id="rDemo">🔊 ฟัง 是 · 吃 · 知 ช้าๆ</button><button class="btn" id="rGo">พร้อมแล้ว ▶</button></div>';
+    $('#rDemo').onclick=()=>{ abortRec(); speak('是，吃，知，十', null, 0.6); };
+    $('#rGo').onclick=()=>{ retroS().introDay=today(); save(); next(); };
+    micState('');
+    return;
+  }
+  const R=RETRO[it.fam];
+  $('#pKind').textContent='🌀 ลิ้นม้วน '+R.name+' · '+RETRO_STEP[it.step]+(it.ok?' · ผ่าน '+it.ok+'/2':'');
+  const nch=[...String(it.hanzi)].filter(c=>/[一-鿿]/.test(c)).length;
+  $('#pHan').className='han zh'+(nch>9?' long':'');
+  $('#pHan').innerHTML='<span class="zh">'+esc(it.hanzi)+'</span>';
+  $('#pPy').innerHTML=retroPyHTML(it.pinyin);
+  $('#pThai').textContent=it.thaiRead||'';
+  $('#pMean').innerHTML=esc(it.meaning||'')+(it.partner ? '<div class="pairVs">ไม่ใช่ <span class="zh vs">'+esc(it.partner.hanzi)+'</span> '+esc(it.partner.pinyin)+' · '+esc(it.partner.meaning)+'</div>' : '');
+  if(!quiet) $('#heard').innerHTML='<div class="pairTip">🌀 '+R.th+' — ม้วนปลายลิ้นขึ้น ปากไม่ยิ้ม · '+esc(R.air)+'</div>';
+  micState('');
+  if(!quiet) speak(it.hanzi, armMic, RETRO_RATE[it.step]);
+}
+function retroContrast(it){
+  if(it.partner) speak(it.hanzi, ()=>setTimeout(()=>speak(it.partner.hanzi, ()=>setTimeout(()=>speak(it.hanzi, armMic, 0.7), 250), 0.7), 250), 0.7);
+  else speak(it.hanzi, armMic, 0.6);
+}
+/* สาเหตุจากเสียงที่ได้ยิน (keyErrs เฉพาะพยางค์ zh/ch/sh ของโจทย์) */
+function retroWhy(errs){
+  if(!errs.length) return '';
+  const [a,b]=errs[0], ia=pyInit(pyBare(a)), ib=pyInit(pyBare(b));
+  const heard=pyChar(b)+' ('+b+')';
+  if(/^[xqj]$/.test(ib)) return 'ได้ยินเป็น '+heard+' = ลิ้นแบนอยู่หน้า + ยิ้ม → ยกปลายลิ้นขึ้นไปหลังปุ่มเหงือก ปากเฉยๆ ไม่ยิ้ม';
+  if(/^[scz]$/.test(ib)) return 'ได้ยินเป็น '+heard+' = ปลายลิ้นแตะฟัน → ยกปลายลิ้นขึ้นไปหาเพดาน อย่าให้โดนฟัน';
+  if(ib==='sh') return 'ได้ยินเป็น '+heard+' = ลมไหลแบบ sh → '+(ia==='ch'?'ch ต้องมีลมระเบิดออกมา':'zh ปิดลิ้นแล้วปล่อยเบาๆ เหมือน "จ"');
+  if(ib==='ch') return 'ได้ยินเป็น '+heard+' = ลมระเบิดแรงไป → '+(ia==='sh'?'sh ลมไหลยาว ลิ้นไม่แตะเพดาน':'zh ไม่มีลมพ่น');
+  if(ib==='zh') return 'ได้ยินเป็น '+heard+' = ลมน้อยไป → '+(ia==='ch'?'ch พ่นลมแรงๆ':'sh ลิ้นไม่แตะเพดาน ลมไหลยาว');
+  return 'ได้ยินเป็น '+heard+' — ม้วนปลายลิ้นขึ้น ปากไม่ยิ้ม แล้วลองช้าๆ';
+}
+function retroRec(it, ok){
+  const R=retroS();
+  const w=R.w[it.hanzi]||(R.w[it.hanzi]={n:0, ok:0, hist:[]}); w.n++; if(ok) w.ok++; w.hist=(w.hist||[]).concat(ok?1:0).slice(-10); w.last=Date.now();
+  const f=R.fam[it.fam]||(R.fam[it.fam]={hist:[]}); f.hist=(f.hist||[]).concat(ok?1:0).slice(-30);
+}
+function judgeRetro(alts){
+  const it=cur(); if(!it) return;
+  if(it.kind==='rintro'){ retroS().introDay=today(); next(); return; }
+  const t=norm(it.hanzi,false);
+  const r=scoreAll(it.hanzi, alts), rp=it.partner ? scoreAll(it.partner.hanzi, alts) : null;
+  const hb=norm(r.heard||'',false);
+  const errs=keyErrs(t, hb).filter(([a])=>/^(zh|ch|sh)$/.test(pyInit(pyBare(a))));
+  const sup = it.partner && t.indexOf(norm(it.partner.hanzi,false))>=0;
+  const ok = r.score>=80 && !errs.length && (!rp || r.score>rp.score || (sup && r.score>=rp.score));
+  it.tries++;
+  const st = ok ? (it.tries<=2 ? 3 : 2) : 0;
+  sessUtter++; sessStars+=st; S.stats.utter++; S.stats.stars+=st;
+  bestPer[qi]=Math.max(bestPer[qi]||0, ok?r.score:0);
+  retroRec(it, ok);
+  const otherWhy=()=>{                             // ม้วนลิ้นถูกแล้ว แต่พยางค์อื่นเพี้ยน (十块 → 实话: kuài → huà)
+    if(t.length!==hb.length) return '';
+    for(let i=0;i<t.length;i++){ const a=pyBare(t[i]), b=pyBare(hb[i]); if(!a || !b || a===b) continue;
+      const pre=/^(zh|ch|sh)/.test(a) ? '' : 'ม้วนลิ้นชัดแล้ว ✓ — ';
+      if(pyInit(a)==='k' && pyInit(b)==='h') return pre+pyChar(t[i])+' ได้ยินเป็น '+pyChar(hb[i])+' → k ปิดโคนลิ้นแล้วปล่อยลมแบบ "ค" ไม่ใช่ "ฮ"';
+      return pre+pyChar(t[i])+' ('+t[i]+') ได้ยินเป็น '+pyChar(hb[i])+' ('+hb[i]+') — ฟังช้าๆ แล้วลองใหม่'; }
+    return '';
+  };
+  const why = ok ? '' : (retroWhy(errs) || (rp && rp.score>=r.score && rp.score>=60 ? 'ออกมาเป็น '+it.partner.hanzi+' ('+it.partner.pinyin+') → '+RETRO[it.fam].th+' ปากไม่ยิ้ม' : otherWhy() || 'ระบบยังจับไม่ได้ — พูดช้าลง ลากพยางค์ที่ขีดเส้นใต้ให้ยาว'));
+  const row={h:it.hanzi, st:st, lat:null, heard:r.heard, score:r.score, fam:it.fam, step:it.step, vs:it.partner?it.partner.hanzi:'', why:why};
+  if(COACH.active) coachLog(row);
+  else { S.log.push(Object.assign({t:'retro', ts:Date.now()}, row)); if(S.log.length>2000) S.log=S.log.slice(-1500); }
+  save();
+  dlog('ลิ้นม้วน', it.fam+' '+RETRO_STEP[it.step]+' '+it.hanzi+(it.partner?' vs '+it.partner.hanzi:'')+' -> '+r.score+(rp?'/'+rp.score:'')+'% '+(ok?'ผ่าน':'ไม่ผ่าน')+' (ได้ยิน: '+(r.heard||'—')+(errs.length?' · '+errs.map(e=>e.join('>')).join(' '):'')+') ครั้งที่ '+it.tries);
+  $('#pHan').innerHTML='<span class="zh">'+markedHTML(it.hanzi, hb)+'</span>';
+  if(ok){
+    it.ok++;
+    $('#heard').innerHTML='<div class="lab">ได้ยินว่า</div>'+heardBox(r.heard)+'<div class="stars" style="color:var(--ok)">'+starStr(st)+' <span class="small">'+(it.ok>=2?'ม้วนลิ้นชัด 2 ครั้งติด 👍':'ชัด! อีกครั้งให้ติดปาก ('+it.ok+'/2)')+'</span></div>';
+    vib([30,40,30]); micState('ok');
+    $('#pKind').textContent=$('#pKind').textContent.replace(/ · ผ่าน \d\/2|$/, ' · ผ่าน '+it.ok+'/2');
+    if(it.ok>=2){ setTimeout(()=>{ if(playing && MODE==='retro' && cur()===it) next(); }, 800); return; }
+    setTimeout(()=>{ if(playing && MODE==='retro' && cur()===it) speak(it.hanzi, armMic, 1.0); }, 600);
+    return;
+  }
+  it.ok=0;                                        // ต้องติดกัน 2 ครั้ง
+  $('#heard').innerHTML='<div class="lab">ได้ยินว่า</div>'+heardBox(r.heard)+'<div class="stars" style="color:var(--bad)">'+starStr(0)+' <span class="small">'+r.score+'%</span></div>'+
+    '<div class="nearTip">👅 '+esc(why)+'</div>';
+  vib(140); micState('');
+  if(it.tries>=5){                                 // พอสำหรับข้อนี้ — วนกลับมาอีกทีท้ายชุด (ครั้งเดียว)
+    if(!it.again && !COACH.active){ Q.push(Object.assign({}, it, {ok:0, tries:0, again:true})); dlog('ลิ้นม้วน','พัก '+it.hanzi+' ไว้ท้ายชุด'); }
+    $('#heard').insertAdjacentHTML('beforeend','<div class="small muted">ไม่เป็นไร '+(it.again||COACH.active?'':'เดี๋ยววนกลับมาอีกที · ')+'ไปข้อต่อไป</div>');
+    setTimeout(()=>{ if(playing && MODE==='retro' && cur()===it) next(); }, 2200);
+    return;
+  }
+  setTimeout(()=>{ if(playing && MODE==='retro' && cur()===it){ renderRetro(it, true);
+    $('#heard').insertAdjacentHTML('beforeend','<div class="nearTip">🔊 ฟังช้าๆ '+(it.partner?esc(it.hanzi)+' – '+esc(it.partner.hanzi)+' – '+esc(it.hanzi):esc(it.hanzi))+'<br>👅 '+esc(why)+'</div>');
+    retroContrast(it); } }, 1500);
+}
+function finishRetro(){
+  if(COACH.active) return coachNextBlock();
+  const ms=Date.now()-t0; S.stats.ms+=ms;
+  const xs=Q.filter(x=>x.kind==='retro'), by={};
+  xs.forEach(x=>{ const b=by[x.fam]||(by[x.fam]={n:0,ok:0}); b.n++; if(x.ok>=2) b.ok++; });
+  const sum=Object.keys(by).map(f=>f+' '+by[f].ok+'/'+by[f].n).join(' · ');
+  dlog('ลิ้นม้วน','จบชุด · '+sum+' · '+Math.round(ms/1000)+' วิ');
+  save(true);
+  endPlay(); MODE='lesson'; screenStack=['scr-home']; renderHome(); show('scr-home',false);
+  toast('🌀 ลิ้นม้วน: '+sum, 'ผ่าน 2 ครั้งติด = ติดปากแล้ว · ทำวันละ 1–2 รอบ', 2800);
+}
+function retroSubText(){
+  const c=['sh','zh','ch'].map(f=>{ const h=(retroS().fam[f]||{}).hist||[]; return h.length ? f+' '+Math.round(h.reduce((a,b)=>a+b,0)/h.length*100)+'%' : null; }).filter(Boolean);
+  return c.length ? 'ความชัดล่าสุด: '+c.join(' · ') : 'ตั้งลิ้น → คำหลัก → คู่เทียบ → ประโยคเที่ยว · ~4 นาที';
+}
 
 /* ============================================================
    🌳 ต้นไม้คำเที่ยว (travel-tree-plan.md) — ลำต้น = โครงประโยค + วลีเอาตัวรอด · กิ่ง = คำนามตามหมวด · ใบ = ประโยคที่ประกอบเอง
@@ -12262,6 +12466,7 @@ $('#btnPattern').onclick=()=>{ renderPatList(); show('scr-patpick'); };
 $('#btnTalk').onclick=()=>{ renderTalkList(); show('scr-talkpick'); };
 $('#btnTone').onclick=()=>{ renderToneList(); show('scr-tonepick'); };
 $('#btnPair').onclick=()=>startPair(pairQueue(16, 3), 'อิสระ');
+$('#btnRetro').onclick=()=>startRetro(retroQueue(0, false), 'อิสระ');
 $('#toneHear').onclick=()=>{ const it=toneItem(); if(!it) return; toneClose(); speak(it.zh); };
 $('#toneNext').onclick=()=>{ toneAbort(); toneNext(); };
 $('#btnToneQuit').onclick=()=>{ if(COACH.active){ coachAskQuit(); return; } toneClose(); releaseWake(); screenStack=['scr-home']; renderHome(); show('scr-home',false); };
@@ -12294,6 +12499,7 @@ $('#btnHear').onclick=()=>{
   if(MODE==='talk'){ const t=talkTurn(); if(t){ abortRec(); speak(t.ask, armMic); } return; }
   if(MODE==='shadow'){ const it=cur(); if(it){ abortRec(); speak(it.hanzi, armMic, SH_PLAN.rates[shStage]); } return; }
   if(MODE==='pair'){ const it=cur(); if(it){ abortRec(); pairContrast(it); } return; }
+  if(MODE==='retro'){ const it=cur(); if(it && it.kind==='retro'){ abortRec(); retroContrast(it); } return; }
   if(MODE==='tree'){
     const it=cur(); if(!it) return;
     if(it.t==='see' || it.tries>=2){ abortRec(); speak(it.hanzi, armMic); }
