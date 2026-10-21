@@ -235,6 +235,13 @@ h2{font-size:1.15rem;margin:1.5rem 0 .5rem}
 .glossbox.on .glossbtn{opacity:.6}
 .gloss2{display:none;flex-wrap:wrap;gap:.3rem .5rem;justify-content:center;margin-top:.4rem;font-size:.9rem;color:var(--muted)}
 .glossbox.on .gloss2{display:flex}
+.revmean{margin-top:.5rem;padding:.45rem .6rem;border:1px dashed var(--rule);border-radius:.7rem;text-align:center}
+.revmean .revth{font-weight:700;color:var(--t1);font-size:1.02rem}
+.revmean .gloss2{color:var(--ink,inherit)}
+.rteach{text-align:left;line-height:1.6;margin-top:.45rem;padding:.5rem .65rem;border-radius:.7rem;border:1px solid var(--rule)}
+.rteach ol{margin:.25rem 0 0 1.1rem;padding:0}
+.rteach .vs{display:flex;gap:.5rem;justify-content:center;flex-wrap:wrap;margin:.15rem 0 .35rem}
+.rteach .vs span{padding:.15rem .55rem;border-radius:.6rem;border:1px solid var(--rule)}
 .gloss2 span{border:1px solid var(--rule);background:var(--card);border-radius:.45rem;padding:.12rem .45rem;white-space:nowrap}
 .gloss2 b{color:var(--ink)}
 .gloss2 .gnew{border-color:var(--t3);background:#FBF1DC}
@@ -3403,7 +3410,7 @@ const MILESTONES = [
 /* ============================================================
    2.5 บันทึกปัญหา (diagnostics) — ไว้ส่งให้ผู้พัฒนาดูเวลาไมค์มีปัญหา
    ============================================================ */
-const BUILD='2026-10-21a';                     // เปลี่ยนทุกครั้งที่แก้ไฟล์ จะได้รู้ว่า log มาจากรุ่นไหน
+const BUILD='2026-10-21b';                     // เปลี่ยนทุกครั้งที่แก้ไฟล์ จะได้รู้ว่า log มาจากรุ่นไหน
 const DIAG=[], STUCK={}, T0=Date.now();
 /* log ปัญหาเก็บลงเครื่องด้วย: iPhone ปิดแอปหรือรีเฟรชแล้ว log เก่ายังอยู่ ส่งย้อนหลังได้ */
 const DKEY='zhgame-diag', DIAG_MAX=2500;
@@ -6055,7 +6062,7 @@ function revealProd(it, heardNorm, silent){
     (S.settings.pyFirst
       ? '<div class="py" style="font-size:1.5rem;font-weight:700">'+pyHTML(it.pinyin)+'</div><div class="zh zhsmall">'+markedHTML(it.hanzi, heardNorm)+'</div>'
       : '<div class="zh">'+markedHTML(it.hanzi, heardNorm)+'</div><div class="py">'+pyHTML(it.pinyin)+'</div>')+
-    '<div class="th">'+esc(it.thaiRead||'')+'</div>'+noteHTML(it);
+    '<div class="th">'+esc(it.thaiRead||'')+'</div>'+meanRevealHTML(it.hanzi, it.pinyin, it.meaning)+noteHTML(it);
   if(!silent) speak(sayText(it));             // เล่นเสียงต้นแบบตอนเฉลย (ตอบถูกเองแล้วไม่ต้อง)
 }
 async function startProd(queue, label){
@@ -7662,6 +7669,58 @@ function retroWhy(errs){
   if(ib==='zh') return 'ได้ยินเป็น '+heard+' = ลมน้อยไป → '+(ia==='ch'?'ch พ่นลมแรงๆ':'sh ลิ้นไม่แตะเพดาน ลมไหลยาว');
   return 'ได้ยินเป็น '+heard+' — ม้วนปลายลิ้นขึ้น ปากไม่ยิ้ม แล้วลองช้าๆ';
 }
+/* วิเคราะห์ว่าพลาดที่พยางค์ไหน เป็นแบบไหน → ใช้ทั้งข้อความสั้นและการ์ดสอน */
+function retroDiag(it, t, hb, errs, r, rp){
+  if(errs.length){ const [a,b]=errs[0], ib=pyInit(pyBare(b));
+    return {tc:a, hc:b, kind:/^[xqj]$/.test(ib)?'front':/^[scz]$/.test(ib)?'teeth':/^(zh|ch|sh)$/.test(ib)?'air':'other'}; }
+  if(rp && rp.score>=r.score && rp.score>=60){
+    const p=norm(it.partner.hanzi,false); for(let i=0;i<Math.min(t.length,p.length);i++) if(t[i]!==p[i]) return {tc:t[i], hc:p[i], kind:'front'};
+  }
+  if(t.length===hb.length) for(let i=0;i<t.length;i++){ const a=pyBare(t[i]), b=pyBare(hb[i]); if(!a || !b || a===b) continue;
+    if(pyInit(a)==='k' && pyInit(b)==='h') return {tc:t[i], hc:hb[i], kind:'kh'};
+    return {tc:t[i], hc:hb[i], kind:/^(zh|ch|sh)/.test(a)?'other':'nonretro'}; }
+  return {tc:null, hc:null, kind:'unclear'};
+}
+const RETRO_FIX={
+  front:{why:'ลิ้นแบนอยู่ข้างหน้า + ยิ้ม (ท่าของ ซี / ชี / จี แบบไทย)', steps:[
+    'พูดเสียงที่ผิดค้างไว้ก่อน เช่น "ซีีี" — สังเกตว่าปลายลิ้นอยู่หลังฟันล่าง ปากยิ้ม',
+    'ขณะยังเปล่งเสียงอยู่ ค่อยๆ ยกปลายลิ้นขึ้น แล้วเลื่อนถอยหลังไปแตะเพดานหลังปุ่มเหงือก → เสียงจะทุ้มลงเป็น "ซรือ"',
+    'หุบยิ้ม ปากเฉยๆ (ส่องกระจก: ไม่เห็นฟันล่าง) แล้วพูดพยางค์นั้นเดี่ยวๆ 3 ครั้ง',
+    'ค้างท่าลิ้นนี้ไว้ แล้วพูดทั้งคำช้าๆ']},
+  teeth:{why:'ปลายลิ้นแตะฟันบน (ท่าของ ซ / จ / ช ปกติ)', steps:[
+    'พูด "ซ" ค้างไว้ — รู้สึกปลายลิ้นแตะหลังฟันบน',
+    'เลื่อนปลายลิ้นขึ้นและถอยหลังไปประมาณ 1 ซม. ให้พ้นปุ่มเหงือก (ลิ้นไม่โดนฟันแล้ว)',
+    'เปล่งเสียงต่อ จะได้เสียง "ซร" ทุ้มๆ แล้วพูดพยางค์นั้น 3 ครั้ง',
+    'พูดทั้งคำช้าๆ โดยไม่ให้ลิ้นกลับลงมาแตะฟัน']},
+  air:{why:'ลิ้นม้วนถูกแล้ว แต่ลมผิดแบบ (sh / ch / zh สลับกัน)', steps:[
+    'เอาฝ่ามือรองหน้าปาก',
+    'sh = ลมไหลยาวไม่สะดุด "ซรรร" · ch = ปิดลิ้นแล้วระเบิดลมแรงจนมือรู้สึก "ชร!" · zh = ปิดลิ้นแล้วปล่อยเบาๆ ไม่มีลม "จร"',
+    'พูดพยางค์ที่ขีดเส้นใต้ 3 ครั้งโดยเช็กลมที่มือ แล้วพูดทั้งคำ']},
+  kh:{why:'เสียงม้วนลิ้นถูกแล้ว ✓ — แต่ k กลายเป็น h', steps:[
+    'k = "ค" ไทย: ยกโคนลิ้นปิดเพดานด้านหลังให้สนิทก่อน',
+    'ปล่อยลมระเบิดออกทีเดียว "ค" (ไม่ใช่ลมไหลแบบ "ฮ")',
+    'เช่น kuài = "ไคว่" ไม่ใช่ "ไฮว่" — พูดช้าๆ 3 ครั้ง แล้วพูดทั้งคำ']},
+  other:{why:'พยางค์ที่ม้วนลิ้นยังไม่ชัด', steps:[
+    'ตั้งลิ้น: ปลายลิ้นแตะเพดานหลังปุ่มเหงือก ปากไม่ยิ้ม',
+    'พูดพยางค์ที่ขีดเส้นใต้เดี่ยวๆ ช้าๆ 3 ครั้ง ลากสระ "อือ"',
+    'แล้วพูดทั้งคำ']},
+  nonretro:{why:'เสียงม้วนลิ้นถูกแล้ว ✓ — พยางค์อื่นยังเพี้ยน', steps:[
+    'ฟังเสียงช้าๆ อีกครั้ง ตั้งใจฟังพยางค์ที่เป็นสีแดง',
+    'พูดพยางค์นั้นเดี่ยวๆ 2 ครั้ง แล้วพูดทั้งคำ']},
+  unclear:{why:'ระบบยังจับคำไม่ได้ (เบาไป / เร็วไป / ไม่ครบคำ)', steps:[
+    'ถือมือถือห่างปาก 1 คืบ พูดดังขึ้นอีกนิด',
+    'พูดช้าลง ทีละพยางค์ ลากพยางค์ที่ขีดเส้นใต้ให้ยาว',
+    'พูดให้ครบทั้งคำในครั้งเดียว']}
+};
+function retroTeachHTML(it, d, n){              // n = พลาดครั้งที่เท่าไหร่ (ครั้งแรกสั้น → ละเอียดขึ้น)
+  const F=RETRO_FIX[d.kind]||RETRO_FIX.unclear;
+  const vs = d.tc && d.hc ? '<div class="vs"><span>คุณพูด ❌ <b>'+esc(pyChar(d.hc))+'</b> <span class="zh small">'+esc(d.hc)+'</span></span><span>ที่ถูก ✅ <b>'+esc(pyChar(d.tc))+'</b> <span class="zh small">'+esc(d.tc)+'</span></span></div>' : '';
+  let steps = n<=1 ? F.steps.slice(0,2) : F.steps.slice();
+  if(d.kind==='front' && d.hc){ const ib=pyInit(pyBare(d.hc)), w={x:'"ซีีี"', q:'"ชีีี"', j:'"จีีี"'}[ib]; if(w) steps[0]=steps[0].replace('"ซีีี"', w); }   // ยกตัวอย่างตามเสียงที่พูดจริง
+  const meaning = '<div class="small muted" style="margin-top:.3rem">'+esc(it.hanzi)+' = '+esc(it.meaning||'')+'</div>'+(glossHTML(it.hanzi, it.pinyin)?'<div class="glossbox on revgloss">'+glossHTML(it.hanzi, it.pinyin)+'</div>':'');
+  return '<div class="rteach">'+vs+'<b>ผิดตรงไหน:</b> '+esc(F.why)+'<br><b>วิธีแก้:</b><ol>'+steps.map(x=>'<li>'+esc(x)+'</li>').join('')+'</ol>'+
+    (n>=2 && d.tc ? '<div class="small" style="margin-top:.25rem">🔊 ฟังพยางค์ <b>'+esc(pyChar(d.tc))+'</b> เดี่ยวๆ ช้าๆ 3 ครั้ง แล้วทั้งคำ</div>' : '')+meaning+'</div>';
+}
 function retroRec(it, ok){
   const R=retroS();
   const w=R.w[it.hanzi]||(R.w[it.hanzi]={n:0, ok:0, hist:[]}); w.n++; if(ok) w.ok++; w.hist=(w.hist||[]).concat(ok?1:0).slice(-10); w.last=Date.now();
@@ -7706,8 +7765,10 @@ function judgeRetro(alts){
     return;
   }
   it.ok=0;                                        // ต้องติดกัน 2 ครั้ง
+  it.miss=(it.miss||0)+1;
+  const dg=retroDiag(it, t, hb, errs, r, rp); it.dg=dg;
   $('#heard').innerHTML='<div class="lab">ได้ยินว่า</div>'+heardBox(r.heard)+'<div class="stars" style="color:var(--bad)">'+starStr(0)+' <span class="small">'+r.score+'%</span></div>'+
-    '<div class="nearTip">👅 '+esc(why)+'</div>';
+    retroTeachHTML(it, dg, it.miss);
   vib(140); micState('');
   if(it.tries>=5){                                 // พอสำหรับข้อนี้ — วนกลับมาอีกทีท้ายชุด (ครั้งเดียว)
     if(!it.again && !COACH.active){ Q.push(Object.assign({}, it, {ok:0, tries:0, again:true})); dlog('ลิ้นม้วน','พัก '+it.hanzi+' ไว้ท้ายชุด'); }
@@ -7715,9 +7776,9 @@ function judgeRetro(alts){
     setTimeout(()=>{ if(playing && MODE==='retro' && cur()===it) next(); }, 2200);
     return;
   }
-  setTimeout(()=>{ if(playing && MODE==='retro' && cur()===it){ renderRetro(it, true);
-    $('#heard').insertAdjacentHTML('beforeend','<div class="nearTip">🔊 ฟังช้าๆ '+(it.partner?esc(it.hanzi)+' – '+esc(it.partner.hanzi)+' – '+esc(it.hanzi):esc(it.hanzi))+'<br>👅 '+esc(why)+'</div>');
-    retroContrast(it); } }, 1500);
+  setTimeout(()=>{ if(playing && MODE==='retro' && cur()===it){
+    if(it.miss>=2 && dg.tc){ speak(dg.tc+'，'+dg.tc+'，'+dg.tc+'，'+it.hanzi, armMic, 0.6); return; }   // พยางค์ที่ผิดเดี่ยวๆ 3 ครั้ง → ทั้งคำ
+    retroContrast(it); } }, 1800);
 }
 function finishRetro(){
   if(COACH.active) return coachNextBlock();
@@ -8596,6 +8657,12 @@ function glossHTML(hanzi, pinyin, isNew){
   return '<div class="gloss2">'+ps.filter(p=>p.py || p.w!=='儿').map(p=>'<span'+(isNew && isNew(p.w)?' class="gnew">🆕 ':'>')+'<b>'+esc(S.settings.pyFirst?p.py:p.w)+'</b> = '+esc(p.th||'—')+'</span>').join('')+'</div>';
 }
 /* ปุ่มเปิด/ปิด (จำค่าไว้) — ไม่ต้องแปลตลอดก็ได้ */
+/* เฉลยหลังพูดผิด: ความหมายไทยทั้งประโยค + แปลทีละคำ (เปิดเสมอ) — ผู้ใช้ขอ 21 ต.ค. ("我订了房间 ไม่มีคำแปล เลยลืม") */
+function meanRevealHTML(hanzi, pinyin, meaning){
+  const m=String(meaning||'').trim(), g=glossHTML(hanzi, pinyin);
+  if(!m && !g) return '';
+  return '<div class="revmean">'+(m?'<div class="revth">🇹🇭 '+esc(m)+'</div>':'')+(g?'<div class="glossbox on revgloss">'+g+'</div>':'')+'</div>';
+}
 function glossToggleHTML(hanzi, pinyin){
   const g=glossHTML(hanzi, pinyin); if(!g) return '';
   const open=!!S.settings.glossOpen;
@@ -8605,7 +8672,7 @@ document.addEventListener('click', e=>{
   const b=e.target.closest('.glossbtn'); if(!b) return;
   e.preventDefault(); e.stopPropagation();
   S.settings.glossOpen=!S.settings.glossOpen; save();
-  $$('.glossbox').forEach(x=>x.classList.toggle('on', !!S.settings.glossOpen));
+  $$('.glossbox:not(.revgloss)').forEach(x=>x.classList.toggle('on', !!S.settings.glossOpen));
 }, true);
 /* โครงเต็ม + คำนาม เรียงตามประโยคจริง: "zhè ge + … duō shao qián" · "yǒu … ma + cài dān" · "lái … + niú ròu miàn" */
 function treeStructHTML(F, nk){
@@ -9083,8 +9150,9 @@ function treeReveal(it, heardNorm, silent){
   $('#pHan').innerHTML=bigWordHTML(it.hanzi, it.pinyin, markedHTML(it.hanzi, heardNorm||''));
   $('#pPy').innerHTML=S.settings.pyFirst ? '' : pyHTML(it.pinyin);
   $('#pThai').textContent=it.thaiRead||'';
-  $$('#pMean .glossbox').forEach(x=>x.remove());
-  $('#pMean').insertAdjacentHTML('afterbegin', glossToggleHTML(it.hanzi, it.pinyin));
+  $$('#pMean .glossbox, #pMean .revmean').forEach(x=>x.remove());
+  if(silent) $('#pMean').insertAdjacentHTML('afterbegin', glossToggleHTML(it.hanzi, it.pinyin));
+  else $('#pMean').insertAdjacentHTML('afterbegin', meanRevealHTML(it.hanzi, it.pinyin, it.meaning));
   if(!silent) speak(it.hanzi);                    // ตอบถูกแล้วไม่ต้องฟังซ้ำ (ประหยัด ~1 วิ/ข้อ)
 }
 function treeLog(it, st, r, extra){
@@ -10879,7 +10947,7 @@ function contrastResult(it, ok, heard, how){
   if(COACH.active) coachLog({h:it.key, tgt:it.hanzi, st:st, heard:heard||'', g:it.g, how:how||''});
   else S.log.push(logEnrich({t:'contrast', h:it.key, tgt:it.hanzi, st:st, heard:heard||'', g:it.g, ts:Date.now()}));
   save();
-  const right='<div class="py" style="font-size:1.25rem;font-weight:700">'+pyHTML(it.pinyin)+'</div><div class="zh small muted">'+esc(it.hanzi)+'</div>';
+  const right='<div class="py" style="font-size:1.25rem;font-weight:700">'+pyHTML(it.pinyin)+'</div><div class="zh small muted">'+esc(it.hanzi)+'</div>'+meanRevealHTML(it.hanzi, it.pinyin, it.meaning);
   $('#heard').innerHTML=(how==='แตะเลือก'?'':'<div class="lab">ได้ยินว่า</div>'+heardBox(heard))+
     '<div class="stars" style="color:var(--'+(ok?'ok':'bad')+')">'+(ok?'✓ ถูกต้อง':'✗ ยังไม่ใช่')+'</div>'+
     (ok ? '' : (how==='wrong' ? '<div class="nearTip">พูดเป็นแบบผิด: '+esc(it.wrongPy)+' — '+esc(it.why)+'</div>' : '')+'<div class="lab" style="margin-top:.4rem">ที่ถูกคือ</div>'+right)+
@@ -10964,6 +11032,7 @@ function judgeSub(alts){
     it.done=true;
     $('#pHan').className='han'+(S.settings.pyFirst?'':' zh'); $('#pHan').innerHTML=bigWordHTML(it.hanzi, it.pinyin, markedHTML(it.hanzi, norm(r.heard||'',false)));
     $('#pThai').textContent=it.thaiRead||'';
+    if(!ok) $('#heard').insertAdjacentHTML('beforeend', meanRevealHTML(it.hanzi, it.pinyin, it.meaning));
     micState(ok?'ok':''); vib(ok?[30,40,30]:140);
     if(it.i===it.n) subFinish(it.chain);
     if(ok) setTimeout(()=>{ if(playing && cur()===it) next(); }, 1300);
@@ -11092,7 +11161,7 @@ function v3Reveal(it, heard){
   }
   $('#pHan').className='han'+(S.settings.pyFirst?'':' zh'); $('#pHan').innerHTML=bigWordHTML(w.zh, w.py, markedHTML(w.zh, norm(heard||'',false)));
   $('#pThai').textContent=w.th||'';
-  $('#pMean').innerHTML=esc(w.mean)+glossToggleHTML(w.zh, w.py);
+  $('#pMean').innerHTML=esc(w.mean)+(glossHTML(w.zh, w.py) ? '<div class="glossbox on revgloss">'+glossHTML(w.zh, w.py)+'</div>' : '');
   speak(w.zh, null, 0.85);
 }
 function v3Rec(it, ok){
