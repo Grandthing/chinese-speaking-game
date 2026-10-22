@@ -3417,7 +3417,7 @@ const MILESTONES = [
 /* ============================================================
    2.5 บันทึกปัญหา (diagnostics) — ไว้ส่งให้ผู้พัฒนาดูเวลาไมค์มีปัญหา
    ============================================================ */
-const BUILD='2026-10-22b';                     // เปลี่ยนทุกครั้งที่แก้ไฟล์ จะได้รู้ว่า log มาจากรุ่นไหน
+const BUILD='2026-10-22c';                     // เปลี่ยนทุกครั้งที่แก้ไฟล์ จะได้รู้ว่า log มาจากรุ่นไหน
 const DIAG=[], STUCK={}, T0=Date.now();
 /* log ปัญหาเก็บลงเครื่องด้วย: iPhone ปิดแอปหรือรีเฟรชแล้ว log เก่ายังอยู่ ส่งย้อนหลังได้ */
 const DKEY='zhgame-diag', DIAG_MAX=2500;
@@ -6352,7 +6352,7 @@ const mmss = ms => { const t=Math.max(0,Math.round(ms/1000)); return Math.floor(
 /* โฟกัสเที่ยว: ไม่จำกัดเวลา เล่นจนครบจำนวนข้อของแต่ละบล็อก (ผู้ใช้ขอ 22 ต.ค.) */
 function focusCounts(){
   const due=treeDueList().length;
-  return {FR: due>=20 ? 40 : 30, FP:5, FT: due>=40 ? 1 : 2, FD:14, FL:30, due:due};
+  return {FR: due>=20 ? 40 : 30, FP:5, FT: due>=40 ? 1 : 2, FD:14, FL:40, due:due};   // ฟัง 40 (ผู้ใช้ขอ 22 ต.ค.)
 }
 function focusCountText(plan){
   const c=focusCounts(), lab={FR:'ทบทวน '+c.FR, FP:'ซ้อมปาก '+c.FP, FT:'คำใหม่ '+c.FT+' ก้อน', FD:'ตัวเลข '+c.FD, FL:'ฟัง '+c.FL, FS:'สถานการณ์ 1 ฉาก', FX:'สอบ 10'};
@@ -11561,7 +11561,7 @@ COACH_RUN.FR=blk=>{
 };
 COACH_RUN.FT=blk=>treeStartSync('โค้ช');          // sync: ห้ามคืน Promise (ตัวคุมโค้ชจะเข้าใจว่าเริ่มแล้ว)
 COACH_RUN.FL=blk=>{
-  const q=treeListenQueue(15).concat(qaQueue(15));   // 👂 เดิม 15 + 🙋 ฟังคำถาม→ตอบ 15 (ผู้ใช้ขอ 22 ต.ค.)
+  const q=treeListenQueue(20).concat(qaQueue(20));   // 👂 ฟัง 40 = คำ/ประโยค 20 (คำ 8 · ประโยค 8 · ของจริง 4) + 🙋 ฟังคำถาม→ตอบ 20 (สั้น → ยาว)
   if(!q.length) return false;
   lisStart(q);
   return true;
