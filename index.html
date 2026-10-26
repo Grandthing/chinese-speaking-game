@@ -3417,7 +3417,7 @@ const MILESTONES = [
 /* ============================================================
    2.5 บันทึกปัญหา (diagnostics) — ไว้ส่งให้ผู้พัฒนาดูเวลาไมค์มีปัญหา
    ============================================================ */
-const BUILD='2026-10-22c';                     // เปลี่ยนทุกครั้งที่แก้ไฟล์ จะได้รู้ว่า log มาจากรุ่นไหน
+const BUILD='2026-10-26a';                     // เปลี่ยนทุกครั้งที่แก้ไฟล์ จะได้รู้ว่า log มาจากรุ่นไหน
 const DIAG=[], STUCK={}, T0=Date.now();
 /* log ปัญหาเก็บลงเครื่องด้วย: iPhone ปิดแอปหรือรีเฟรชแล้ว log เก่ายังอยู่ ส่งย้อนหลังได้ */
 const DKEY='zhgame-diag', DIAG_MAX=2500;
@@ -7670,7 +7670,9 @@ function judgePair(alts){
   const it=cur(); if(!it) return;
   const r=scoreAll(it.hanzi, alts), rp=scoreAll(it.partner.hanzi, alts);
   const sup = norm(it.hanzi,false).indexOf(norm(it.partner.hanzi,false))>=0;   // 泰国人 ⊃ 泰国: เสมอกัน = ได้เป้า
-  const ok = r.score>=80 && (r.score>rp.score || (sup && r.score>=rp.score));
+  const rpSame=scoreAll(it.partner.hanzi, [r.heard]).score;                                  // เทียบกับคำถอดเดียวกัน (ไม่เอาอันดับรองมาตัดสิน)
+  const topP = alts && alts[0] ? scoreAll(it.partner.hanzi, [alts[0]]).score : 0, topT = alts && alts[0] ? scoreAll(it.hanzi, [alts[0]]).score : 0;
+  const ok = r.score>=80 && (r.score>rpSame || (sup && r.score>=rpSame)) && !(topP>=80 && topP>topT);
   const mixed = !ok && rp.score>=80 && rp.score>=r.score;          // ออกมาเป็นคู่หลอกพอดี
   const st = ok ? (pTries===0?3:2) : mixed ? 0 : 1;
   sessUtter++; sessStars+=st; S.stats.utter++; S.stats.stars+=st;
@@ -7931,7 +7933,9 @@ function judgeRetro(alts){
   const hb=norm(r.heard||'',false);
   const errs=keyErrs(t, hb).filter(([a])=>/^(zh|ch|sh)$/.test(pyInit(pyBare(a))));
   const sup = it.partner && t.indexOf(norm(it.partner.hanzi,false))>=0;
-  const ok = r.score>=80 && !errs.length && (!rp || r.score>rp.score || (sup && r.score>=rp.score));
+  const rpSame = it.partner ? scoreAll(it.partner.hanzi, [r.heard]).score : 0;              // คู่หลอก เทียบกับคำถอดเดียวกัน
+  const topP = it.partner && alts && alts[0] ? scoreAll(it.partner.hanzi, [alts[0]]).score : 0, topT = alts && alts[0] ? scoreAll(it.hanzi, [alts[0]]).score : 0;
+  const ok = r.score>=80 && !errs.length && (!it.partner || ((r.score>rpSame || (sup && r.score>=rpSame)) && !(topP>=80 && topP>topT)));
   it.tries++;
   const st = ok ? (it.tries<=2 ? 3 : 2) : 0;
   sessUtter++; sessStars+=st; S.stats.utter++; S.stats.stars+=st;
@@ -8999,6 +9003,7 @@ function treeReviewRate3(){                        // ทบทวนผ่า�
 const TRIP_OFF=new Set([
   '西红柿','黄瓜','白菜',                          // ผักดิบ (ไม่ได้ทำกับข้าวเอง)
   '西瓜','桃子','荔枝','芒果','葡萄','草莓',        // ผลไม้ที่ไม่ใช่ฤดู พ.ย.
+  '橘子','猕猴桃',                                  // ผลไม้ที่ผู้ใช้บอกว่าแปลก/ไม่ได้ใช้ (26 ต.ค.) — เหลือ 苹果 · 香蕉
   '煎饼果子','肉夹馍','烤冷面',                     // ของกินเล่นทางเหนือ (เฉิงตูหายาก)
   '糯','嫩',                                        // คำบรรยายรสสัมผัส (ฟังออกพอ ไม่ต้องพูด)
   '抹个零吧','帮我挑几个','酱分开装','菜市场','手套' // ตลาดสด/ต่อเศษ (จ่ายสแกนไม่มีเศษ)
@@ -9023,7 +9028,7 @@ function treeNewLeft(){ return Math.max(0, treeQuota() - treeDayRec().n); }
 function treePickChunk(n, force){
   n=n||4;
   const out=[];
-  const parked=k=>tripOff(k) || !!(TL && TL.miss && TL.miss[k]>=8) || !!(S.tree[k] && (S.tree[k].parked || S.tree[k].hwSkip));   // พักในรอบนี้ / ติดวน 2 session (R-2)
+  const parked=k=>tripOff(k) || !!(TL && ((TL.miss && TL.miss[k]>=5) || (TL.fail && TL.fail[k]))) || !!(S.tree[k] && (S.tree[k].parked || S.tree[k].hwSkip));   // พักในรอบนี้ (เกณฑ์ 5 · พลาดเกิน 2 วน) / ติดวน 2 session   // พักในรอบนี้ / ติดวน 2 session (R-2)
   const pending=Object.keys(S.tree||{}).filter(k=>TREE[k] && (S.tree[k].stage||0)<5 && !parked(k)).sort((a,b)=>(S.tree[a].first||0)-(S.tree[b].first||0));
   pending.forEach(k=>{ const it=TREE[k]; if(it.kind==='frame' && !treePartsReady(it.frame)) return; if(out.length<n) out.push(k); });   // ประโยคที่ค้าง: รอให้คำประกอบผ่านก่อน
   let quota=treeNewLeft();
@@ -10084,7 +10089,7 @@ function timeObj(h,m){
   const py=FD_HOUR_PY[h]+' diǎn'+(m===30?' bàn':m===15?' yí kè':m===0?'':' '+priceToPy(m)+' fēn');
   return {zh:zh, py:py, th:h+':'+String(m).padStart(2,'0')};
 }
-const RP_FRUIT=[{zh:'苹果',py:'píng guǒ',th:'แอปเปิ้ล'},{zh:'橘子',py:'jú zi',th:'ส้ม'},{zh:'葡萄',py:'pú tao',th:'องุ่น'},{zh:'荔枝',py:'lì zhī',th:'ลิ้นจี่'},{zh:'芒果',py:'máng guǒ',th:'มะม่วง'},{zh:'草莓',py:'cǎo méi',th:'สตรอว์เบอร์รี'}];
+const RP_FRUIT=[{zh:'苹果',py:'píng guǒ',th:'แอปเปิ้ล'},{zh:'香蕉',py:'xiāng jiāo',th:'กล้วย'}];   // 26 ต.ค.: ตัดผลไม้นอกฤดู/แปลก (葡萄 荔枝 芒果 草莓 橘子)
 const RP_DISH=[{zh:'牛肉面',py:'niú ròu miàn',th:'บะหมี่เนื้อ'},{zh:'担担面',py:'dàn dàn miàn',th:'บะหมี่ตันตัน'},{zh:'抄手',py:'chāo shǒu',th:'เกี๊ยวน้ำ'},{zh:'米饭',py:'mǐ fàn',th:'ข้าวสวย'}];
 const RP_SCENES=[
   { id:'rp1', icon:'🧺', title:'ตลาดสด: ซื้อผลไม้ราคาต่อจิน', desc:'ถามราคา · ทวนราคา · บอกกี่จิน · ทวนยอด · จ่าย',
@@ -11170,7 +11175,7 @@ function renderGramBook(){
 const SUB_CHAINS=[
  {"id":"S1","name":"🍜 ร้านอาหาร","start":["我想吃牛肉面","wǒ xiǎng chī niú ròu miàn","หว่อ เสี่ยง ชือ หนิว โร่ว เมี่ยน","อยากกินบะหมี่เนื้อ"],"steps":[["ไก่","我想吃鸡肉","wǒ xiǎng chī jī ròu","หว่อ เสี่ยง ชือ จี โร่ว","鸡"],["ไม่เผ็ด","我想吃不辣的","wǒ xiǎng chī bú là de","หว่อ เสี่ยง ชือ ปู๋ ล่า เตอะ","不辣"],["ถามว่ามีไหม","有不辣的吗？","yǒu bú là de ma","โหย่ว ปู๋ ล่า เตอะ มะ","有"],["ขอชามนึง","来一碗牛肉面","lái yì wǎn niú ròu miàn","ไหล อี้ หว่าน หนิว โร่ว เมี่ยน","一碗"],["สองชาม","来两碗牛肉面","lái liǎng wǎn niú ròu miàn","ไหล เหลี่ยง หว่าน หนิว โร่ว เมี่ยน","两碗"]]},
  {"id":"S2","name":"🚇 ถามทาง","start":["洗手间在哪里？","xǐ shǒu jiān zài nǎ lǐ","สี่ โส่ว เจียน จ้าย หน่า หลี่","ห้องน้ำอยู่ไหน"],"steps":[["สถานีรถไฟใต้ดิน","地铁站在哪里？","dì tiě zhàn zài nǎ lǐ","ตี้ เถี่ย จ้าน จ้าย หน่า หลี่","地铁站"],["ถามว่าไปยังไง","地铁站怎么走？","dì tiě zhàn zěn me zǒu","ตี้ เถี่ย จ้าน เจิ่น เมอะ โจ่ว","怎么走"],["บอกแท็กซี่ไปสนามบิน","师傅，去机场","shī fu, qù jī chǎng","ซือ ฟู่ ชวี่ จี ฉ่าง","去机场"],["จอดตรงนี้","就这儿停","jiù zhèr tíng","จิ้ว เจ้อร์ ถิง","停"]]},
- {"id":"S3","name":"🧺 ตลาดผลไม้","start":["苹果多少钱一斤？","píng guǒ duō shao qián yì jīn","ผิง กั่ว ตัว เส่า เฉียน อี้ จิน","แอปเปิลจินละเท่าไหร่"],"steps":[["ส้ม","橘子多少钱一斤？","jú zi duō shao qián yì jīn","จฺวี๋ จึ ตัว เส่า เฉียน อี้ จิน","橘子"],["แพงไปนิด","有点贵","yǒu diǎn guì","โหย่ว เตี่ยน กุ้ย","有点"],["ขอถูกลงหน่อย","便宜一点","pián yi yì diǎn","เผียน อี๋ อี้ เตี่ยน","便宜"],["เอาจินนึง","来一斤","lái yì jīn","ไหล อี้ จิน","一斤"],["ไม่เอาถุง","不用袋子","bú yòng dài zi","ปู๋ ย่ง ต้าย จึ","不用"]]},
+ {"id":"S3","name":"🧺 ตลาดผลไม้","start":["苹果多少钱一斤？","píng guǒ duō shao qián yì jīn","ผิง กั่ว ตัว เส่า เฉียน อี้ จิน","แอปเปิลจินละเท่าไหร่"],"steps":[["กล้วย","香蕉多少钱一斤？","xiāng jiāo duō shao qián yì jīn","เซียง เจียว ตัว เส่า เฉียน อี้ จิน","香蕉"],["แพงไปนิด","有点贵","yǒu diǎn guì","โหย่ว เตี่ยน กุ้ย","有点"],["ขอถูกลงหน่อย","便宜一点","pián yi yì diǎn","เผียน อี๋ อี้ เตี่ยน","便宜"],["เอาจินนึง","来一斤","lái yì jīn","ไหล อี้ จิน","一斤"],["ไม่เอาถุง","不用袋子","bú yòng dài zi","ปู๋ ย่ง ต้าย จึ","不用"]]},
  {"id":"S4","name":"🧋 ร้านชานม","start":["来一杯奶茶","lái yì bēi nǎi chá","ไหล อี้ เปย หน่าย ฉา","ขอชานมแก้วนึง"],"steps":[["ไม่ใส่น้ำแข็ง","奶茶去冰","nǎi chá qù bīng","หน่าย ฉา ชวี่ ปิง","去冰"],["หวานครึ่งเดียว","奶茶半糖","nǎi chá bàn táng","หน่าย ฉา ปั้น ถาง","半糖"],["แก้วใหญ่","要大杯的","yào dà bēi de","เย่า ต้า เปย เตอะ","大杯"],["แบบร้อน","要热的","yào rè de","เย่า เร่อ เตอะ","热的"],["สองแก้ว","来两杯奶茶","lái liǎng bēi nǎi chá","ไหล เหลี่ยง เปย หน่าย ฉา","两杯"]]},
  {"id":"S5","name":"🏨 โรงแรม","start":["我订了房间","wǒ dìng le fáng jiān","หว่อ ติ้ง เลอะ ฝาง เจียน","ฉันจองห้องไว้แล้ว"],"steps":[["ถามว่ามีอาหารเช้าไหม","有早餐吗？","yǒu zǎo cān ma","โหย่ว เจ่า ชาน มะ","早餐"],["อาหารเช้ากี่โมง","早餐几点？","zǎo cān jǐ diǎn","เจ่า ชาน จี่ เตี่ยน","几点"],["ไม่มีน้ำร้อน","没有热水","méi yǒu rè shuǐ","เหมย โหย่ว เร่อ สุ่ย","没有"],["แอร์เสีย","空调坏了","kōng tiáo huài le","คง เถียว ไฮว่ เลอะ","空调"],["จะเช็กเอาต์","我要退房","wǒ yào tuì fáng","หว่อ เย่า ทุ่ย ฝาง","退房"]]},
  {"id":"S6","name":"🚖 DiDi","start":["去机场","qù jī chǎng","ชวี่ จี ฉ่าง","ไปสนามบิน"],"steps":[["ไปโรงแรม","去酒店","qù jiǔ diàn","ชวี่ จิ่ว เตี้ยน","酒店"],["จอดตรงนี้","就这儿停","jiù zhèr tíng","จิ้ว เจ้อร์ ถิง","停"],["ถึงหรือยัง","到了吗？","dào le ma","เต้า เลอะ มะ","到了"],["อีกกี่นาที","还要几分钟？","hái yào jǐ fēn zhōng","ไห เย่า จี่ เฟิน จง","几分钟"],["ได้เลย ขอบคุณ","好的，谢谢","hǎo de, xiè xie","ห่าว เตอะ เซี่ย เสียะ","谢谢"]]},
@@ -11523,13 +11528,18 @@ document.addEventListener('click', e=>{
 });
 /* ---------- โค้ช "โฟกัสเที่ยว" 15 นาที: ทบทวน 4 · ต้นไม้ 6 · เสาเข็ม 3 · ฟัง 2 ---------- */
 function pronItems(n){
-  const ks=Object.keys(S.pron||{}).filter(k=>S.pron[k]>0 && !tripOff(k) && !tripOffText(k)).sort((a,b)=>S.pron[b]-S.pron[a]);
+  const seen=S.pronSeen||(S.pronSeen={}), now=Date.now(), recent=k=>(seen[k]||0)>now-20*3600000;
+  const ks=Object.keys(S.pron||{}).filter(k=>S.pron[k]>0 && !tripOff(k) && !tripOffText(k)).sort((a,b)=>S.pron[b]-S.pron[a])
+    .slice(0, 12).sort((a,b)=>(recent(a)?1:0)-(recent(b)?1:0));          // หมุนเวียน: ที่วอร์มอัพไปเมื่อวานไว้ท้าย (log 23–25 ต.ค. ซ้ำทุกรอบ)
   const out=[];
+  const longer=T=>!T.car && norm(T.hanzi,false).length<=2 && (T.ok||[]).find(x=>norm(x,false).length>2);   // 油碟 สั้นไป ระบบฟังเป็น 要得/有点 → 要油碟
   ks.forEach(k=>{
     if(out.length>=n) return;
-    const it=TREE[k] ? {hanzi:treeSay(TREE[k]), pinyin:TREE[k].car?TREE[k].car.pinyin:TREE[k].pinyin, thaiRead:TREE[k].car?TREE[k].car.thaiRead:TREE[k].thaiRead, meaning:TREE[k].meaning, pronKey:k}
+    const L=TREE[k] && longer(TREE[k]);
+    const it=TREE[k] ? (L ? {hanzi:L, pinyin:toPinyin(L), thaiRead:TREE[k].thaiRead, meaning:TREE[k].meaning, pronKey:k}
+      : {hanzi:treeSay(TREE[k]), pinyin:TREE[k].car?TREE[k].car.pinyin:TREE[k].pinyin, thaiRead:TREE[k].car?TREE[k].car.thaiRead:TREE[k].thaiRead, meaning:TREE[k].meaning, pronKey:k})
       : (()=>{ const c=coachResolve(k); return c ? Object.assign({pronKey:k}, c, {hanzi:sayText(c)}) : null; })();
-    if(it) out.push(it);
+    if(it){ out.push(it); seen[k]=now; }
   });
   return out;
 }
@@ -11911,7 +11921,7 @@ function treeListenQueue(n){
     const okIds=new Set((S.listen.hist||[]).slice(-80).filter(h=>h.ok && !h.as).map(h=>h.id));
     const isNew=treeKnownFn();
     LISTEN.filter(L=>SC.indexOf(L.scene)>=0).map(L=>({L:L, nNew:glossParts(L.zh, L.py).filter(p=>isNew(p.w)).length}))
-      .filter(x=>x.nNew<=2).sort(()=>Math.random()-0.5)
+      .filter(x=>x.nNew<=2 && !tripOffText(x.L.zh)).sort(()=>Math.random()-0.5)
       .sort((a,b)=>(a.nNew-b.nNew) || ((okIds.has(a.L.id)?1:0)-(okIds.has(b.L.id)?1:0)) || ((b.L.tree?1:0)-(a.L.tree?1:0)))
       .slice(0,nR).forEach(x=>q.push(Object.assign(lisSentItem(x.L), {real:true, nNew:x.nNew})));
   }
