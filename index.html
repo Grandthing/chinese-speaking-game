@@ -3417,7 +3417,7 @@ const MILESTONES = [
 /* ============================================================
    2.5 บันทึกปัญหา (diagnostics) — ไว้ส่งให้ผู้พัฒนาดูเวลาไมค์มีปัญหา
    ============================================================ */
-const BUILD='2026-10-26a';                     // เปลี่ยนทุกครั้งที่แก้ไฟล์ จะได้รู้ว่า log มาจากรุ่นไหน
+const BUILD='2026-10-26b';                     // เปลี่ยนทุกครั้งที่แก้ไฟล์ จะได้รู้ว่า log มาจากรุ่นไหน
 const DIAG=[], STUCK={}, T0=Date.now();
 /* log ปัญหาเก็บลงเครื่องด้วย: iPhone ปิดแอปหรือรีเฟรชแล้ว log เก่ายังอยู่ ส่งย้อนหลังได้ */
 const DKEY='zhgame-diag', DIAG_MAX=2500;
@@ -6352,7 +6352,10 @@ const mmss = ms => { const t=Math.max(0,Math.round(ms/1000)); return Math.floor(
 /* โฟกัสเที่ยว: ไม่จำกัดเวลา เล่นจนครบจำนวนข้อของแต่ละบล็อก (ผู้ใช้ขอ 22 ต.ค.) */
 function focusCounts(){
   const due=treeDueList().length;
-  return {FR: due>=20 ? 40 : 30, FP:5, FT: due>=40 ? 1 : 2, FD:14, FL:40, due:due};   // ฟัง 40 (ผู้ใช้ขอ 22 ต.ค.)
+  // คำใหม่: ให้ทันก่อนบิน (คำที่ยังไม่เริ่ม ÷ 4 คำต่อก้อน ÷ วันที่เหลือ) · 1–2 ก้อน · ค้างทวน ≥ 40 = 1
+  const left=Object.values(TREE).filter(t=>!tripOff(t.key) && !treeRec(t.key)).length, days=Math.max(1, (typeof tripPlan==='function' && tripPlan() && tripPlan().days) || 14);
+  const ft=due>=40 ? 1 : Math.max(1, Math.min(2, Math.ceil(left/4/days)));
+  return {FR: due>=20 ? 40 : 30, FP:5, FT:ft, FD:14, FL:60, due:due, left:left};   // ฟัง 60 (ผู้ใช้ขอเน้นฟัง 26 ต.ค.)
 }
 function focusCountText(plan){
   const c=focusCounts(), lab={FR:'ทบทวน '+c.FR, FP:'ซ้อมปาก '+c.FP, FT:'คำใหม่ '+c.FT+' ก้อน', FD:'ตัวเลข '+c.FD, FL:'ฟัง '+c.FL, FS:'สถานการณ์ 1 ฉาก', FX:'สอบ 10'};
@@ -9004,6 +9007,15 @@ const TRIP_OFF=new Set([
   '西红柿','黄瓜','白菜',                          // ผักดิบ (ไม่ได้ทำกับข้าวเอง)
   '西瓜','桃子','荔枝','芒果','葡萄','草莓',        // ผลไม้ที่ไม่ใช่ฤดู พ.ย.
   '橘子','猕猴桃',                                  // ผลไม้ที่ผู้ใช้บอกว่าแปลก/ไม่ได้ใช้ (26 ต.ค.) — เหลือ 苹果 · 香蕉
+  // ---- รีวิว 26 ต.ค. (เหลือ 18 วัน): ข้ามการพูด · ยังได้ยินในโหมด 🙋 ฟังคำถาม ----
+  '冰粉','豆花','面条','羊肉','虾','鱼','糖','葱','蒜','脆','鲜切水果',                 // อาหารรอง (ชี้เมนู/มีคำหลักแล้ว)
+  '别的颜色','鞋','竹签','有大号吗？','有黑色的吗？','有什么特产？','商场','尝一下','纸巾',  // ช้อปปิ้งเสื้อผ้า/ของฝาก · 纸巾 ใช้ 有纸吗？ แทน
+  '我就要这个','有大一点的吗？','几点关门？','阿姨','来半斤','来十块钱的','可以拼一下吗？',
+  '现在吃','帮我热一下','帮我切一下','走路去远吗？',                                       // ตลาด/ของกินเล่น: 我要这个 + ชี้ ก็พอ
+  '哪个卖得最好？','有什么特色？','这个是什么味道？','是甜的还是咸的？','大家一般点哪个？',   // ซ้ำกับ 有什么推荐的？/你们家招牌是什么？
+  '二两','来二两饺子','少油','不要太咸','有冰水吗？','我饿了',                               // 二两 → พูด 小碗/大碗 แทน
+  '全糖','中杯','来一杯珍珠奶茶，半糖，少冰','帮我点一下',                                 // ชานม: เหลือ 半糖 少冰 去冰 大杯 常温
+  '去机场坐几号线？','门票包括观光车吗？','能换房间吗？','能多给一条毛巾吗？','请打扫一下房间',
   '煎饼果子','肉夹馍','烤冷面',                     // ของกินเล่นทางเหนือ (เฉิงตูหายาก)
   '糯','嫩',                                        // คำบรรยายรสสัมผัส (ฟังออกพอ ไม่ต้องพูด)
   '抹个零吧','帮我挑几个','酱分开装','菜市场','手套' // ตลาดสด/ต่อเศษ (จ่ายสแกนไม่มีเศษ)
@@ -11114,10 +11126,11 @@ function contrastItem(i){
   return {kind:'core', contrast:i, key:'C:'+i, store:'srx', src:'contrast', g:c[0], hanzi:c[2], pinyin:c[3], thaiRead:c[4], meaning:c[1], wrong:c[5], wrongPy:c[6], why:c[7], ok:[], alt:[], note:''};
 }
 /* 2–3 ข้อต่อรอบ: ข้อที่ถึงรอบทวนก่อน · ข้อใหม่ไม่เกิน 2 · กฎที่คนไทยพลาดบ่อย (⚠️) มาก่อน */
+const CONTRAST_OFF=new Set([1,5,6,7,9,12]);          // รีวิว 26 ต.ค.: ข้ามก่อนบิน
 function contrastPick(n){
   const now=Date.now(), X=S.srx||{};
-  const due=CONTRAST.map((c,i)=>i).filter(i=>X['C:'+i] && (X['C:'+i].next||0)<=now).sort(()=>Math.random()-0.5);
-  const fresh=CONTRAST.map((c,i)=>i).filter(i=>!X['C:'+i]).sort((a,b)=>(GRAMMAR[CONTRAST[b][0]].hot?1:0)-(GRAMMAR[CONTRAST[a][0]].hot?1:0) || a-b);
+  const due=CONTRAST.map((c,i)=>i).filter(i=>!CONTRAST_OFF.has(i) && X['C:'+i] && (X['C:'+i].next||0)<=now).sort(()=>Math.random()-0.5);
+  const fresh=CONTRAST.map((c,i)=>i).filter(i=>!CONTRAST_OFF.has(i) && !X['C:'+i]).sort((a,b)=>(GRAMMAR[CONTRAST[b][0]].hot?1:0)-(GRAMMAR[CONTRAST[a][0]].hot?1:0) || a-b);
   const out=due.slice(0,n); fresh.slice(0,Math.min(2, n-out.length)).forEach(i=>out.push(i));
   return out.map(contrastItem);
 }
@@ -11571,7 +11584,7 @@ COACH_RUN.FR=blk=>{
 };
 COACH_RUN.FT=blk=>treeStartSync('โค้ช');          // sync: ห้ามคืน Promise (ตัวคุมโค้ชจะเข้าใจว่าเริ่มแล้ว)
 COACH_RUN.FL=blk=>{
-  const q=treeListenQueue(20).concat(qaQueue(20));   // 👂 ฟัง 40 = คำ/ประโยค 20 (คำ 8 · ประโยค 8 · ของจริง 4) + 🙋 ฟังคำถาม→ตอบ 20 (สั้น → ยาว)
+  const q=treeListenQueue(25).concat(qaQueue(35));   // 👂 ฟัง 60 = คำ/ประโยค 25 (คำ 10 · ประโยค 10 · ของจริง 5) + 🙋 ฟังคำถาม→ตอบ 35 (สั้น → ยาว)
   if(!q.length) return false;
   lisStart(q);
   return true;
